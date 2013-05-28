@@ -1,0 +1,77 @@
+program shlib_type_test
+
+#ifdef NAGFOR
+  use,intrinsic :: f90_unix, only: exit
+#endif
+  use,intrinsic :: iso_fortran_env, only: error_unit
+  use,intrinsic :: iso_c_binding, only: c_funptr, c_ptr, c_f_procpointer, c_f_pointer, c_float
+  use fortran_dynamic_loader
+  implicit none
+
+  abstract interface
+    real function f(x)
+      real, value :: x
+    end function
+  end interface
+  procedure(f), pointer :: fptr
+  
+  integer :: status = 0
+  
+  call test_libm_cbrtf
+  call test_mylib_square
+  call test_mylib_var
+  
+  call exit (status)
+  
+contains
+
+  subroutine test_libm_cbrtf
+
+    type(c_funptr)  :: funptr
+    type(shlib) :: libm
+
+    !! Load the C math library libm.so and calculate the cube root
+    !! of 8.0 using the function cbrtf from the library.
+    call libm%open ('libm.so', RTLD_NOW)
+    call libm%func ('cbrtf', funptr)  ! cube root function
+    call c_f_procpointer (funptr, fptr)
+    if (fptr(8.0) /= 2.0) then
+      status = 1
+      write(error_unit,*) 'test_libm_cbrtf failed'
+    end if
+    call libm%close
+  
+  end subroutine test_libm_cbrtf
+  
+  subroutine test_mylib_square
+  
+    type(c_funptr)  :: funptr
+    type(shlib) :: mylib
+  
+    call mylib%open('./libmylib.so', RTLD_NOW)
+    call mylib%func ('square', funptr)  ! square function
+    call c_f_procpointer (funptr, fptr)
+    if (fptr(3.0) /= 9.0) then
+    print *, fptr(3.0_c_float)
+      status = 1
+      write(error_unit,*) 'test_mylib_square failed'
+    end if
+    call mylib%close
+  
+  end subroutine test_mylib_square
+  
+  subroutine test_mylib_var
+    type(shlib) :: mylib
+    integer, pointer :: n
+    type(c_ptr) :: ptr
+    call mylib%open('./libmylib.so', RTLD_NOW)
+    call mylib%sym('FORTYTWO', ptr)
+    call c_f_pointer(ptr, n)
+    if (n /= 42) then
+      status = 1
+      write(error_unit,*) 'test_mylib_var failed'
+    end if
+    call mylib%close
+  end subroutine test_mylib_var
+
+end program
