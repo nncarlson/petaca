@@ -30,6 +30,9 @@ set(CMAKE_Fortran_MODULE_DIRECTORY ${Petaca_MODULE_DIR})
 # Build Options 
 # ---------------------------------------------------------------------------- #
 
+option(ENABLE_TESTS "Build test programs" ON)
+option(ENABLE_EXAMPLES "Build example programs" ON)
+
 # Build the tests
 if (ENABLE_TESTS)
   enable_testing()
