@@ -1,0 +1,13 @@
+CMAKE STUFF
+-----------
+Figure out how to gracefully build the documentation via cmake.
+Requires pdflatex and the latex2man style files to build the pdf,
+and the latex2man program to create the man file.  This may well
+not exist on many systems.
+
+Figure out how to run the unit tests via cmake.
+
+Figure out how to install the petaca library, associated mod
+files, documentations, etc.
+
+Figure out how to build a distribution tarball using CPack(?)
