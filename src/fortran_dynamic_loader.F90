@@ -4,13 +4,40 @@
 !! Neil Carlson <neil.n.carlson@gmail.com>
 !! 10 Apr 2006; last revised 29 Mar 2013.
 !!
-!! This module provides access to the dynamic loader.  It uses the
-!! C-interoperability features of Fortran 2003 to directly interface with
-!! the POSIX C functions dlopen, dlclose, dlsym, and dlerror from the system
-!! DLL library (libdl on linux).
+!! This module provides an interface to the system dynamic loader (DL).
+!! It uses the C-interoperability features of Fortran to directly interface
+!! with the POSIX C functions dlopen, dlclose, dlsym, and dlerror from the
+!! system DL library (libdl on linux).
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) 2006, 2013, Neil N. Carlson
+!!
+!! Permission is hereby granted, free of charge, to any person obtaining a
+!! copy of this software and associated documentation files (the "Software"),
+!! to deal in the Software without restriction, including without limitation
+!! the rights to use, copy, modify, merge, publish, distribute, sublicense,
+!! and/or sell copies of the Software, and to permit persons to whom the
+!! Software is furnished to do so, subject to the following conditions:
+!!
+!! The above copyright notice and this permission notice shall be included
+!! in all copies or substantial portions of the Software.
+!!
+!! THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+!! IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+!! FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+!! THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+!! LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+!! FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+!! DEALINGS IN THE SOFTWARE.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! PROGRAMMING INTERFACE
 !!
+!! The derived type SHLIB implements an object-oriented interface to the
+!! dynamic loader, providing access to data and procedures defined by a
+!! shared library.  The derived type has the following type bound subroutines.
 !! Each subroutine has the optional intent-out arguments STAT and ERRMSG.
 !! If STAT is present, it is assigned the value 0 if the subroutine completes
 !! successfully, and a nonzero value if an error occurs.  In the latter case,
@@ -19,94 +46,46 @@
 !! an error occurs, the error string is written to the preconnected error unit
 !! and the program exits with a nonzero status.
 !!
-!! The DLL library must included when linking the executable (-ldl on linux)
+!! The DL library must included when linking the executable (-ldl on linux)
 !! to resolve the symbols dlopen, dlclose, dlsym and dlerror.
 !!
-!!  CALL DLL_OPEN (PATH, MODE, HANDLE [,STAT [,ERRMSG]])
-!!    CHARACTER(*), INTENT(IN) :: PATH
-!!    INTEGER(C_INT), INTENT(IN) :: MODE
-!!    TYPE(DL_HANDLE) :: HANDLE
-!!    INTEGER, INTENT(OUT), OPTIONAL :: STAT
-!!    CHARACTER(:), ALLOCATABLE, INTENT(OUT), OPTIONAL :: ERRMSG
+!!  OPEN(FILENAME, MODE [,STAT [,ERRMSG]]) loads the shared library file
+!!    named by the character argument FILENAME and associates it with the
+!!    SHLIB object.  If FILENAME contains a slash (/), it is interpreted as
+!!    a relative or absolute pathname.  Otherwise the dynamic loader searches
+!!    a certain list of directories for the library; see dlopen(3) for details.
+!!    The value supplied for MODE must be one of the module parameters
+!!    RTLD_LAZY or RTLD_NOW, optionally or'ed with one of the module parameters
+!!    RTLD_GLOBAL or RTLD_LOCAL.  See dlopen(3) for a detailed description of
+!!    the behavior.  A shared library file may be "loaded" multiple times.
+!!    In reality it is only loaded once by the underlying DL, which maintains
+!!    a reference count.
 !!
-!!    This call opens the shared library file specified by PATH and returns
-!!    a handle for the library.  This handle is intended only to be passed
-!!    back to DLL_FUNC and DLL_CLOSE.  This can be called multiple times
-!!    for the same library; the same handle is returned.  The value supplied
-!!    for MODE must be one of the module parameters RTLD_LAZY or RTLD_NOW,
-!!    optionally or'ed with the module parameter RTLD_GLOBAL.  See the man
-!!    page for dlopen(3) for a detailed description of the behavior.
+!!  CLOSE([STAT [,ERRMSG]]) disassociates the shared library from the object
+!!    and decrements the library reference count.  When the reference count
+!!    and the library reaches zero, it is unloaded.  See the man page for
+!!    dlclose(3) for more details.
 !!
-!!  CALL DLL_CLOSE (HANDLE [,STAT [,ERRMSG]])
-!!    TYPE(DL_HANDLE) :: HANDLE
-!!    INTEGER, INTENT(OUT), OPTIONAL :: STAT
-!!    CHARACTER(:), ALLOCATABLE, INTENT(OUT), OPTIONAL :: ERRMSG
+!!  FUNC(SYMBOL, FUNPTR [,STAT [,ERRMSG]]) returns the memory address where
+!!    the specified function symbol from the shared library is loaded.  The
+!!    character argument SYMBOL gives the symbol name, and the address is
+!!    returned in the TYPE(C_FUNPTR) argument FUNPTR.  The caller is
+!!    responsible for converting this C function pointer value to an
+!!    appropriate Fortran procedure pointer using the subroutine
+!!    C_F_PROCPOINTER from the intrinsic ISO_C_BINDING module.
 !!
-!!    This call decrements the reference count on the specified shared library
-!!    handle.  When the reference count reaches zero, the shared library is
-!!    unloaded.  See the man page for dlclose(3) for more details.
-!!
-!!  CALL DLL_FUNC (HANDLE, SYMBOL, FUNPTR [,STAT [,ERRMSG]])
-!!    TYPE(DL_HANDLE) :: HANDLE
-!!    CHARACTER(*), INTENT(IN) :: SYMBOL
-!!    TYPE(C_FUNPTR), INTENT(OUT) :: FUNPTR
-!!    INTEGER, INTENT(OUT), OPTIONAL :: STAT
-!!    CHARACTER(:), ALLOCATABLE, INTENT(OUT), OPTIONAL :: ERRMSG
-!!
-!!    Given the handle of a shared library returned by DLL_OPEN and the name of
-!!    a function symbol in that library, this routine returns the address of
-!!    the function in FUNPTR.  The caller is responsible for converting this
-!!    C_FUNPTR type value to the appropriate Fortran procedure pointer using
-!!    the intrinsic module procedure C_F_PROCPOINTER from ISO_C_BINDING.
-!!
-!!  CALL DLL_SYM (HANDLE, SYMBOL, SYMPTR [,STAT [,ERRMSG]])
-!!    TYPE(DL_HANDLE) :: HANDLE
-!!    CHARACTER(*), INTENT(IN) :: SYMBOL
-!!    TYPE(C_PTR), INTENT(OUT) :: SYMPTR
-!!    INTEGER, INTENT(OUT), OPTIONAL :: STAT
-!!    CHARACTER(:), ALLOCATABLE, INTENT(OUT), OPTIONAL :: ERRMSG
-!!
-!!    Given the handle of a shared library returned by DLL_OPEN and the name of
-!!    a (data) symbol in that library, this routine returns the address of
-!!    the symbol in SYMPTR.  The caller is responsible for converting this
-!!    C_PTR type value to the appropriate Fortran data pointer using
-!!    the intrinsic module procedure C_F_POINTER from ISO_C_BINDING.
-!!
-!! An alternative object-oriented interface is also provided.  The derived type
-!! SHLIB has type-bound procedures OPEN, CLOSE, FUNC, and SYM that have the same
-!! interfaces as DLL_OPEN, DLL_CLOSE, DLL_FUNC, and DLL_SYM but with the HANDLE
-!! argument omitted.  An object of this type is effectively the handle.
+!!  SYM(SYMBOL, SYMPTR [,STAT [,ERRMSG]]) returns the memory address where
+!!    the specified data symbol from the shared library is loaded.  The
+!!    character argument SYMBOL gives the symbol name, and the address is
+!!    returned in the TYPE(C_PTR) argument SYMPTR. The caller is responsible
+!!    for converting this C data pointer value to an appropriate Fortran
+!!    data pointer using the subroutine C_F_POINTER from the intrinsic
+!!    ISO_C_BINDING module.
 !!
 !! EXAMPLE
 !!
 !!  Load the C math library libm.so and print the cube root of 8.0 using
 !!  the function cbrtf from the library:
-!!
-!!    program example
-!!
-!!      use dynamic_linking_loader
-!!      use,intrinsic :: iso_c_binding, only: c_funptr, c_f_procpointer
-!!      implicit none
-!!
-!!      type(dl_handle) :: so
-!!      type(c_funptr)  :: funptr
-!!      procedure(f), pointer :: fptr
-!!
-!!      abstract interface
-!!        real function f(x)
-!!          real, value :: x
-!!        end function
-!!      end interface
-!!
-!!      call dll_open ('libm.so', RTLD_NOW, so)
-!!      call dll_func (so, 'cbrtf', funptr)
-!!      call c_f_procpointer (funptr, fptr)
-!!      print *, 'the cube root of 8 is', fptr(8.0)
-!!      call dll_close (so)
-!!
-!!    end program
-!!
-!!  The same program using the object-oriented interface is nearly the same:
 !!
 !!    program example
 !!
@@ -134,7 +113,7 @@
 !!
 !! IMPLEMENTATION NOTES
 !!
-!! There is the well-known dilemma that dlsym returns a pointer to a data
+!! There is the well-known issue that dlsym returns a pointer to a data
 !! object (void *) regardless of whether the symbol is a function or a data
 !! object, but that casts between pointer to data and pointer to function are
 !! disallowed in C; there is no guarantee that the two C pointer types have
@@ -143,25 +122,22 @@
 !! The assumption is that a data pointer is wide enough to hold a function
 !! pointer.
 !!
-!! Here we lie about the return value of dlsym and say that it is a C
-!! function pointer so that we can translate it into a Fortran procedure
-!! pointer.  The expectation is that what users want is to link to functions
-!! from a shared object and not global data.
-!!
-!! It would be desirable to also provide a DLL_SYM procedure that returned
-!! a C data pointer, in addition to the DLL_FUNC.  Attempting to define a
-!! different interface block, say for dlfunc, that binds to the same external
-!! name dlsym though doesn't work.  The compiler sees that there are two
-!! different and incompatible interfaces to the same external binding symbol.
-!! Thus this will have to wait until a time when the POSIX DLL specification
-!! introduces a separate dlfunc (like in the BSD implementation) that returns
-!! a function pointer.
-!!
-!! The object-oriented interface was introduced as an experiment.  It works
-!! quite well for the capabilities currently exposed, however the Linux dll
-!! implementation has additional capabilities beyond POSIX, and some of these
-!! involve inspection of the library handle.  The object-oriented interface
-!! doesn't look too well suited for that.
+!! Following the example of BSD, we have provided distinct methods for
+!! getting a pointer to a data symbol (SYM) and and a function symbol (FUNC).
+!! Under the covers, however, there is only the single library function dlsym
+!! (on Linux, at least).  This has required using two alternative approaches,
+!! depending on the Fortran compiler.  One is to define (locally) two different
+!! interfaces for dlsym, one returning a C data pointer and the other a C
+!! function pointer.  The other is to use a single interface for dlsym, but
+!! use the transfer intrinsic to copy its C_PTR return result to a C_FUNPTR
+!! variable.  The issue with the former alternative is that the compiler may
+!! detect the interface mismatch (interfaces are global entities according to
+!! the standard) and refuse to compile the code.  The danger with the latter
+!! is that the implementation of C_PTR and C_FUNPTR is not specified by the
+!! standard, and so there is no reason to expect the transfer operation to
+!! do the right thing.  The expectation, however, is that both types simply
+!! enclose a C pointers and that the transfer is doing the copy that the C
+!! compiler would do.  See the preprocessor macro FAKE_DLFUNC below.
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -223,14 +199,14 @@ module fortran_dynamic_loader
 
 contains
 
-  subroutine shlib_open (this, path, mode, stat, errmsg)
+  subroutine shlib_open (this, filename, mode, stat, errmsg)
     class(shlib), intent(inout) :: this
-    character(*), intent(in) :: path
+    character(*), intent(in) :: filename
     integer(c_int), intent(in) :: mode
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
     if (present(stat)) stat = 0
-    this%handle = dlopen(trim(path)//C_NULL_CHAR, mode)
+    this%handle = dlopen(trim(filename)//C_NULL_CHAR, mode)
     if (.not.c_associated(this%handle)) call error_handler ('SHLIB:OPEN', dlerror(), stat, errmsg)
   end subroutine shlib_open
 

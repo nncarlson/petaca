@@ -1,0 +1,141 @@
+\documentclass[11pt]{article}
+
+\usepackage[latin1]{inputenc}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+
+\usepackage{underscore}
+\usepackage{verbatim}
+\usepackage{enumitem}
+
+\usepackage[nofancy]{latex2man}
+
+\usepackage[margin=1.25in,letterpaper]{geometry}
+
+%\setlength{\parindent}{0pt}
+
+\begin{document}
+
+\setDate{June 2013}
+\setVersion{1.0}
+
+\begin{Name}{3}{map_any_type}{Neil N. Carlson}{Petaca}{The fortran_dynamic_loader module}
+The \texttt{fortran_dynamic_loader} module defines an object-oriented Fortran
+interface to the system dynamic loader as implemented by the POSIX C functions
+\emph{dlopen}, \emph{dlclose}, \emph{dlsym}, and \emph{dlerror}.
+\end{Name}
+
+\section{Synopsis}
+\begin{description}[style=nextline]\raggedright
+\item[Usage]
+  \verb+use fortran_dynamic_loader+
+\item[Derived Type]
+  \texttt{shlib}
+\item[Parameters]
+  \texttt{RTLD_LAZY},\texttt{ RTLD_NOW},\texttt{ RTLD_LOCAL},%
+  \texttt{ RTLD_GLOBAL}
+\item[Linking]
+  Link with the system DL library (\texttt{-ldl} on Linux) to
+  resolve the symbols \emph{dlopen}, \emph{dlclose}, \emph{dlsym}, and
+  \emph{dlerror}.
+\end{description}
+
+\section{The shlib derived type}
+The derived type \texttt{shlib} implements the dynamic loading of a shared
+library and access to data and procedures defined by the library.
+
+\subsection{Type bound subroutines}
+The derived type has the following type bound subroutines.
+Each subroutine has the optional intent-out arguments \texttt{stat} and
+\texttt{errmsg}.  If the integer \texttt{stat} is present, it is assigned
+the value 0 if the subroutine completes successfully, and a nonzero value
+if an error occurs.  In the latter case, the allocatable character string
+\texttt{errmsg}, if present, is assigned the error string returned by the
+underlying system dl library.  If \texttt{stat} is not present and an error
+occurs, the error string is written to the preconnected error unit and the
+program exits with a nonzero status.
+\begin{description}[style=nextline]\setlength{\itemsep}{0pt}
+\item[\texttt{open(filename, mode [,stat [,errmsg]])}]
+  loads the shared library file named by the character argument
+  \texttt{filename} and associates it with the \texttt{shlib} object.
+  If \texttt{filename} contains a slash (\texttt{/}), then it is interpreted
+  as a relative or absolute pathname.  Otherwise the dynamic loader searches
+  a certain list of directories for the library; see \Cmd{dlopen}{3} for a
+  detailed description of the search process.
+  
+  One of the following two values must be passed as the \texttt{mode} argument:
+  \begin{description}[style=nextline]\setlength{\itemsep}{0pt}
+  \item[\texttt{RTLD_LAZY}]
+    Only resolve symbols as the code that references them is executed
+    (lazy binding).
+  \item[\texttt{RTLD_NOW}]
+    All undefined symbols in the library are resolved before the \texttt{open}
+    procedure returns.  An error occurs if this is not possible.  This
+    is also the behavior if the environment variable \texttt{LD_BIND_NOW} is
+    set to a nonempty string.
+  \end{description}
+  One of the following values may optionally be or'ed with the preceding values
+  before being passed as the \texttt{mode} argument; e.g.,
+  \verb+mode=ior(RTLD_LAZY,RTLD_GLOBAL)+.
+  \begin{description}[style=nextline]\setlength{\itemsep}{0pt}
+  \item[\texttt{RTLD_GLOBAL}]
+    The symbols defined by this library will be made available for symbol
+    resolution of subsequently loaded libraries.
+  \item[\texttt{RTLD_LOCAL}]
+    This is the converse of \texttt{RTLD_GLOBAL} and the default. Symbols
+    defined by this library are not made available to resolve references
+    in subsequently loaded libraries.
+  \end{description}
+  See \Cmd{dlopen}{3} for more details.
+\item[\texttt{close([stat [,errmsg]])}]
+  decrements the reference count on the shared library.  When the reference
+  count reaches zero, the shared library is unloaded.  See \Cmd{dlclose}{3}
+  for a detailed description of the behavior.
+\item[\texttt{func(symbol, funptr [,stat [,errmsg]])}]
+  returns the memory address where the specified function symbol from the
+  shared library is loaded.  The character argument \texttt{symbol} gives
+  the symbol name, and the address is returned in the \texttt{type(c_funptr)}
+  argument \texttt{funptr}.  The caller is responsible for converting this
+  C function pointer value to an appropriate Fortran procedure pointer using
+  the subroutine \texttt{c_f_procpointer} from the intrinsic
+  \texttt{iso_c_binding} module.
+\item[\texttt{sym(symbol, symptr [,stat [,errmsg]])}]
+  returns the memory address where the specified data symbol from the shared
+  library is loaded.  The character argument \texttt{symbol} gives the symbol
+  name, and the address is returned in the \texttt{type(c_ptr)} argument
+  \texttt{symptr}.  The caller is responsible for converting this C pointer
+  value to an appropriate Fortran data pointer using the subroutine
+  \texttt{c_f_pointer} from the intrinsic \texttt{iso_c_binding} module.
+\end{description}
+
+\section{Example}
+\begin{verbatim}
+use fortran_dynamic_loader
+use,intrinsic :: iso_c_binding, only: c_funptr, c_f_procpointer
+
+abstract interface
+  real function f(x)
+    real, value :: x
+  end function
+end interface
+procedure(f), pointer :: cbrtf
+
+type(shlib) :: libm
+type(c_funptr) :: funptr
+
+!! Load the C math library libm.so and calculate the cube
+!! root of 8 using the function cbrtf from the library.
+call libm%open ('libm.so', RTLD_NOW)
+call libm%func ('cbrtf', funptr)
+call c_f_procpointer (funptr, cbrtf)
+if (cbrtf(8.0) /= 2.0) print *, 'error'
+call libm%close
+\end{verbatim}
+
+\section{Bugs}
+Bug reports and improvement suggestions should be directed to
+\Email{neil.n.carlson@gmail.com}
+
+\LatexManEnd
+
+\end{document}
