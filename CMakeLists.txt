@@ -26,6 +26,8 @@ project(Petaca Fortran)
 set(Petaca_MODULE_DIR ${Petaca_BINARY_DIR}/mod_files/)
 set(CMAKE_Fortran_MODULE_DIRECTORY ${Petaca_MODULE_DIR})
 
+set(Petaca_INCLUDE_DIR ${Petaca_SOURCE_DIR}/include)
+
 # ---------------------------------------------------------------------------- #
 # Build Options 
 # ---------------------------------------------------------------------------- #
@@ -43,3 +45,11 @@ endif()
 #-------------------------------------------------------------------------------
 
 add_subdirectory(src)
+
+if(ENABLE_TESTS)
+  add_subdirectory(test)
+endif()
+
+if(ENABLE_EXAMPLES)
+  add_subdirectory(examples)
+endif()

@@ -1,4 +1,4 @@
-project(MAP_ANY_TYPE_Test)
+project(MapAnyTypeTest)
 
 include(CTest)
 
@@ -7,6 +7,7 @@ unset(CMAKE_Fortran_MODULE_DIRECTORY)
 
 # Add the library module directory to the module search path.
 include_directories(${Petaca_MODULE_DIR})
+include_directories(${Petaca_INCLUDE_DIR})
 
 add_executable (test_map_any_type test_map_any_type.F90)
 target_link_libraries(test_map_any_type petaca)

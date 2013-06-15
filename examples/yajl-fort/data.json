@@ -1,0 +1,5 @@
+{ "first": 1, "second": 2.0,
+  "sublist":
+  { "foo": "bar"},
+  "array": [1, true]
+}
