@@ -1,0 +1,59 @@
+\documentclass[11pt]{article}
+
+\usepackage[latin1]{inputenc}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+
+\usepackage{underscore}
+\usepackage{verbatim}
+\usepackage{enumitem}
+
+\usepackage[nofancy]{latex2man}
+
+\usepackage[margin=1.25in,letterpaper]{geometry}
+
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+%%% SET THE DATE
+\setDate{May 2013}
+\setVersion{1.0}
+
+\begin{Name}{3}{MANPAGE CHAPTER}{Neil N. Carlson}{Petaca}{THE TITLE}
+%%% THE ABSTRACT GOES HERE
+\end{Name}
+
+\section{Synopsis}
+\begin{description}[style=nextline]
+\item[Usage]
+  \verb+use :: map_any_type+
+\item[Derived Types]
+  \texttt{map_any},\texttt{ map_any_iterator}
+\item[Parameters]
+\end{description}
+
+\section{SECTION TITLE}
+
+\subsection{Type bound subroutines}
+\begin{description}[style=nextline]\setlength{\itemsep}{0pt}
+\item[\texttt{some_subroutine(and_its_arguments)}]
+\end{description}
+
+\subsection{Type bound functions}
+\begin{description}[style=nextline]\setlength{\itemsep}{0pt}
+\item[\texttt{some_function(and_its_arguments)}]
+\end{description}
+
+\section{Example}
+\begin{verbatim}
+%%% SOME EXAMPLE CODE
+\end{verbatim}
+
+\section{Bugs}
+Bug reports and improvement suggestions should be directed to
+\Email{neil.n.carlson@gmail.com}
+
+\LatexManEnd
+
+\end{document}

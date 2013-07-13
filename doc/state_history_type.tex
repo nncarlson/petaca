@@ -1,0 +1,168 @@
+\documentclass[11pt]{article}
+
+\usepackage[latin1]{inputenc}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+
+\usepackage{underscore}
+\usepackage{verbatim}
+\usepackage{enumitem}
+
+\usepackage[nofancy]{latex2man}
+
+\usepackage[margin=1.25in,letterpaper]{geometry}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{\smallskipamount}
+
+\begin{document}
+
+%%% SET THE DATE
+\setDate{July 2013}
+\setVersion{1.0}
+
+\begin{Name}{3}{state_history_type}{Neil N. Carlson}{Petaca}{The state_history_type module}
+%%% THE ABSTRACT GOES HERE
+The \texttt{state_history_type} module provides a structure for maintaining
+the recent history of a solution procedure that is characterized by a (time)
+sequence of state vectors, and methods for performing polynomial interpolation
+based on that history.
+\end{Name}
+
+\section{Synopsis}
+\begin{description}[style=nextline]
+\item[Usage]
+  \texttt{use :: state_history_type}
+\item[Derived Types]
+  \texttt{state_history}
+\end{description}
+
+\section{The state_history derived type}
+The derived type \texttt{state_history} implements a scheme for maintaining
+the recent history of a solution procedure characterized by a (time) sequence
+of state vectors, and provides a method for computing polynomial interpolation
+based on that history.  ODE integration algorithms often require such a
+capability, for example.  The sequence of state vectors is stored internally
+as a table of divided differences, which is easily updated and which makes
+polynomial interpolation particularly simple to express.
+
+Object of this derived type:
+\begin{itemize}\setlength{\itemsep}{0pt}
+\item
+  should not be used in assignment statements; only the default intrinsic
+  assignment is available, and its semantics are unlikely to be what is
+  desired.
+\item
+  are properly finalized when the object is deallocated or otherwise
+  ceases to exist.
+\end{itemize}
+
+The derived type has the following type bound procedures.  The state vectors
+are implemented as rank-1 real arrays, and all real arguments and function
+results are of kind \texttt{real_kind()} (see the type bound function below).
+Currently this is \texttt{int64} from the intrinsic \texttt{iso_fortran_env}
+module.
+
+\subsection{Type bound subroutines}
+\begin{description}[style=nextline]\setlength{\itemsep}{0pt}
+\item[\texttt{init(mvec, \LBr t, x \Lbr,xdot\Rbr | vlen\RBr)}]
+  initializes the object to maintain up to \texttt{mvec} state vectors.
+  In the first variant, the vector \texttt{x} with time index \texttt{t}
+  is recorded as the initial state vector of a new history.  If the optional
+  vector \texttt{xdot} is also specified, it is recorded as the state
+  vector time derivative at the same time index.  It must have the same
+  size as \texttt{x} and the size of \texttt{x} establishes the expected
+  size of all further state vector arguments.  In the second variant,
+  \texttt{vlen} specifies the length of the vectors to be maintained but
+  no state vector is recorded.  An object must be initialized before any
+  of the other methods are invoked.  It is permitted to re-initialize an
+  object.
+\item[\texttt{flush(t, x \Lbr,xdot\Rbr)}]
+  flushes the accumulated state vectors and records the state vector
+  \texttt{x} with time index \texttt{t} as the initial state vector of
+  a new history.  If \texttt{xdot} is specified, it is also recorded as
+  the state vector time derivative at the same time index.  This differs
+  from \texttt{init} in that the maximum number of vectors and their
+  lengths are not changed.
+\item[\texttt{record_state(t, x \Lbr,xdot\Rbr)}]
+  records the vector \texttt{x} with time index \texttt{t} as the most recent
+  state vector in the history.  If the vector \texttt{xdot} is present, it is
+  recorded as the state vector time derivative at the same time index.  The
+  oldest state vector (or two oldest in the case \texttt{xdot} is present) is
+  discarded once the history is fully populated with \texttt{mvec} vectors.
+  Note that when only one of a \texttt{x}/\texttt{xdot} pair of vectors is
+  discarded, it is effectively the derivative vector that gets discarded.
+\item[\texttt{get_last_state_copy(copy)}]
+  copies the last recorded state vector into the array \texttt{copy},
+  whose length should equal \texttt{state_size()}.
+\item[\texttt{get_last_state_view(view)}]
+  associates the array pointer \texttt{view} with the last recorded state
+  vector.  \emph{This should be used with great caution.}  The target of
+  this pointer should never be modified or deallocated.  The pointer will
+  cease to reference the last recorded state vector when the history is
+  subsequently modified through calls to \texttt{record_state}, \texttt{flush},
+  or \texttt{init}.
+\item[\texttt{interp_state(t, x \Lbr,first\Rbr \Lbr,order\Rbr)}]
+  computes the interpolated state vector at time index \texttt{t} from the
+  set of state vectors maintained by the object, and returns the result in
+  the user-supplied array \texttt{x}.  Polynomial interpolation is used, and
+  \texttt{order}, if present, specifies the order using the \texttt{order+1}
+  most recent vectors; 1 for linear interpolation, 2 for quadratic, etc.
+  It is an error to request an order for which there is insufficient data.
+  If not specified, the maximal order is used given the available data; once
+  the history is fully populated, the interpolation order is \texttt{mvec-1}.
+  Typically the array \texttt{x} would have the same size as the stored state
+  vectors, but more generally \texttt{x} may return any contiguous segment of
+  the interpolated state starting at index \texttt{first} (default 1) and
+  length the size of \texttt{x}.
+\item[\texttt{revise(index, x \Lbr,xdot\Rbr)}]
+  revises the history of a selected state vector component: \texttt{index}
+  is the component, \texttt{x} is the new most recent value of that component,
+  and \texttt{xdot}, if present, is the new first divided difference.
+  All higher-order divided differences for the component are set to zero.
+  \texttt{Depth()} must be at least 1 (2 if \texttt{xdot} is present) to use
+  this method.  The use-case for this method arises from equation switching.
+\end{description}
+
+\subsection{Type bound functions}
+\begin{description}[style=nextline]\setlength{\itemsep}{0pt}
+\item[\texttt{real_kind()}]
+  returns the kind parameter value expected of all real arguments.
+\item[\texttt{depth()}]
+  returns the number of state vectors currently stored.  This number will
+  vary between 0 and \texttt{max_depth()}..
+\item[\texttt{max_depth()}]
+  returns the maximum number of state vectors that can be stored.  This
+  number is the value of \texttt{mvec} used to initialize the object.
+\item[\texttt{state_size()}]
+  returns the length of the state vectors stored by the object.  This number
+  will equal the size of \texttt{x} or the value of \texttt{vlen} used to
+  initialize the object.
+\item[\texttt{last_time()}]
+  returns the time index of the last recorded state vector.
+\item[\texttt{time_deltas()}]
+  returns an array containing the time index differences: the first element
+  is the difference between the last and penultimate times; the second is the
+  difference between the last and antepenultimate times, and so forth.  The
+  length of the result equals \texttt{depth()-1}.  It is an error to call this
+  method if \texttt{depth()} is less than 2.
+\item[\texttt{defined()}]
+  returns true if the object is well-defined; otherwise it returns false.
+  Defined means that the data components of the object are properly and
+  consistently defined.  The function should return true at any time after
+  the \texttt{init} method has been called; it is intended to be used in
+  debugging situations and is used internally in assertion checks.
+\end{description}
+
+%\section{Example}
+%\begin{verbatim}
+%%% SOME EXAMPLE CODE
+%\end{verbatim}
+
+\section{Bugs}
+Bug reports and improvement suggestions should be directed to
+\Email{neil.n.carlson@gmail.com}
+
+\LatexManEnd
+
+\end{document}

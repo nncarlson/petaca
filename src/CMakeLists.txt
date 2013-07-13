@@ -5,7 +5,8 @@ set(Petaca_SOURCE_FILES
       yajl_fort.F90
       parameter_entry_type.F90
       parameter_list_type.F90
-      parameter_list_json.F90)
+      parameter_list_json.F90
+      state_history_type.F90)
                             
                             
 include_directories(${Petaca_INCLUDE_DIR})
