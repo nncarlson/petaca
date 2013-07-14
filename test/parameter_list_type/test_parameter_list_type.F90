@@ -62,7 +62,8 @@ contains
     call toplist%set ('p3', 0)
     sublist => toplist%sublist ('l2')
     
-    call piter%init (toplist)!, sublists_only=.true.)
+    !call piter%init (toplist)!, sublists_only=.true.)
+    piter = parameter_list_iterator(toplist)!, sublists_only=.true.)
     print *, 'number of parameter list items =', piter%count()
     do while (.not.piter%at_end())
       print *, piter%name(), '; is a list =', piter%is_list()
@@ -70,7 +71,8 @@ contains
     end do
     
     sublist => toplist%sublist ('l1')
-    call piter%init (sublist)
+    !call piter%init (sublist)
+    piter = parameter_list_iterator(sublist)
     print *, 'number of sublist items =', piter%count()
     do while (.not.piter%at_end())
       print *, piter%name(), '; is a list =', piter%is_list()

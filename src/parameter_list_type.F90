@@ -24,7 +24,6 @@
 
 #ifdef __INTEL_COMPILER
 #define INTEL_WORKAROUND
-!#define INTEL_WORKAROUND2
 #endif
 
 #include "f90_assert.fpp"
@@ -65,10 +64,10 @@ module parameter_list_type
   end type
   
   type, public :: parameter_list_iterator
+    private
     type(map_any_iterator) :: mapit
     logical :: sublists_only = .false.
   contains
-    procedure :: init => iter_init
     procedure :: next => iter_next
     procedure :: at_end => iter_at_end
     procedure :: name => iter_name
@@ -78,37 +77,37 @@ module parameter_list_type
     procedure :: count => iter_count
   end type parameter_list_iterator
   
+  interface parameter_list_iterator
+    procedure iter_begin
+  end interface
+  
 contains
 
-  subroutine iter_init (this, plist, sublists_only)
-    class(parameter_list_iterator), intent(out) :: this
+  function iter_begin (plist, sublists_only) result (iter)
     class(parameter_list), intent(in) :: plist
     logical, intent(in), optional :: sublists_only
+    type(parameter_list_iterator) :: iter
 #ifdef INTEL_WORKAROUND
     class(*), pointer :: uptr
 #endif
-    if (present(sublists_only)) this%sublists_only = sublists_only
-#ifdef INTEL_WORKAROUND2
-    call this%mapit%init (plist%params)
-#else
-    this%mapit = map_any_iterator(plist%params)
-#endif
-    if (this%sublists_only) then
-      do while (.not.this%mapit%at_end())
+    if (present(sublists_only)) iter%sublists_only = sublists_only
+    iter%mapit = map_any_iterator(plist%params)
+    if (iter%sublists_only) then
+      do while (.not.iter%mapit%at_end())
 #ifdef INTEL_WORKAROUND
-        uptr => this%mapit%value()
+        uptr => iter%mapit%value()
         select type (uptr)
 #else
-        select type (uptr => this%mapit%value())
+        select type (uptr => iter%mapit%value())
 #endif
         class is (parameter_list)
           exit
         end select
-        call this%mapit%next
+        call iter%mapit%next
       end do
     end if
-  end subroutine iter_init
-  
+  end function iter_begin
+
   subroutine iter_next (this)
     class(parameter_list_iterator), intent(inout) :: this
 #ifdef INTEL_WORKAROUND
@@ -645,11 +644,7 @@ contains
 #ifdef INTEL_WORKAROUND
     class(*), pointer :: pentry
 #endif
-#ifdef INTEL_WORKAROUND2
-    call item%init (this%params)
-#else
     item = map_any_iterator(this%params)
-#endif
     if (item%at_end()) then
       write(unit,'(2a)') prefix, '[empty list]'
     else
