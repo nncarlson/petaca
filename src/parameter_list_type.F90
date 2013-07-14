@@ -24,7 +24,7 @@
 
 #ifdef __INTEL_COMPILER
 #define INTEL_WORKAROUND
-#define INTEL_WORKAROUND2
+!#define INTEL_WORKAROUND2
 #endif
 
 #include "f90_assert.fpp"

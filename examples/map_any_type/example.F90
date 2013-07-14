@@ -1,3 +1,7 @@
+#ifdef __INTEL_COMPILER
+#define INTEL_WORKAROUND
+#endif
+
 program example
 
   use map_any_type
@@ -5,6 +9,9 @@ program example
   type(map_any) :: map, map_copy
   type(map_any_iterator) :: iter
   class(*), pointer :: value
+#ifdef INTEL_WORKAROUND
+  class(*), pointer :: uptr
+#endif
 
   type point
     real x, y
@@ -31,7 +38,12 @@ program example
   !! Write the contents.
   iter = map_any_iterator(map)
   do while (.not.iter%at_end())
+#ifdef INTEL_WORKAROUND
+    uptr => iter%value()
+    select type (uptr)
+#else
     select type (uptr => iter%value())
+#endif
     type is (integer)
       print *, iter%key(), ' = ', uptr
     type is (real)
