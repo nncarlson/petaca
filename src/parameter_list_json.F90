@@ -829,7 +829,7 @@ contains
     class(*), pointer :: pentry
 #endif
 
-    call piter%init (plist)
+    piter = parameter_list_iterator(plist)
     first_param = .true.
     do while (.not.piter%at_end())
       if (first_param) then
