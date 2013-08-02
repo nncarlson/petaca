@@ -30,7 +30,7 @@
 
 module parameter_list_type
 
-  use parameter_entry_type
+  use parameter_entry_class
   use map_any_type
   implicit none
   private

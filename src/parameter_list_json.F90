@@ -817,7 +817,7 @@ contains
   recursive subroutine parameter_list_to_json_aux (plist, indent, unit)
 
     use map_any_type
-    use parameter_entry_type
+    use parameter_entry_class
 
     type(parameter_list), intent(in) :: plist
     character(*), intent(in) :: indent
