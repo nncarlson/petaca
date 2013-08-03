@@ -20,7 +20,7 @@ program parameter_list_input_example
   open(10,file=file,action='read',access='stream',form='unformatted')
   call parameter_list_from_json_stream(10, plist, errmsg)
   if (associated(plist)) then
-    call plist%print (output_unit, ' ')
+    call parameter_list_to_json (plist, output_unit)
     deallocate(plist)
   else
     write(error_unit,'(a)') errmsg

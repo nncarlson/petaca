@@ -826,7 +826,7 @@ contains
     type(parameter_list_iterator) :: piter
     logical :: first_param
 #ifdef INTEL_WORKAROUND
-    class(*), pointer :: pentry
+    class(parameter_entry), pointer :: pentry
 #endif
 
     piter = parameter_list_iterator(plist)
