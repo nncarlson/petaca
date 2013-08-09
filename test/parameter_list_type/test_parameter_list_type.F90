@@ -36,9 +36,9 @@ program test_parameter_list_type
 
   integer :: stat = 0
   
-  !call test_basic
-  !call test_get
-  !call test_overwrite
+  call test_basic
+  call test_get
+  call test_overwrite
   call test_sublists
   call test_iterator
 
