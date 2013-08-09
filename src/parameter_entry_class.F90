@@ -54,11 +54,11 @@
 !!    SET_VALUE(VALUE) sets the value stored by the object to a (shallow) copy
 !!      of the scalar argument VALUE, which may be of any intrinsic or derived
 !!      type.
-!!  
+!!
 !!    GET_VALUE(VALUE) gets the value stored by the object.  The argument VALUE
 !!      is a CLASS(*) allocatable variable that returns a (shallow) copy of the
 !!      stored value.
-!!  
+!!
 !!    GET_VALUE(VALUE, ERRC) gets a (shallow) copy of the value stored by the
 !!      object.  This is a generic subroutine that depends on the type of the
 !!      scalar argument VALUE: it may be integer (INT32, INT64 kinds), real
@@ -68,7 +68,7 @@
 !!      double precision kinds.  If the type and kind of VALUE does not match
 !!      the stored value, the logical argument ERRC returns true; otherwise it
 !!      returns false.
-!!  
+!!
 !!    VALUE_PTR() returns a CLASS(*) pointer to the value stored by the object.
 !!      The object should have the TARGET attribute.
 !!

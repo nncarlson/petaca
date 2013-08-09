@@ -116,9 +116,9 @@ module parameter_list_type
   use map_any_type
   implicit none
   private
-  
+
   public :: parameter_entry, any_scalar, any_vector
-  
+
   type, extends(parameter_entry), public :: parameter_list
     private
     character(:), allocatable :: name
@@ -150,7 +150,7 @@ module parameter_list_type
     procedure, private :: get_vector_logical
     procedure, private :: get_vector_string
   end type
-  
+
   type, public :: parameter_list_iterator
     private
     type(map_any_iterator) :: mapit
@@ -164,11 +164,11 @@ module parameter_list_type
     procedure :: sublist => iter_sublist
     procedure :: count => iter_count
   end type parameter_list_iterator
-  
+
   interface parameter_list_iterator
     procedure iter_begin
   end interface
-  
+
 contains
 
   !!
@@ -188,7 +188,7 @@ contains
   !! For convenience each routine can be passed a null pointer; a null pointer
   !! is returned in that case.
   !!
-  
+
   !! Casts the given CLASS(*) pointer to a CLASS(PARAMETER_ENTRY) pointer.
   function cast_to_parameter_entry (uptr) result (cast)
     class(*), pointer, intent(in) :: uptr
@@ -202,7 +202,7 @@ contains
       ASSERT(associated(cast))
     end if
   end function cast_to_parameter_entry
-  
+
   !! Casts a CLASS(PARAMETER_ENTRY) pointer to a CLASS(PARAMETER_LIST) pointer
   !! provided the dynamic type of the pointer is of that class; otherwise a
   !! null pointer is returned.
@@ -217,7 +217,7 @@ contains
       end select
     end if
   end function cast_to_parameter_list
-  
+
   !! Casts a CLASS(PARAMETER_ENTRY) pointer to a CLASS(ANY_SCALAR) pointer
   !! provided the dynamic type of the pointer is of that class; otherwise a
   !! null pointer is returned.
@@ -232,7 +232,7 @@ contains
       end select
     end if
   end function cast_to_any_scalar
-  
+
   !! Casts a CLASS(PARAMETER_ENTRY) pointer to a CLASS(ANY_VECTOR) pointer
   !! provided the dynamic type of the pointer is of that class; otherwise a
   !! null pointer is returned.
@@ -247,7 +247,7 @@ contains
       end select
     end if
   end function cast_to_any_vector
-    
+
   !!!! OTHER AUXILLARY ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !! Returns a pointer to the parameter entry in the parameter list that
@@ -265,7 +265,7 @@ contains
     pentry => cast_to_parameter_entry(map%value(name))
 #endif
   end function find_entry
-  
+
   !! Returns a CLASS(ANY_SCALAR) pointer to the named parameter value.
   !! Pointer is null if no such parameter exists or is of the wrong kind.
   function find_any_scalar_entry (map, name) result (entry)
@@ -280,7 +280,7 @@ contains
     entry => cast_to_any_scalar(find_entry(map, name))
 #endif
   end function find_any_scalar_entry
-    
+
   !! Returns a CLASS(ANY_VECTOR) pointer to the named parameter value.
   !! Pointer is null if no such parameter exists or is of the wrong kind.
   function find_any_vector_entry (map, name) result (entry)
@@ -295,7 +295,7 @@ contains
     entry => cast_to_any_vector(find_entry(map, name))
 #endif
   end function find_any_vector_entry
-  
+
   !! Returns a CLASS(PARAMETER_LIST) pointer to the named parameter sublist.
   !! Pointer is null if no such parameter exists or is of the wrong kind.
   function find_parameter_list_entry (map, name) result (entry)
@@ -304,16 +304,16 @@ contains
     class(parameter_list), pointer :: entry
     entry => cast_to_parameter_list(find_entry(map, name))
   end function find_parameter_list_entry
-  
+
   !!!! AUXILLARY ERROR HANDLING PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+
   subroutine error_clear (stat, errmsg)
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
     if (present(stat)) stat = 0
     if (present(errmsg)) errmsg = ''
   end subroutine error_clear
-    
+
   subroutine error (errmsg_, stat, errmsg)
     use,intrinsic :: iso_fortran_env, only: error_unit
     character(*), intent(in) :: errmsg_
@@ -327,9 +327,9 @@ contains
       stop
     end if
   end subroutine error
-  
+
 !!!! PARAMETER_LIST TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+
   !! Returns true if the named parameter exists.
   logical function is_parameter (this, name)
     class(parameter_list), intent(in) :: this
@@ -342,7 +342,7 @@ contains
     is_parameter = associated(find_entry(this%params, name))
 #endif
   end function is_parameter
-  
+
   !! Returns true if the named parameter exists and is a sublist.
   logical function is_sublist (this, name)
     class(parameter_list), intent(in) :: this
@@ -355,7 +355,7 @@ contains
     is_sublist = associated(cast_to_parameter_list(find_entry(this%params, name)))
 #endif
   end function is_sublist
-  
+
   !! Returns the number of stored parameters.
   integer function count (this)
     class(parameter_list), intent(in) :: this
@@ -367,15 +367,15 @@ contains
   !! created if necessary.
 
   function sublist (this, name, stat, errmsg)
-  
+
     class(parameter_list), intent(inout) :: this
     character(*), intent(in) :: name
     class(parameter_list), pointer :: sublist
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
-    
+
     class(parameter_entry), pointer :: pentry
-    
+
     call error_clear (stat, errmsg)
     pentry => find_entry(this%params, name)
     if (.not.associated(pentry)) then
@@ -388,9 +388,9 @@ contains
     if (.not.associated(sublist)) then
       call error ('parameter is not a sublist: "' // name // '"', stat, errmsg)
     end if
-    
+
   end function sublist
-      
+
   !! Sets the scalar value of the named parameter.  If the parameter exists,
   !! its value, which must be of type ANY_SCALAR, is overwritten with the
   !! given value.  If an error is encountered, STAT and ERRMSG return info.
@@ -421,7 +421,7 @@ contains
     end if
 
   end subroutine set_scalar
-      
+
   !! Sets the rank-1 array value of the named parameter.  If the parameter
   !! exists, its value, which must be of type ANY_VECTOR, is overwritten with
   !! the given value. If an error is encountered, STAT and ERRMSG return info.
@@ -486,7 +486,7 @@ contains
       get_vector_ptr => null()
     end if
   end function get_vector_ptr
-  
+
   !! The follow subroutines get the scalar value of the named parameter for
   !! various specific types.  If the parameter doesn't exist, it is created
   !! with the specified default value, if specified; otherwise it is an error.
@@ -525,7 +525,7 @@ contains
     end if
 
   end subroutine get_scalar_int32
-  
+
   subroutine get_scalar_int64 (this, name, value, default, stat, errmsg)
 
     class(parameter_list), intent(inout) :: this
@@ -558,7 +558,7 @@ contains
     end if
 
   end subroutine get_scalar_int64
-  
+
   subroutine get_scalar_real32 (this, name, value, default, stat, errmsg)
 
     class(parameter_list), intent(inout) :: this
@@ -591,7 +591,7 @@ contains
     end if
 
   end subroutine get_scalar_real32
-  
+
   subroutine get_scalar_real64 (this, name, value, default, stat, errmsg)
 
     class(parameter_list), intent(inout) :: this
@@ -624,19 +624,19 @@ contains
     end if
 
   end subroutine get_scalar_real64
-  
+
   subroutine get_scalar_logical (this, name, value, default, stat, errmsg)
-  
+
     class(parameter_list), intent(inout) :: this
     character(*), intent(in) :: name
     logical, intent(out) :: value
     logical, intent(in), optional :: default
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
-    
+
     logical :: errc
     class(parameter_entry), pointer :: pentry
-    
+
     call error_clear (stat, errmsg)
     pentry => find_entry(this%params, name)
     if (associated(pentry)) then
@@ -655,21 +655,21 @@ contains
         call error ('no such parameter: "' // name // '"', stat, errmsg)
       end if
     end if
-    
+
   end subroutine get_scalar_logical
-  
+
   subroutine get_scalar_string (this, name, value, default, stat, errmsg)
-  
+
     class(parameter_list), intent(inout) :: this
     character(*), intent(in) :: name
     character(:), allocatable, intent(out) :: value
     character(*), intent(in), optional :: default
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
-    
+
     logical :: errc
     class(parameter_entry), pointer :: pentry
-    
+
     call error_clear (stat, errmsg)
     pentry => find_entry(this%params, name)
     if (associated(pentry)) then
@@ -688,7 +688,7 @@ contains
         call error ('no such parameter: "' // name // '"', stat, errmsg)
       end if
     end if
-    
+
   end subroutine get_scalar_string
 
   !! The follow subroutines get the rank-1 array value of the named parameter
@@ -696,19 +696,19 @@ contains
   !! with the specified default value, if specified; otherwise it is an error.
   !! It is an error if the parameter value type doesn't match the type of the
   !! value argument.
- 
+
   subroutine get_vector_int32 (this, name, value, default, stat, errmsg)
-  
+
     class(parameter_list), intent(inout) :: this
     character(*), intent(in) :: name
     integer(int32), allocatable, intent(out) :: value(:)
     integer(int32), intent(in), optional :: default(:)
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
-    
+
     logical :: errc
     class(parameter_entry), pointer :: pentry
-    
+
     call error_clear (stat, errmsg)
     pentry => find_entry(this%params, name)
     if (associated(pentry)) then
@@ -727,21 +727,21 @@ contains
         call error ('no such parameter: "' // name // '"', stat, errmsg)
       end if
     end if
-    
+
   end subroutine get_vector_int32
- 
+
   subroutine get_vector_int64 (this, name, value, default, stat, errmsg)
-  
+
     class(parameter_list), intent(inout) :: this
     character(*), intent(in) :: name
     integer(int64), allocatable, intent(out) :: value(:)
     integer(int64), intent(in), optional :: default(:)
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
-    
+
     logical :: errc
     class(parameter_entry), pointer :: pentry
-    
+
     call error_clear (stat, errmsg)
     pentry => find_entry(this%params, name)
     if (associated(pentry)) then
@@ -760,21 +760,21 @@ contains
         call error ('no such parameter: "' // name // '"', stat, errmsg)
       end if
     end if
-    
+
   end subroutine get_vector_int64
-  
+
   subroutine get_vector_real32 (this, name, value, default, stat, errmsg)
-  
+
     class(parameter_list), intent(inout) :: this
     character(*), intent(in) :: name
     real(real32), allocatable, intent(out) :: value(:)
     real(real32), intent(in), optional :: default(:)
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
-    
+
     logical :: errc
     class(parameter_entry), pointer :: pentry
-    
+
     call error_clear (stat, errmsg)
     pentry => find_entry(this%params, name)
     if (associated(pentry)) then
@@ -793,21 +793,21 @@ contains
         call error ('no such parameter: "' // name // '"', stat, errmsg)
       end if
     end if
-    
+
   end subroutine get_vector_real32
-  
+
   subroutine get_vector_real64 (this, name, value, default, stat, errmsg)
-  
+
     class(parameter_list), intent(inout) :: this
     character(*), intent(in) :: name
     real(real64), allocatable, intent(out) :: value(:)
     real(real64), intent(in), optional :: default(:)
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
-    
+
     logical :: errc
     class(parameter_entry), pointer :: pentry
-    
+
     call error_clear (stat, errmsg)
     pentry => find_entry(this%params, name)
     if (associated(pentry)) then
@@ -826,21 +826,21 @@ contains
         call error ('no such parameter: "' // name // '"', stat, errmsg)
       end if
     end if
-    
+
   end subroutine get_vector_real64
 
   subroutine get_vector_logical (this, name, value, default, stat, errmsg)
-  
+
     class(parameter_list), intent(inout) :: this
     character(*), intent(in) :: name
     logical, allocatable, intent(out) :: value(:)
     logical, intent(in), optional :: default(:)
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
-    
+
     logical :: errc
     class(parameter_entry), pointer :: pentry
-    
+
     call error_clear (stat, errmsg)
     pentry => find_entry(this%params, name)
     if (associated(pentry)) then
@@ -859,21 +859,21 @@ contains
         call error ('no such parameter: "' // name // '"', stat, errmsg)
       end if
     end if
-    
+
   end subroutine get_vector_logical
-  
+
   subroutine get_vector_string (this, name, value, default, stat, errmsg)
-  
+
     class(parameter_list), intent(inout) :: this
     character(*), intent(in) :: name
     character(:), allocatable, intent(out) :: value(:)
     character(*), intent(in), optional :: default(:)
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
-    
+
     logical :: errc
     class(parameter_entry), pointer :: pentry
-    
+
     call error_clear (stat, errmsg)
     pentry => find_entry(this%params, name)
     if (associated(pentry)) then
@@ -892,13 +892,13 @@ contains
         call error ('no such parameter: "' // name // '"', stat, errmsg)
       end if
     end if
-    
+
   end subroutine get_vector_string
-  
+
 !!!! PARAMETER_LIST_ITERATOR TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !! Defined PARAMETER_LIST_ITERATOR constructor that is positioned
-  !! at the initial parameter of the specified parameter list. 
+  !! at the initial parameter of the specified parameter list.
   function iter_begin (plist, sublists_only) result (iter)
     class(parameter_list), intent(in) :: plist
     logical, intent(in), optional :: sublists_only
@@ -952,14 +952,14 @@ contains
     class(parameter_list_iterator), intent(in) :: this
     at_end = this%mapit%at_end()
   end function iter_at_end
-  
+
   !! Returns the name of the current parameter.
   function iter_name (this)
     class(parameter_list_iterator), intent(in) :: this
     character(:), allocatable :: iter_name
     iter_name = this%mapit%key()
   end function iter_name
-  
+
   !! Returns a CLASS(PARAMETER_ENTRY) pointer to the current parameter value.
   function iter_value (this)
     class(parameter_list_iterator), intent(in) :: this
@@ -972,13 +972,13 @@ contains
     iter_value => cast_to_parameter_entry(this%mapit%value())
 #endif
   end function iter_value
-  
+
   !! Returns true if the current parameter is a sublist.
   logical function iter_is_list (this) result (is_list)
     class(parameter_list_iterator), intent(in) :: this
     is_list = associated(iter_sublist(this))
   end function iter_is_list
-  
+
   !! If the current parameter is a sublist, return a pointer to it;
   !! otherwise return a null pointer.
   function iter_sublist (this) result (sublist)
@@ -997,7 +997,7 @@ contains
       sublist => null()
     end select
   end function iter_sublist
-  
+
   !! Returns the number of remaining parameters, including the current one.
   integer function iter_count (this) result (n)
     class(parameter_list_iterator), intent(in) :: this

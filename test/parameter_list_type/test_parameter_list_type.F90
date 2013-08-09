@@ -35,7 +35,7 @@ program test_parameter_list_type
 #endif
 
   integer :: stat = 0
-  
+
   call test_basic
   call test_get
   call test_overwrite
@@ -55,13 +55,13 @@ contains
 
     type(parameter_list) :: p
     integer ::stat
-    
+
     !! A derived type
     type point; real x, y; end type
-    
+
     !! Check that the initial list is empty.
     if (p%count() /= 0) call write_fail ('test_basic failed test 1')
-    
+
     !! Define parameters of various types and ranks,
     !! checking the parameter count each time.
     call p%set ('foo', 1)
@@ -70,37 +70,37 @@ contains
     if (p%count() /= 2) call write_fail ('test_basic failed test 3')
     call p%set ('wat', ['biz','bat'])
     if (p%count() /= 3) call write_fail ('test_basic failed test 4')
-    
-    !! Check that they are recognized as parameters, but not sublists.   
+
+    !! Check that they are recognized as parameters, but not sublists.
     if (.not.p%is_parameter('foo')) call write_fail ('test_basic failed test 5')
     if (.not.p%is_parameter('bar')) call write_fail ('test_basic failed test 6')
     if (.not.p%is_parameter('wat')) call write_fail ('test_basic failed test 7')
     if (p%is_sublist('foo')) call write_fail ('test_basic failed test 8')
     if (p%is_sublist('bar')) call write_fail ('test_basic failed test 9')
     if (p%is_sublist('wat')) call write_fail ('test_basic failed test 10')
-    
+
     !! Replace the value of a parameter; different rank -- should fail
     call p%set ('foo', [1,2], stat=stat)
     if (stat == 0) call write_fail ('test_basic failed test 11')
     if (p%count() /= 3) call write_fail ('test_basic failed test 12')
-    
+
     !! Replace the value of a parameter; same rank -- should succeed.
     call p%set ('bar', [1,2], stat=stat)
     if (stat /= 0) call write_fail ('test_basic failed test 13')
     if (p%count() /= 3) call write_fail ('test_basic failed test 14')
-    
+
     !! Verify that a non-existant parameter does not exist.
     if (p%is_parameter('dummy')) call write_fail ('test_basic failed test 15')
     if (p%is_sublist('dummy')) call write_fail ('test_basic failed test 16')
-    
+
   end subroutine
-  
+
  !!
  !! A thorough test of set/get for all the specific intrinsic types.
  !!
-  
+
   subroutine test_get
-  
+
     type(parameter_list) :: p
     integer(int32) :: i32, i32default
     integer(int64) :: i64, i64default
@@ -113,7 +113,7 @@ contains
     logical :: l, ldefault
     logical, allocatable :: larray(:), larraydefault(:)
     character(:), allocatable :: c, carray(:), cdefault, carraydefault(:)
-    
+
     call p%set ('i32', 1_int32)
     call p%set ('i64', 2_int64)
     call p%set ('i32array', [3_int32,4_int32])
@@ -122,7 +122,7 @@ contains
     call p%set ('r64', 2.0_real64)
     call p%set ('r32array', [3.0_real32,4.0_real32])
     call p%set ('r64array', [5.0_real64,6.0_real64])
-    
+
     call p%get ('i32', i32)
     call p%get ('i64', i64)
     call p%get ('i32array', i32array)
@@ -131,7 +131,7 @@ contains
     call p%get ('r64', r64)
     call p%get ('r32array', r32array)
     call p%get ('r64array', r64array)
-    
+
     if (i32 /= 1) call write_fail ('test_get failed test 1')
     if (i64 /= 2) call write_fail ('test_get failed test 2')
     if (any(i32array /= [3_int32,4_int32])) call write_fail ('test_get failed test 3')
@@ -145,21 +145,21 @@ contains
     call p%set ('larray', [.true.,.false.])
     call p%set ('c', 'bizbat')
     call p%set ('carray', ['foo','bar'])
-    
+
     call p%get ('l', l)
     call p%get ('larray', larray)
     call p%get ('c', c)
     call p%get ('carray', carray)
-    
+
     if (.not.l) call write_fail ('test_get failed test 9')
     if (any(larray .neqv. [.true.,.false.])) call write_fail ('test_get failed test 10')
     if (c /= 'bizbat') call write_fail ('test_get failed test 11')
     if (len(c) /= 6) call write_fail ('test_get failed test 12')
     if (any(carray /= ['foo','bar'])) call write_fail ('test_get failed test 13')
     if (len(carray) /= 3) call write_fail ('test_get failed test 14')
-    
+
     !! Verify that the default argument is ignored for these existing parameters.
-    
+
     call p%get ('i32', i32, default=0_int32)
     call p%get ('i64', i64, default=0_int64)
     call p%get ('i32array', i32array, default=[0_int32])
@@ -168,7 +168,7 @@ contains
     call p%get ('r64', r64, default=0.0_real64)
     call p%get ('r32array', r32array, default=[0.0_real32])
     call p%get ('r64array', r64array, default=[0.0_real64])
-    
+
     if (i32 /= 1) call write_fail ('test_get failed test 1')
     if (i64 /= 2) call write_fail ('test_get failed test 2')
     if (any(i32array /= [3_int32,4_int32])) call write_fail ('test_get failed test 15')
@@ -177,21 +177,21 @@ contains
     if (r64 /= 2.0) call write_fail ('test_get failed test 18')
     if (any(r32array /= [3.0_real32,4.0_real32])) call write_fail ('test_get failed test 19')
     if (any(r64array /= [5.0_real64,6.0_real64])) call write_fail ('test_get failed test 20')
-    
+
     call p%get ('l', l, default=.false.)
     call p%get ('larray', larray, default=[.false.])
     call p%get ('c', c, default='yellow')
     call p%get ('carray', carray, default=['fubar'])
-    
+
     if (.not.l) call write_fail ('test_get failed test 21')
     if (any(larray .neqv. [.true.,.false.])) call write_fail ('test_get failed test 22')
     if (c /= 'bizbat') call write_fail ('test_get failed test 23')
     if (len(c) /= 6) call write_fail ('test_get failed test 24')
     if (any(carray /= ['foo','bar'])) call write_fail ('test_get failed test 25')
     if (len(carray) /= 3) call write_fail ('test_get failed test 26')
-    
+
     !! Verify that the default argument is used for these new parameters.
-    
+
     call p%get ('i32default', i32default, default=10_int32)
     call p%get ('i64default', i64default, default=20_int64)
     call p%get ('i32arraydefault', i32arraydefault, default=[30_int32])
@@ -200,7 +200,7 @@ contains
     call p%get ('r64default', r64default, default=20.0_real64)
     call p%get ('r32arraydefault', r32arraydefault, default=[30.0_real32])
     call p%get ('r64arraydefault', r64arraydefault, default=[40.0_real64])
-    
+
     if (i32default /= 10) call write_fail ('test_get failed test 27')
     if (i64default /= 20) call write_fail ('test_get failed test 28')
     if (any(i32arraydefault /= [30_int32])) call write_fail ('test_get failed test 29')
@@ -209,27 +209,27 @@ contains
     if (r64default /= 20.0) call write_fail ('test_get failed test 32')
     if (any(r32arraydefault /= [30.0])) call write_fail ('test_get failed test 33')
     if (any(r64arraydefault /= [40.0])) call write_fail ('test_get failed test 34')
-    
+
     call p%get ('ldefault', ldefault, default=.false.)
     call p%get ('larraydefault', larraydefault, default=[.true.])
     call p%get ('cdefault', cdefault, default='yellow')
     call p%get ('carraydefault', carraydefault, default=['fubar'])
-    
+
     if (ldefault) call write_fail ('test_get failed test 35')
     if (any(larraydefault .neqv. [.true.])) call write_fail ('test_get failed test 36')
     if (cdefault /= 'yellow') call write_fail ('test_get failed test 37')
     if (len(c) /= 6) call write_fail ('test_get failed test 38')
     if (any(carraydefault /= ['fubar'])) call write_fail ('test_get failed test 39')
     if (len(carraydefault) /= 5) call write_fail ('test_get failed test 40')
-    
+
   end subroutine
-  
+
  !!
  !! Test the overwriting of parameter values
  !!
 
   subroutine test_overwrite
-  
+
     type(parameter_list) :: p
     real :: r
     real, allocatable :: rarray(:)
@@ -239,13 +239,13 @@ contains
 #ifdef INTEL_WORKAROUND
     class(*), pointer :: scalar, vector(:)
 #endif
-    
+
     call p%set ('foo', 13)
-    
+
     !! Overwrite with different rank; should fail
     call p%set ('foo', [1], stat=stat)
     if (stat == 0) call write_fail ('test_overwrite failed test 1')
-    
+
     !! Overwrite with different values/types.
     call p%set ('foo', 11.0)
     call p%get ('foo', r)
@@ -265,13 +265,13 @@ contains
     class default
       call write_fail ('test_overwrite failed test 5')
     end select
-    
+
     call p%set ('bar', [13])
-    
+
     !! Overwrite with different rank; should fail
     call p%set ('bar', 1, stat=stat)
     if (stat == 0) call write_fail ('test_overwrite failed test 6')
-    
+
     !! Overwrite with different values/types.
     call p%set ('bar', [11.0])
     call p%get ('bar', rarray)
@@ -291,19 +291,19 @@ contains
     class default
       call write_fail ('test_overwrite failed test 10')
     end select
-    
+
   end subroutine
-  
+
  !!
  !! Tests the creation and access to sublists
  !!
-  
+
   subroutine test_sublists
-  
+
     type(parameter_list) :: p
     type(parameter_list), pointer :: sl, sla, slb
     integer :: stat
-    
+
     !! Create a sublist parameter and add a parameter to the sublist.
     sla => p%sublist('A')
     if (.not.associated(sla)) call write_fail ('test_sublists failed test 1')
@@ -317,43 +317,43 @@ contains
     !! Try to use sublist with an existing non-sublist parameter; should fail.
     slb => sla%sublist('foo', stat)
     if (stat == 0) call write_fail ('test_sublists failed test 5')
-    
+
     !! Create a sublist parameter of the sublist.
     slb => sla%sublist('B')
     if (.not.associated(slb)) call write_fail ('test_sublists failed test 6')
     if (sla%count() /= 2) call write_fail ('test_sublists failed test 7')
     if (.not.sla%is_sublist('B')) call write_fail ('test_sublists failed test 8')
     if (.not.sla%is_parameter('B')) call write_fail ('test_sublists failed test 9')
-    
+
     !! Access the 'A' sublist again and verify it is the same.
     sl => p%sublist('A')
     if (.not.associated(sl,sla)) call write_fail ('test_sublists failed test 5')
-    
+
   end subroutine
-  
+
  !!
  !! Test the parameter list iterator
  !!
- 
+
   subroutine test_iterator
 
     type(parameter_list) :: p
     type(parameter_list), pointer :: sl, sl2
     type(parameter_list_iterator) :: piter
-    
+
     type point; real x, y; end type
 #ifdef INTEL_WORKAROUND
     class(parameter_entry), pointer :: pentry
     class(*), pointer :: scalar, vector(:)
 #endif
-    
+
     !! Populate a parameter list.
     call p%set ('integer', 1)
     call p%set ('real', [2.0])
     sl => p%sublist ('sublist')
     call p%set ('string', 'hello')
     call p%set ('point', point(1.0,2.0))
-    
+
     !! Walk the list.
     piter = parameter_list_iterator(p)
     if (piter%count() /= 5) call write_fail ('test_iterator failed test 1')
@@ -364,7 +364,7 @@ contains
     end do
     if (piter%count() /= 0) call write_fail ('test_iterator failed test 4')
     if (.not.piter%at_end()) call write_fail ('test_iterator failed test 5')
-    
+
     !! Walk the list again and check values this time.
     piter = parameter_list_iterator(p)
     do while (.not.piter%at_end())
