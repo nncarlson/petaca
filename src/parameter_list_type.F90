@@ -73,6 +73,8 @@
 !!  IS_SUBLIST(NAME) returns true if there is a parameter with the given name
 !!    and it is a sublist.
 !!
+!!  COUNT() returns the number of parameters stored in the parameter list.
+!!
 !! PARAMETER_LIST_ITERATOR TYPE BOUND PROCEDURES
 !!
 !!  PARAMETER_LIST_ITERATOR(PLIST [,SUBLISTS_ONLY]) is a constructor that
@@ -115,14 +117,17 @@ module parameter_list_type
   implicit none
   private
   
+  public :: parameter_entry, any_scalar, any_vector
+  
   type, extends(parameter_entry), public :: parameter_list
     private
     character(:), allocatable :: name
     type(map_any) :: params = map_any()
   contains
-    procedure :: sublist
     procedure :: is_parameter
     procedure :: is_sublist
+    procedure :: count
+    procedure :: sublist
     generic :: set => set_scalar, set_vector
     procedure, private :: set_scalar
     procedure, private :: set_vector
@@ -252,16 +257,28 @@ contains
     class(map_any), intent(in) :: map
     character(*), intent(in) :: name
     class(parameter_entry), pointer :: pentry
+#ifdef INTEL_WORKAROUND
+    class(*), pointer :: uptr
+    uptr => map%value(name)
+    pentry => cast_to_parameter_entry(uptr)
+#else
     pentry => cast_to_parameter_entry(map%value(name))
+#endif
   end function find_entry
   
   !! Returns a CLASS(ANY_SCALAR) pointer to the named parameter value.
   !! Pointer is null if no such parameter exists or is of the wrong kind.
-  function find_any_scalar_entry (this, name) result (entry)
-    class(map_any), intent(in) :: this
+  function find_any_scalar_entry (map, name) result (entry)
+    class(map_any), intent(in) :: map
     character(*), intent(in) :: name
     class(any_scalar), pointer :: entry
-    entry => cast_to_any_scalar(find_entry(this, name))
+#ifdef INTEL_WORKAROUND
+    class(parameter_entry), pointer :: pentry
+    pentry => find_entry(map, name)
+    entry => cast_to_any_scalar(pentry)
+#else
+    entry => cast_to_any_scalar(find_entry(map, name))
+#endif
   end function find_any_scalar_entry
     
   !! Returns a CLASS(ANY_VECTOR) pointer to the named parameter value.
@@ -270,7 +287,13 @@ contains
     class(map_any), intent(in) :: map
     character(*), intent(in) :: name
     class(any_vector), pointer :: entry
+#ifdef INTEL_WORKAROUND
+    class(parameter_entry), pointer :: pentry
+    pentry => find_entry(map, name)
+    entry => cast_to_any_vector(pentry)
+#else
     entry => cast_to_any_vector(find_entry(map, name))
+#endif
   end function find_any_vector_entry
   
   !! Returns a CLASS(PARAMETER_LIST) pointer to the named parameter sublist.
@@ -311,15 +334,33 @@ contains
   logical function is_parameter (this, name)
     class(parameter_list), intent(in) :: this
     character(*), intent(in) :: name
+#ifdef INTEL_WORKAROUND
+    class(parameter_entry), pointer :: pentry
+    pentry => find_entry(this%params, name)
+    is_parameter = associated(pentry)
+#else
     is_parameter = associated(find_entry(this%params, name))
+#endif
   end function is_parameter
   
   !! Returns true if the named parameter exists and is a sublist.
   logical function is_sublist (this, name)
     class(parameter_list), intent(in) :: this
     character(*), intent(in) :: name
+#ifdef INTEL_WORKAROUND
+    class(parameter_entry), pointer :: pentry
+    pentry => find_entry(this%params, name)
+    is_sublist = associated(cast_to_parameter_list(pentry))
+#else
     is_sublist = associated(cast_to_parameter_list(find_entry(this%params, name)))
+#endif
   end function is_sublist
+  
+  !! Returns the number of stored parameters.
+  integer function count (this)
+    class(parameter_list), intent(in) :: this
+    count = this%params%size()
+  end function count
 
   !! Returns a pointer to the named parameter sublist.  It is an error if the
   !! parameter exists and is not a sublist.  An empty sublist parameter is
@@ -923,7 +964,13 @@ contains
   function iter_value (this)
     class(parameter_list_iterator), intent(in) :: this
     class(parameter_entry), pointer :: iter_value
+#ifdef INTEL_WORKAROUND
+    class(*), pointer :: uptr
+    uptr => this%mapit%value()
+    iter_value => cast_to_parameter_entry(uptr)
+#else
     iter_value => cast_to_parameter_entry(this%mapit%value())
+#endif
   end function iter_value
   
   !! Returns true if the current parameter is a sublist.
