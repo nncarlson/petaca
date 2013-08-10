@@ -26,6 +26,10 @@
 #define INTEL_WORKAROUND
 #endif
 
+#ifdef NAGFOR
+#define NAG_WORKAROUND1
+#endif
+
 program test_parameter_list_type
 
   use parameter_list_type
@@ -36,11 +40,12 @@ program test_parameter_list_type
 
   integer :: stat = 0
 
-  call test_basic
-  call test_get
-  call test_overwrite
-  call test_sublists
-  call test_iterator
+  !call test_basic
+  !call test_get
+  call test_get_any
+  !call test_overwrite
+  !call test_sublists
+  !call test_iterator
 
   call exit (stat)
 
@@ -223,6 +228,104 @@ contains
     if (len(carraydefault) /= 5) call write_fail ('test_get failed test 40')
 
   end subroutine
+  
+ !!
+ !! Test the get_any methods
+ !!
+ 
+  subroutine test_get_any
+  
+    type(parameter_list) :: p
+    
+    integer :: stat
+    type point; real x, y; end type
+    class(*), allocatable :: scalar, vector(:)
+    
+    !! Define parameters using the provided default value.
+    
+    call p%get_any ('a', scalar, default=1)
+    select type (scalar)
+    type is (integer)
+      if (scalar /= 1) call write_fail ('test_get_any failed test 1')
+    class default
+      call write_fail ('test_get_any failed test 2')
+    end select
+    
+    call p%get_any ('b', vector, default=[1.0,2.0])
+    select type (vector)
+    type is (real)
+      if (any(vector /= [1,2])) call write_fail ('test_get_any failed test 3')
+    class default
+      call write_fail ('test_get_any failed test 4')
+    end select
+    
+    call p%get_any ('c', scalar, default=point(1.0,2.0))
+    select type (scalar)
+    type is (point)
+      if (scalar%x /= 1 .or. scalar%y /= 2) call write_fail ('test_get_any failed test 5')
+    class default
+      call write_fail ('test_get_any failed test 6')
+    end select
+    
+    call p%get_any ('d', vector, default=['foo','bar'])
+    select type (vector)
+    type is (character(*))
+      if (any(vector /= ['foo','bar'])) call write_fail ('test_get_any failed test 7')
+    class default
+      call write_fail ('test_get_any failed test 8')
+    end select
+    
+    call p%get_any ('e', vector, default=[point(1.0,2.0)])
+    select type (vector)
+    type is (point)
+      if (vector(1)%x /= 1.0 .or. vector(1)%y /= 2.0) call write_fail ('test_get_any failed test 9')
+    class default
+      call write_fail ('test_get_any failed test 10')
+    end select
+    
+    !! Get them again with different default values that should be ignored.
+    
+    call p%get_any ('a', scalar, default=0)
+    select type (scalar)
+    type is (integer)
+      if (scalar /= 1) call write_fail ('test_get_any failed test 11')
+    class default
+      call write_fail ('test_get_any failed test 12')
+    end select
+    
+    call p%get_any ('b', vector, default=[0.0])
+    select type (vector)
+    type is (real)
+      if (any(vector /= [1,2])) call write_fail ('test_get_any failed test 13')
+    class default
+      call write_fail ('test_get_any failed test 14')
+    end select
+    
+    call p%get_any ('c', scalar, default="fubar")
+    select type (scalar)
+    type is (point)
+      if (scalar%x /= 1 .or. scalar%y /= 2) call write_fail ('test_get_any failed test 15')
+    class default
+      call write_fail ('test_get_any failed test 16')
+    end select
+    
+    call p%get_any ('d', vector, default=[point(1.0,2.0)])
+    select type (vector)
+    type is (character(*))
+      if (any(vector /= ['foo','bar'])) call write_fail ('test_get_any failed test 17')
+    class default
+      call write_fail ('test_get_any failed test 18')
+    end select
+    
+    call p%get_any ('e', vector, default=[13])
+    select type (vector)
+    type is (point)
+      if (vector(1)%x /= 1.0 .or. vector(1)%y /= 2.0) call write_fail ('test_get_any failed test 19')
+    class default
+      call write_fail ('test_get_any failed test 20')
+    end select
+    
+  end subroutine
 
  !!
  !! Test the overwriting of parameter values
@@ -236,9 +339,7 @@ contains
     character(:), allocatable :: c, carray(:)
     type point; real x, y; end type
     integer :: stat
-#ifdef INTEL_WORKAROUND
-    class(*), pointer :: scalar, vector(:)
-#endif
+    class(*), allocatable :: scalar, vector(:)
 
     call p%set ('foo', 13)
 
@@ -254,12 +355,8 @@ contains
     call p%get ('foo', c)
     if (c /= 'blah') call write_fail ('test_overwrite failed test 3')
     call p%set ('foo', point(1.0, 2.0))
-#ifdef INTEL_WORKAROUND
-    scalar => p%get_scalar_ptr('foo')
+    call p%get_any ('foo', scalar)
     select type (scalar)
-#else
-    select type (scalar => p%get_scalar_ptr('foo'))
-#endif
     type is (point)
       if (scalar%x /= 1 .or. scalar%y /= 2) call write_fail ('test_overwrite failed test 4')
     class default
@@ -280,12 +377,8 @@ contains
     call p%get ('bar', carray)
     if (any(c /= ['blah','blah'])) call write_fail ('test_overwrite failed test 8')
     call p%set ('bar', [point(1.0, 2.0)])
-#ifdef INTEL_WORKAROUND
-    vector => p%get_vector_ptr('bar')
+    call p%get_any ('bar', vector)
     select type (vector)
-#else
-    select type (vector => p%get_vector_ptr('bar'))
-#endif
     type is (point)
       if (vector(1)%x /= 1 .or. vector(1)%y /= 2) call write_fail ('test_overwrite failed test 9')
     class default
@@ -342,8 +435,10 @@ contains
     type(parameter_list_iterator) :: piter
 
     type point; real x, y; end type
-#ifdef INTEL_WORKAROUND
+#if defined(INTEL_WORKAROUND) || defined(NAG_WORKAROUND1)
     class(parameter_entry), pointer :: pentry
+#endif
+#if defined(INTEL_WORKAROUND)
     class(*), pointer :: scalar, vector(:)
 #endif
 
@@ -368,7 +463,7 @@ contains
     !! Walk the list again and check values this time.
     piter = parameter_list_iterator(p)
     do while (.not.piter%at_end())
-#ifdef INTEL_WORKAROUND
+#if defined(INTEL_WORKAROUND) || defined(NAG_WORKAROUND1)
       pentry => piter%value()
       select type (pentry)
 #else

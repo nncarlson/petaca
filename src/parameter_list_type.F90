@@ -55,18 +55,20 @@
 !!    It is an error if the type, kind and rank of VALUE does not match the
 !!    stored value of the named parameter.
 !!
+!!  GET_ANY(NAME, VALUE [,DEFAULT] [,STAT [,ERRMSG]]) gets the value of the
+!!    named parameter.  A copy of the value is returned in VALUE, which is
+!!    an allocatable CLASS(*) variable or rank-1 array.  This is a more
+!!    general version of GET in that any type of parameter value can be
+!!    returned.  The downside is that the application code must use a select-
+!!    type construct in order to use the returned value.  It is an error if
+!!    the named parameter does not exist and DEFAULT is not present.  It is
+!!    an error if the named parameter is a sublist.  It is an error if the
+!!    rank of the VALUE does not match the rank of the stored value.
+!!
 !!  SUBLIST(NAME [,STAT [,ERRMSG]]) returns a TYPE(PARAMETER_LIST) pointer to
 !!    the named parameter sublist. A sublist parameter is created with an empty
 !!    parameter list value if the sublist does not already exist.  It is an
 !!    error if the parameter exists but is not a sublist.
-!!
-!!  GET_SCALAR_PTR(NAME) returns a CLASS(*) pointer to the scalar value of the
-!!    named parameter.  A null pointer is returned if the parameter does not
-!!    exist, or if its value is not a scalar.
-!!
-!!  GET_VECTOR_PTR(NAME) returns a CLASS(*) rank-1 array pointer to the vector
-!!    value of the named parameter. A null pointer is returned if the parameter
-!!    does not exist, or if its value is not a vector.
 !!
 !!  IS_PARAMETER(NAME) returns true if there is a parameter with given name.
 !!
@@ -105,6 +107,11 @@
 
 #ifdef __INTEL_COMPILER
 #define INTEL_WORKAROUND
+#define INTEL_WORKAROUND1
+#endif
+
+#ifdef NAGFOR
+#define NAG_WORKAROUND1
 #endif
 
 #include "f90_assert.fpp"
@@ -131,8 +138,9 @@ module parameter_list_type
     generic :: set => set_scalar, set_vector
     procedure, private :: set_scalar
     procedure, private :: set_vector
-    procedure :: get_scalar_ptr
-    procedure :: get_vector_ptr
+    generic :: get_any => get_any_scalar, get_any_vector
+    procedure, private :: get_any_scalar
+    procedure, private :: get_any_vector
     generic :: get => get_scalar_logical, get_scalar_string, &
                get_scalar_int32, get_scalar_int64, get_scalar_real32, get_scalar_real64, &
                get_vector_logical, get_vector_string, &
@@ -453,39 +461,93 @@ contains
 
   end subroutine set_vector
 
-  !! Returns a CLASS(*) pointer to the scalar value of the named parameter.
-  !! A null pointer is returned if the parameter does not exist, or if its
-  !! value is not a scalar.
+  !! Returns the scalar value of the named parameter in the CLASS(*)
+  !! allocatable variable VALUE.  If the named parameter does not exist
+  !! and the optional argument DEFAULT is present, the parameter is
+  !! created and assigned the value specified by DEFAULT, and that value
+  !! returned by VALUE.  Otherwise it is an error.  It is an error if
+  !! the parameter exists and is a sublist, or it has a non-scalar value.
 
-  function get_scalar_ptr (this, name)
-    class(parameter_list), intent(in) :: this
+  subroutine get_any_scalar (this, name, value, default, stat, errmsg)
+
+    class(parameter_list), intent(inout) :: this
     character(*), intent(in) :: name
-    class(*), pointer :: get_scalar_ptr
-    class(any_scalar), pointer :: scalar
-    scalar => find_any_scalar_entry(this%params, name)
-    if (associated(scalar)) then
-      get_scalar_ptr => scalar%value_ptr()
+    class(*), allocatable, intent(out) :: value
+    class(*), intent(in), optional :: default
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+
+    class(parameter_entry), pointer :: pentry
+    class(*), pointer :: scalar
+
+    call error_clear (stat, errmsg)
+    pentry => find_entry(this%params, name)
+    if (associated(pentry)) then
+      select type (pentry)
+      type is (any_scalar)
+        scalar => pentry%value_ptr()
+        allocate(value,source=scalar)
+      class default
+        call error ('not a scalar parameter: "' // name // '"', stat, errmsg)
+      end select
     else
-      get_scalar_ptr => null()
+      if (present(default)) then
+        call set_scalar (this, name, default)
+        allocate(value,source=default)
+      else
+        call error ('no such parameter: "' // name // '"', stat, errmsg)
+      end if
     end if
-  end function get_scalar_ptr
 
-  !! Returns a CLASS(*) rank-1 array pointer to the vector value of the named
-  !! parameter.  A null pointer is returned if the parameter does not exist,
-  !! or if its value is not a vector.
+  end subroutine get_any_scalar
 
-  function get_vector_ptr (this, name)
-    class(parameter_list), intent(in) :: this
+  !! Returns the vector value of the named parameter in the CLASS(*)
+  !! allocatable array VALUE.  If the named parameter does not exist
+  !! and the optional array DEFAULT is present, the parameter is
+  !! created and assigned the value specified by DEFAULT, and that value
+  !! returned by VALUE.  Otherwise it is an error.  It is an error if
+  !! the parameter exists and is a sublist, or it has a non-vector value.
+
+  subroutine get_any_vector (this, name, value, default, stat, errmsg)
+
+    class(parameter_list), intent(inout) :: this
     character(*), intent(in) :: name
-    class(*), pointer :: get_vector_ptr(:)
-    class(any_vector), pointer :: vector
-    vector => find_any_vector_entry(this%params, name)
-    if (associated(vector)) then
-      get_vector_ptr => vector%value_ptr()
+    class(*), allocatable, intent(out) :: value(:)
+    class(*), intent(in), optional :: default(:)
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+
+    class(parameter_entry), pointer :: pentry
+    class(*), pointer :: vector(:)
+
+    call error_clear (stat, errmsg)
+    pentry => find_entry(this%params, name)
+    if (associated(pentry)) then
+      select type (pentry)
+      type is (any_vector)
+        vector => pentry%value_ptr()
+#ifdef INTEL_WORKAROUND1
+        allocate(value,source=vector)
+#else
+        value = vector
+#endif
+      class default
+        call error ('not a vector parameter: "' // name // '"', stat, errmsg)
+      end select
     else
-      get_vector_ptr => null()
+      if (present(default)) then
+        call set_vector (this, name, default)
+#ifdef INTEL_WORKAROUND1
+        allocate(value,source=default)
+#else
+        value = default
+#endif
+      else
+        call error ('no such parameter: "' // name // '"', stat, errmsg)
+      end if
     end if
-  end function get_vector_ptr
+
+  end subroutine get_any_vector
 
   !! The follow subroutines get the scalar value of the named parameter for
   !! various specific types.  If the parameter doesn't exist, it is created
@@ -984,7 +1046,7 @@ contains
   function iter_sublist (this) result (sublist)
     class(parameter_list_iterator), intent(in) :: this
     class(parameter_list), pointer :: sublist
-#ifdef INTEL_WORKAROUND
+#if (defined(INTEL_WORKAROUND) || defined(NAG_WORKAROUND1))
     class(*), pointer :: uptr
     uptr => this%mapit%value()
     select type (uptr)
