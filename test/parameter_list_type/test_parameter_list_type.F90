@@ -40,12 +40,12 @@ program test_parameter_list_type
 
   integer :: stat = 0
 
-  !call test_basic
-  !call test_get
+  call test_basic
+  call test_get
   call test_get_any
-  !call test_overwrite
-  !call test_sublists
-  !call test_iterator
+  call test_overwrite
+  call test_sublists
+  call test_iterator
 
   call exit (stat)
 
@@ -228,21 +228,20 @@ contains
     if (len(carraydefault) /= 5) call write_fail ('test_get failed test 40')
 
   end subroutine
-  
+
  !!
  !! Test the get_any methods
  !!
- 
+
   subroutine test_get_any
-  
+
     type(parameter_list) :: p
-    
-    integer :: stat
+
     type point; real x, y; end type
     class(*), allocatable :: scalar, vector(:)
-    
+
     !! Define parameters using the provided default value.
-    
+
     call p%get_any ('a', scalar, default=1)
     select type (scalar)
     type is (integer)
@@ -250,7 +249,7 @@ contains
     class default
       call write_fail ('test_get_any failed test 2')
     end select
-    
+
     call p%get_any ('b', vector, default=[1.0,2.0])
     select type (vector)
     type is (real)
@@ -258,7 +257,7 @@ contains
     class default
       call write_fail ('test_get_any failed test 4')
     end select
-    
+
     call p%get_any ('c', scalar, default=point(1.0,2.0))
     select type (scalar)
     type is (point)
@@ -266,7 +265,7 @@ contains
     class default
       call write_fail ('test_get_any failed test 6')
     end select
-    
+
     call p%get_any ('d', vector, default=['foo','bar'])
     select type (vector)
     type is (character(*))
@@ -274,7 +273,8 @@ contains
     class default
       call write_fail ('test_get_any failed test 8')
     end select
-    
+
+    call p%set ('e', [point(1.0,2.0)])
     call p%get_any ('e', vector, default=[point(1.0,2.0)])
     select type (vector)
     type is (point)
@@ -282,9 +282,9 @@ contains
     class default
       call write_fail ('test_get_any failed test 10')
     end select
-    
+
     !! Get them again with different default values that should be ignored.
-    
+
     call p%get_any ('a', scalar, default=0)
     select type (scalar)
     type is (integer)
@@ -292,7 +292,7 @@ contains
     class default
       call write_fail ('test_get_any failed test 12')
     end select
-    
+
     call p%get_any ('b', vector, default=[0.0])
     select type (vector)
     type is (real)
@@ -300,7 +300,7 @@ contains
     class default
       call write_fail ('test_get_any failed test 14')
     end select
-    
+
     call p%get_any ('c', scalar, default="fubar")
     select type (scalar)
     type is (point)
@@ -308,7 +308,7 @@ contains
     class default
       call write_fail ('test_get_any failed test 16')
     end select
-    
+
     call p%get_any ('d', vector, default=[point(1.0,2.0)])
     select type (vector)
     type is (character(*))
@@ -316,7 +316,7 @@ contains
     class default
       call write_fail ('test_get_any failed test 18')
     end select
-    
+
     call p%get_any ('e', vector, default=[13])
     select type (vector)
     type is (point)
@@ -324,7 +324,7 @@ contains
     class default
       call write_fail ('test_get_any failed test 20')
     end select
-    
+
   end subroutine
 
  !!
@@ -438,9 +438,7 @@ contains
 #if defined(INTEL_WORKAROUND) || defined(NAG_WORKAROUND1)
     class(parameter_entry), pointer :: pentry
 #endif
-#if defined(INTEL_WORKAROUND)
-    class(*), pointer :: scalar, vector(:)
-#endif
+    class(*), pointer :: scalar, scalar1, vector(:), vector1(:)
 
     !! Populate a parameter list.
     call p%set ('integer', 1)
@@ -464,52 +462,61 @@ contains
     piter = parameter_list_iterator(p)
     do while (.not.piter%at_end())
 #if defined(INTEL_WORKAROUND) || defined(NAG_WORKAROUND1)
-      pentry => piter%value()
+      pentry => piter%entry()
       select type (pentry)
 #else
-      select type (pentry => piter%value())
+      select type (pentry => piter%entry())
 #endif
       type is (any_scalar)
-        if (piter%is_list()) call write_fail ('test_iterator failed test 6')
-#ifdef INTEL_WORKAROUND
+        if (.not.piter%is_scalar()) call write_fail ('test_iterator failed test 6')
+        if (piter%is_list()) call write_fail ('test_iterator failed test 7')
+        if (piter%is_vector()) call write_fail ('test_iterator failed test 8')
+        scalar1 => piter%scalar()
         scalar => pentry%value_ptr()
+        if (.not.associated(scalar,scalar1)) call write_fail ('test_iterator failed test A')
         select type (scalar)
-#else
-        select type (scalar => pentry%value_ptr())
-#endif
         type is (integer)
-          if (piter%name() /= 'integer') call write_fail ('test_iterator failed test 7')
-          if (scalar /= 1) call write_fail ('test_iterator failed test 8')
+          if (piter%name() /= 'integer') call write_fail ('test_iterator failed test 9')
+          if (scalar /= 1) call write_fail ('test_iterator failed test 10')
         type is (character(*))
-          if (piter%name() /= 'string') call write_fail ('test_iterator failed test 9')
-          if (scalar /= 'hello') call write_fail ('test_iterator failed test 10')
+          if (piter%name() /= 'string') call write_fail ('test_iterator failed test 11')
+          if (scalar /= 'hello') call write_fail ('test_iterator failed test 12')
         type is (point)
-          if (piter%name() /= 'point') call write_fail ('test_iterator failed test 11')
-          if (scalar%x /= 1 .or. scalar%y /= 2) call write_fail ('test_iterator failed test 12')
+          if (piter%name() /= 'point') call write_fail ('test_iterator failed test 13')
+          if (scalar%x /= 1 .or. scalar%y /= 2) call write_fail ('test_iterator failed test 14')
         class default
-          call write_fail ('test_iterator failed test 13')
+          call write_fail ('test_iterator failed test 15')
         end select
       type is (any_vector)
-        if (piter%is_list()) call write_fail ('test_iterator failed test 14')
-#ifdef INTEL_WORKAROUND
+        if (.not.piter%is_vector()) call write_fail ('test_iterator failed test 16')
+        if (piter%is_list()) call write_fail ('test_iterator failed test 17')
+        if (piter%is_scalar()) call write_fail ('test_iterator failed test 18')
         vector => pentry%value_ptr()
+        vector1 => piter%vector()
+        if (.not.associated(vector,vector1)) call write_fail ('test_iterator failed test B1')
         select type (vector)
-#else
-        select type (vector => pentry%value_ptr())
-#endif
         type is (real)
-          if (piter%name() /= 'real') call write_fail ('test_iterator failed test 15')
-          if (any(vector /= [2.0])) call write_fail ('test_iterator failed test 16')
+          if (piter%name() /= 'real') call write_fail ('test_iterator failed test 19')
+          if (any(vector /= [2.0])) call write_fail ('test_iterator failed test 20')
+          select type (vector1)
+          type is (real)
+            if (any(vector1 /= [2.0])) call write_fail ('test_iterator failed test B2')
+            if (any(vector1 /= vector)) call write_fail ('test_iterator failed test B3')
+          class default
+            call write_fail ('test_iterator failed test B4')
+          end select
         class default
-          call write_fail ('test_iterator failed test 17')
+          call write_fail ('test_iterator failed test 21')
         end select
       type is (parameter_list)
-        if (.not.piter%is_list()) call write_fail ('test_iterator failed test 18')
+        if (.not.piter%is_list()) call write_fail ('test_iterator failed test 22')
+        if (piter%is_scalar()) call write_fail ('test_iterator failed test 23')
+        if (piter%is_vector()) call write_fail ('test_iterator failed test 24')
         sl2 => piter%sublist()
-        if (.not. associated(sl,sl2)) call write_fail ('test_iterator failed test 19')
-        if (.not. associated(sl,pentry)) call write_fail ('test_iterator failed test 20')
+        if (.not. associated(sl,sl2)) call write_fail ('test_iterator failed test 25')
+        if (.not. associated(sl,pentry)) call write_fail ('test_iterator failed test 26')
       class default
-        call write_fail ('test_iterator failed test 21')
+        call write_fail ('test_iterator failed test 27')
       end select
       call piter%next
     end do

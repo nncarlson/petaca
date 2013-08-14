@@ -77,8 +77,8 @@ contains
     if (associated(value)) call write_fail ('last item found')
 
     value => map%value('middle item')
-    call map%remove ('middle item')
     if (.not.associated(value)) call write_fail ('middle item not found')
+    call map%remove ('middle item')
     if (map%size() /= 2) call write_fail ('size not 2')
     value => map%value('middle item')
     if (associated(value)) call write_fail ('middle item found')

@@ -366,6 +366,8 @@ contains
     if (.not.associated(xp1,b(1)%n)) call write_fail ('test_shallow_assignment test 2 failed')
     if (.not.associated(xp2,yp2))  call write_fail ('test_shallow_assignment test 3 failed')
     if (.not.associated(xp2,b(2)%n)) call write_fail ('test_shallow_assignment test 4 failed')
+    
+    deallocate(b(1)%n,b(2)%n) ! clean-up in case we use a memory checker
 
   end subroutine
 

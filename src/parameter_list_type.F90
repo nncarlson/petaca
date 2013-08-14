@@ -94,15 +94,42 @@
 !!  NAME() returns the name of the current parameter.  The iterator must not be
 !!    positioned at the end.
 !!
-!!  VALUE() returns a CLASS(PARAMETER_ENTRY) pointer to the value of the
+!!  ENTRY() returns a CLASS(PARAMETER_ENTRY) pointer to the value of the
 !!    current parameter.  The iterator must not be positioned at the end. The
 !!    pointer has one of the following dynamic types: ANY_SCALAR, ANY_VECTOR,
 !!    and PARAMETER_LIST.
 !!
 !!  IS_LIST() returns true if the current parameter is a sublist.
 !!
+!!  IS_SCALAR() returns true if the current parameter has a scalar value.
+!!
+!!  IS_VECTOR() returns true if the current parameter has a vector value.
+!!
 !!  SUBLIST() returns a TYPE(PARAMETER_LIST) pointer to the current parameter
 !!    sublist, if it is indeed a sublist; otherwise it returns a null pointer.
+!!
+!!  SCALAR() returns a CLASS(*) pointer to the value of the current parameter
+!!    provided it is a scalar; otherwise it returns a null pointer.
+!!
+!!  VECTOR() returns a rank-1 CLASS(*) array pointer to the value of the
+!!    current parameter provided it is a vector; otherwise it returns a null
+!!    pointer.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! NOTES
+!!
+!! 1) The passed-object argument of the VALUE_PTR method of the ANY_SCALAR and
+!!    ANY_VECTOR types is declared with the target attribute (the function
+!!    returns a pointer to a non-pointer component of the object).  This means
+!!    that the object, in the caller, must also have the target attribute.
+!!    In the untweaked procedures that reference this note, the object is an
+!!    associate name in a class-is block of a select-type construct.  That
+!!    associate name should have the target attribute (the selector does) but
+!!    recent changes to the NAG compiler have broken that (edit 942 and earlier
+!!    work but 962 does not).  In this case this result is silent run time
+!!    errors further up the calling chain -- pointers silently lose their
+!!    targets.
 !!
 
 #ifdef __INTEL_COMPILER
@@ -112,6 +139,7 @@
 
 #ifdef NAGFOR
 #define NAG_WORKAROUND1
+#define NAG_WORKAROUND2
 #endif
 
 #include "f90_assert.fpp"
@@ -167,9 +195,13 @@ module parameter_list_type
     procedure :: next => iter_next
     procedure :: at_end => iter_at_end
     procedure :: name => iter_name
-    procedure :: value => iter_value
+    procedure :: entry => iter_entry
     procedure :: is_list => iter_is_list
+    procedure :: is_scalar => iter_is_scalar
+    procedure :: is_vector => iter_is_vector
     procedure :: sublist => iter_sublist
+    procedure :: scalar => iter_scalar
+    procedure :: vector => iter_vector
     procedure :: count => iter_count
   end type parameter_list_iterator
 
@@ -526,10 +558,10 @@ contains
       select type (pentry)
       type is (any_vector)
         vector => pentry%value_ptr()
-#ifdef INTEL_WORKAROUND1
-        allocate(value,source=vector)
+#if defined(NAG_WORKAROUND2)
+        allocate(value(lbound(vector,1):ubound(vector,1)),source=vector)
 #else
-        value = vector
+        allocate(value,source=vector)
 #endif
       class default
         call error ('not a vector parameter: "' // name // '"', stat, errmsg)
@@ -537,10 +569,10 @@ contains
     else
       if (present(default)) then
         call set_vector (this, name, default)
-#ifdef INTEL_WORKAROUND1
-        allocate(value,source=default)
+#if defined(NAG_WORKAROUND2)
+        allocate(value(lbound(default,1):ubound(default,1)),source=default)
 #else
-        value = default
+        allocate(value,source=default)
 #endif
       else
         call error ('no such parameter: "' // name // '"', stat, errmsg)
@@ -1023,23 +1055,87 @@ contains
   end function iter_name
 
   !! Returns a CLASS(PARAMETER_ENTRY) pointer to the current parameter value.
-  function iter_value (this)
+  function iter_entry (this)
     class(parameter_list_iterator), intent(in) :: this
-    class(parameter_entry), pointer :: iter_value
+    class(parameter_entry), pointer :: iter_entry
 #ifdef INTEL_WORKAROUND
     class(*), pointer :: uptr
     uptr => this%mapit%value()
-    iter_value => cast_to_parameter_entry(uptr)
+    iter_entry => cast_to_parameter_entry(uptr)
 #else
-    iter_value => cast_to_parameter_entry(this%mapit%value())
+    iter_entry => cast_to_parameter_entry(this%mapit%value())
 #endif
-  end function iter_value
+  end function iter_entry
 
   !! Returns true if the current parameter is a sublist.
   logical function iter_is_list (this) result (is_list)
     class(parameter_list_iterator), intent(in) :: this
     is_list = associated(iter_sublist(this))
   end function iter_is_list
+
+  !! Returns true if the current parameter has a scalar value.
+  logical function iter_is_scalar (this) result (is_scalar)
+    class(parameter_list_iterator), intent(in) :: this
+#ifdef INTEL_WORKAROUND
+    class(parameter_entry), pointer :: pentry
+    pentry => iter_entry(this)
+    is_scalar = associated(cast_to_any_scalar(pentry))
+#else
+    is_scalar = associated(cast_to_any_scalar(iter_entry(this)))
+#endif
+  end function iter_is_scalar
+
+  !! Returns true if the current parameter has a vector value.
+  logical function iter_is_vector (this) result (is_vector)
+    class(parameter_list_iterator), intent(in) :: this
+#ifdef INTEL_WORKAROUND
+    class(parameter_entry), pointer :: pentry
+    pentry => iter_entry(this)
+    is_vector = associated(cast_to_any_vector(pentry))
+#else
+    is_vector = associated(cast_to_any_vector(iter_entry(this)))
+#endif
+  end function iter_is_vector
+
+  !! If the current parameter has a scalar value, return a CLASS(*)
+  !! pointer to it; otherwise return a null pointer.
+  !! N.B. See Note 1 regarding the NAG workaround.
+  function iter_scalar (this) result (scalar)
+    class(parameter_list_iterator), intent(in) :: this
+    class(*), pointer :: scalar
+#if defined(INTEL_WORKAROUND) || defined(NAG_WORKAROUND1)
+    class(*), pointer :: uptr
+    uptr => this%mapit%value()
+    select type (uptr)
+#else
+    select type (uptr => this%mapit%value())
+#endif
+    class is (any_scalar)
+      scalar => uptr%value_ptr()
+    class default
+      scalar => null()
+    end select
+  end function iter_scalar
+
+  !! If the current parameter has a vector value, return a CLASS(*)
+  !! rank-1 array pointer to it; otherwise return a null pointer.
+  !! N.B. See Note 1 regarding the NAG workaround.
+  function iter_vector (this) result (vector)
+    class(parameter_list_iterator), intent(in) :: this
+    class(*), pointer :: vector(:)
+#if defined(INTEL_WORKAROUND) || defined(NAG_WORKAROUND1)
+    class(*), pointer :: uptr
+    uptr => this%mapit%value()
+    select type (uptr)
+#else
+    select type (uptr => this%mapit%value())
+#endif
+    class is (any_vector)
+      vector => uptr%value_ptr()
+    class default
+      vector => null()
+    end select
+  end function iter_vector
 
   !! If the current parameter is a sublist, return a pointer to it;
   !! otherwise return a null pointer.

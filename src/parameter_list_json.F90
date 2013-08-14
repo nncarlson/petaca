@@ -212,7 +212,7 @@ contains
         write(error_unit,'(a,i0)') 'read error: iostat=', ios
         exit
       end if
-      
+
 #ifdef INTEL_WORKAROUND3
       !! The intel compiler doesn't advance the file position at all when the
       !! EOF is encountered.  This means we don't know how many characters
@@ -781,7 +781,6 @@ contains
   !! Pop the value off the head of the list; use peek first to get it.
   subroutine queue_pop (this)
     class(value_queue), intent(inout) :: this
-    class(*), allocatable :: value
     type(queue_item), pointer :: head
     if (associated(this%head)) then
       head => this%head
@@ -822,7 +821,7 @@ contains
     type(parameter_list), intent(in) :: plist
     character(*), intent(in) :: indent
     integer, intent(in) :: unit
-    
+
     type(parameter_list_iterator) :: piter
     logical :: first_param
 #ifdef INTEL_WORKAROUND
@@ -839,10 +838,10 @@ contains
       end if
       write(unit,'(a)',advance='no') indent // '"' // piter%name() // '"'
 #ifdef INTEL_WORKAROUND
-      pentry => piter%value()
+      pentry => piter%entry()
       select type (pentry)
 #else
-      select type (pentry => piter%value())
+      select type (pentry => piter%entry())
 #endif
       type is (parameter_list)
         write(unit,'(a)') ': {'

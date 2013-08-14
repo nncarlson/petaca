@@ -341,6 +341,7 @@ contains
     end type
     type(box) :: b
 
+print *, 'foo'
     allocate(b%n)
     b%n = 1
 
@@ -361,6 +362,8 @@ contains
 
     if (.not.associated(xp,yp))  call write_fail ('test_shallow_assignment test 1 failed')
     if (.not.associated(xp,b%n)) call write_fail ('test_shallow_assignment test 2 failed')
+
+    deallocate(b%n) ! clean-up in case we use a memory checker
 
   end subroutine
 
