@@ -1,13 +1,14 @@
 !!
 !! MD5_HASH_TYPE
 !!
-!! Implements MD5 hash sums for the CRYPTO_HASH class.
+!! Implements the MD5 hash algorithm for the SECURE_HASH class.
+!! See that class for documentation.
 !!
 !! Neil N. Carlson <neil.n.carlson@gmail.com>
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
-!! Copyright © 2008, 2011, 2013  Neil N. Carlson
+!! Copyright (c) 2008, 2011, 2013  Neil N. Carlson
 !!
 !! Permission is hereby granted, free of charge, to any person obtaining a
 !! copy of this software and associated documentation files (the "Software"),
@@ -47,11 +48,11 @@
 module md5_hash_type
 
   use,intrinsic :: iso_fortran_env, only: int8, int32, int64
-  use crypto_hash_class
+  use secure_hash_class
   implicit none
   private
 
-  type, extends(crypto_hash), public :: md5_hash
+  type, extends(secure_hash), public :: md5_hash
     private
     integer(int32) :: a = int(z'67452301')
     integer(int32) :: b = int(z'EFCDAB89')
@@ -281,31 +282,29 @@ contains
 
     pure subroutine R1_operation (a, b, c, d, w, t, s)
       integer(int32), intent(inout) :: a
-      !integer(int32), intent(in)    :: b, c, d, w, t
-      !integer,     intent(in)    :: s
-      integer(int32), intent(in), value    :: b, c, d, w, t
-      integer,     intent(in), value    :: s
+      integer(int32), intent(in), value :: b, c, d, w, t
+      integer, intent(in), value :: s
       a = ishftc(((ieor(iand(ieor(c,d),b),d) + a) + w) + t, s) + b
     end subroutine R1_operation
 
     pure subroutine R2_operation (a, b, c, d, w, t, s)
       integer(int32), intent(inout) :: a
-      integer(int32), intent(in)    :: b, c, d, w, t
-      integer,     intent(in)    :: s
+      integer(int32), intent(in), value :: b, c, d, w, t
+      integer, intent(in), value :: s
       a = ishftc(((ieor(iand(ieor(b,c),d),c) + a) + w) + t, s) + b
     end subroutine R2_operation
 
     pure subroutine R3_operation (a, b, c, d, w, t, s)
       integer(int32), intent(inout) :: a
-      integer(int32), intent(in)    :: b, c, d, w, t
-      integer,     intent(in)    :: s
+      integer(int32), intent(in), value :: b, c, d, w, t
+      integer, intent(in), value :: s
       a = ishftc(((ieor(ieor(b,c),d) + a) + w) + t, s) + b
     end subroutine R3_operation
 
     pure subroutine R4_operation (a, b, c, d, w, t, s)
       integer(int32), intent(inout) :: a
-      integer(int32), intent(in)    :: b, c, d, w, t
-      integer, intent(in) :: s
+      integer(int32), intent(in), value :: b, c, d, w, t
+      integer, intent(in), value :: s
       a = ishftc(((ieor(ior(not(d),b),c) + a) + w) + t, s) + b
     end subroutine R4_operation
 

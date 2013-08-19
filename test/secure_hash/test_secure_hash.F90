@@ -30,7 +30,7 @@ module valid_hash_function
 
   use md5_hash_type
   use sha1_hash_type
-  use crypto_hash_factory
+  use secure_hash_factory
   use,intrinsic :: iso_fortran_env
   implicit none
   private
@@ -47,7 +47,7 @@ contains
 #ifdef INTEL_WORKAROUND
     use ifport, only: system
 #endif
-    class(crypto_hash), intent(inout) :: h
+    class(secure_hash), intent(inout) :: h
     integer :: unit, comstat
     character(:), allocatable :: command
     !! Write the computed hash sum of the data (checksum format)
@@ -75,11 +75,11 @@ contains
     character(*), intent(in) :: hashtype
     class(*), intent(in) :: a
 
-    class(crypto_hash), allocatable :: h
+    class(secure_hash), allocatable :: h
     integer :: unit
 
     !! Write the data to disk.
-    call new_crypto_hash (h, hashtype)
+    call new_secure_hash (h, hashtype)
     open(newunit=unit,file='file.tmp',status='replace',action='write',access='stream')
     select type (a)
     type is (integer(int8))
@@ -131,11 +131,11 @@ contains
     character(*), intent(in) :: hashtype
     class(*), intent(in) :: a(:)
 
-    class(crypto_hash), allocatable :: h
+    class(secure_hash), allocatable :: h
     integer :: unit
 
     !! Write the data to disk.
-    call new_crypto_hash (h, hashtype)
+    call new_secure_hash (h, hashtype)
     open(newunit=unit,file='file.tmp',status='replace',action='write',access='stream')
     select type (a)
     type is (integer(int8))
@@ -187,11 +187,11 @@ contains
     character(*), intent(in) :: hashtype
     class(*), intent(in) :: a(:,:)
 
-    class(crypto_hash), allocatable :: h
+    class(secure_hash), allocatable :: h
     integer :: unit
 
     !! Write the data to disk.
-    call new_crypto_hash (h, hashtype)
+    call new_secure_hash (h, hashtype)
     open(newunit=unit,file='file.tmp',status='replace',action='write',access='stream')
     select type (a)
     type is (integer(int8))
@@ -243,11 +243,11 @@ contains
     character(*), intent(in) :: hashtype
     class(*), intent(in) :: a(:,:,:)
 
-    class(crypto_hash), allocatable :: h
+    class(secure_hash), allocatable :: h
     integer :: unit
 
     !! Write the data to disk.
-    call new_crypto_hash (h, hashtype)
+    call new_secure_hash (h, hashtype)
     open(newunit=unit,file='file.tmp',status='replace',action='write',access='stream')
     select type (a)
     type is (integer(int8))
@@ -296,9 +296,9 @@ contains
 end module valid_hash_function
 
 
-program test_crypto_hash
+program test_secure_hash
 
-  use crypto_hash_factory
+  use secure_hash_factory
   use valid_hash_function
   use,intrinsic :: iso_fortran_env
 #ifdef NAGFOR
@@ -344,13 +344,13 @@ contains
 
   subroutine test_noncontiguous
 
-    class(crypto_hash), allocatable :: h1, h2
+    class(secure_hash), allocatable :: h1, h2
     integer :: a1(3), a2(2,3), a3(4)
     character(5) :: s1(2)
     character(4) :: s2(2)
 
-    call new_crypto_hash (h1, 'md5')
-    call new_crypto_hash (h2, 'md5')
+    call new_secure_hash (h1, 'md5')
+    call new_secure_hash (h2, 'md5')
 
     a1 = [1,2,3]
     a2(1,:) = a1
@@ -384,8 +384,8 @@ contains
 
   subroutine test_md5_blocking
 
-    class(crypto_hash), allocatable :: h
-    call new_crypto_hash (h, 'md5')
+    class(secure_hash), allocatable :: h
+    call new_secure_hash (h, 'md5')
 
     call test ('md5_blocking: 0-length message', &
         h%hexdigest() == 'd41d8cd98f00b204e9800998ecf8427e')
@@ -573,8 +573,8 @@ contains
 
   subroutine test_sha1_blocking
 
-    class(crypto_hash), allocatable :: h
-    call new_crypto_hash (h, 'sha1')
+    class(secure_hash), allocatable :: h
+    call new_secure_hash (h, 'sha1')
 
     call test ('sha1_blocking: 0-length message', &
         h%hexdigest() == 'da39a3ee5e6b4b0d3255bfef95601890afd80709')
@@ -783,10 +783,10 @@ contains
 
 !  subroutine test_md5_int8
 !
-!    class(crypto_hash), allocatable :: h
+!    class(secure_hash), allocatable :: h
 !    integer(int8) :: a0, a1(2), a2(2,3), a3(2,3,4)
 !
-!    call new_crypto_hash (h, 'md5')
+!    call new_secure_hash (h, 'md5')
 !
 !    a0 = -91; a1 = -91; a2 = -91; a3 = -91
 !
@@ -812,10 +812,10 @@ contains
 !
 !  subroutine test_md5_int16
 !
-!    class(crypto_hash), allocatable :: h
+!    class(secure_hash), allocatable :: h
 !    integer(int16) :: a0, a1(2), a2(2,3), a3(2,3,4)
 !
-!    call new_crypto_hash (h, 'md5')
+!    call new_secure_hash (h, 'md5')
 !
 !    a0 = -13001; a1 = -13001; a2 = -13001; a3 = -13001
 !
@@ -845,10 +845,10 @@ contains
 !
 !  subroutine test_md5_int32
 !
-!    class(crypto_hash), allocatable :: h
+!    class(secure_hash), allocatable :: h
 !    integer(int32) :: a0, a1(2), a2(2,3), a3(2,3,4)
 !
-!    call new_crypto_hash (h, 'md5')
+!    call new_secure_hash (h, 'md5')
 !
 !    a0 = -130010023; a1 = -130010023; a2 = -130010023; a3 = -130010023
 !
@@ -878,10 +878,10 @@ contains
 !
 !  subroutine test_md5_int64
 !
-!    class(crypto_hash), allocatable :: h
+!    class(secure_hash), allocatable :: h
 !    integer(int64) :: a0, a1(2), a2(2,3), a3(2,3,4)
 !
-!    call new_crypto_hash (h, 'md5')
+!    call new_secure_hash (h, 'md5')
 !
 !    a0 = -1300100230; a1 = -1300100230; a2 = -1300100230; a3 = -1300100230
 !
@@ -911,10 +911,10 @@ contains
 !
 !  subroutine test_md5_real32
 !
-!    class(crypto_hash), allocatable :: h
+!    class(secure_hash), allocatable :: h
 !    real(real32) :: a0, a1(2), a2(2,3), a3(2,3,4)
 !
-!    call new_crypto_hash (h, 'md5')
+!    call new_secure_hash (h, 'md5')
 !
 !    a0 = -1300100230.; a1 = -1300100230.; a2 = -1300100230.; a3 = -1300100230.
 !
@@ -944,10 +944,10 @@ contains
 !
 !  subroutine test_md5_real64
 !
-!    class(crypto_hash), allocatable :: h
+!    class(secure_hash), allocatable :: h
 !    real(real64) :: a0, a1(2), a2(2,3), a3(2,3,4)
 !
-!    call new_crypto_hash (h, 'md5')
+!    call new_secure_hash (h, 'md5')
 !
 !    a0 = -130010023087.0_real64
 !    a1 = a0; a2 = a0; a3 = a0
@@ -978,10 +978,10 @@ contains
 !
 !  subroutine test_md5_real128
 !
-!    class(crypto_hash), allocatable :: h
+!    class(secure_hash), allocatable :: h
 !    real(real128) :: a0, a1(2), a2(2,3), a3(2,3,4)
 !
-!    call new_crypto_hash (h, 'md5')
+!    call new_secure_hash (h, 'md5')
 !
 !    a0 = -4
 !    a1 = a0; a2 = a0; a3 = a0
@@ -1012,10 +1012,10 @@ contains
 !
 !  subroutine test_md5_character
 !
-!    class(crypto_hash), allocatable :: h
+!    class(secure_hash), allocatable :: h
 !    character(5) :: a0, a1(2), a2(2,3), a3(2,3,4)
 !
-!    call new_crypto_hash (h, 'md5')
+!    call new_secure_hash (h, 'md5')
 !
 !    a0 = 'hello'
 !    a1 = a0; a2 = a0; a3 = a0
@@ -1040,10 +1040,10 @@ contains
 !
 !  subroutine test_md5_log8
 !
-!    class(crypto_hash), allocatable :: h
+!    class(secure_hash), allocatable :: h
 !    logical(int8) :: a0, a1(2), a2(2,3), a3(2,3,4)
 !
-!    call new_crypto_hash (h, 'md5')
+!    call new_secure_hash (h, 'md5')
 !
 !    a0 = .true.
 !    a1 = a0; a2 = a0; a3 = a0
@@ -1072,4 +1072,4 @@ contains
 !
 !  end subroutine test_md5_log8
 
-end program test_crypto_hash
+end program test_secure_hash

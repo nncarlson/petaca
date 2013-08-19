@@ -9,6 +9,9 @@ unset(CMAKE_Fortran_MODULE_DIRECTORY)
 include_directories(${Petaca_MODULE_DIR})
 include_directories(${Petaca_INCLUDE_DIR})
 
-add_executable (test_crypto_hash test_crypto_hash.F90)
-target_link_libraries(test_crypto_hash petaca)
-add_test(crypto_hash test_crypto_hash)
+add_executable (test_secure_hash test_secure_hash.F90)
+target_link_libraries(test_secure_hash petaca)
+add_test(secure_hash test_secure_hash)
+
+add_executable (time_hash time_hash.F90)
+target_link_libraries(time_hash petaca)

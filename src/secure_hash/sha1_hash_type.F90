@@ -1,13 +1,14 @@
 !!
 !! SHA1_HASH_TYPE
 !!
-!! Implements SHA1 hash sums for the CRYPTO_HASH class.
+!! Implements the SHA1 hash algorithm for the SECURE_HASH class.
+!! See that class for documentation.
 !!
 !! Neil N. Carlson <neil.n.carlson@gmail.com>
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
-!! Copyright © 2013  Neil N. Carlson
+!! Copyright (c) 2013  Neil N. Carlson
 !!
 !! Permission is hereby granted, free of charge, to any person obtaining a
 !! copy of this software and associated documentation files (the "Software"),
@@ -47,11 +48,11 @@
 module sha1_hash_type
 
   use,intrinsic :: iso_fortran_env, only: int8, int32, int64
-  use crypto_hash_class
+  use secure_hash_class
   implicit none
   private
 
-  type, extends(crypto_hash), public :: sha1_hash
+  type, extends(secure_hash), public :: sha1_hash
     private
     integer(int32) :: a = int(z'67452301',int32)
     integer(int32) :: b = int(z'EFCDAB89',int32)

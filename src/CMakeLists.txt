@@ -7,10 +7,10 @@ set(Petaca_SOURCE_FILES
       parameter_list_type.F90
       parameter_list_json.F90
       state_history_type.F90
-      crypto_hash/crypto_hash_class.F90
-      crypto_hash/crypto_hash_factory.F90
-      crypto_hash/md5_hash_type.F90
-      crypto_hash/sha1_hash_type.F90)
+      secure_hash/secure_hash_class.F90
+      secure_hash/secure_hash_factory.F90
+      secure_hash/md5_hash_type.F90
+      secure_hash/sha1_hash_type.F90)
                             
                             
 include_directories(${Petaca_INCLUDE_DIR})
