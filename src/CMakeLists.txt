@@ -10,7 +10,8 @@ set(Petaca_SOURCE_FILES
       secure_hash/secure_hash_class.F90
       secure_hash/secure_hash_factory.F90
       secure_hash/md5_hash_type.F90
-      secure_hash/sha1_hash_type.F90)
+      secure_hash/sha1_hash_type.F90
+      timer_tree_type.F90)
                             
                             
 include_directories(${Petaca_INCLUDE_DIR})
