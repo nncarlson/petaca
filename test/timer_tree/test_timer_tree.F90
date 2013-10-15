@@ -35,7 +35,7 @@ program test_timer_tree
   character(:), allocatable :: key(:)
   character(15) :: prog = 'TEST_TIMER_TREE'
   real, allocatable :: cpu(:)
-  real :: tspin, x
+  real :: tspin, x = 0.0
   integer :: nspin
 
   call calibrate_spin ()
@@ -281,11 +281,13 @@ contains
     logical :: pass
     real :: error, cpu
     integer :: ha, hb, hc
+    
+    call reset_timer_tree
 
     call start_timer ('A',ha)
     call start_timer ('B',hb)
-    call spin
-    call spin
+    call spin ()
+    call spin ()
     call stop_timer  ('B')
     call start_timer ('C',hc)
     call spin
@@ -332,7 +334,7 @@ contains
 
   subroutine spin()
     integer :: j
-    x = 0.0
+    !x = 0.0
     do j = 1, nspin
       x = (x**2 - 1.0)**2
     end do
