@@ -281,13 +281,11 @@ contains
     logical :: pass
     real :: error, cpu
     integer :: ha, hb, hc
-    
-    call reset_timer_tree
 
     call start_timer ('A',ha)
     call start_timer ('B',hb)
-    call spin ()
-    call spin ()
+    call spin
+    call spin
     call stop_timer  ('B')
     call start_timer ('C',hc)
     call spin

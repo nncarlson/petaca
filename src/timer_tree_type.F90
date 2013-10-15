@@ -190,7 +190,6 @@ contains
       type(node), pointer :: child, timer
       if (.not.associated(child)) then
         allocate(child)
-        child%cpu_elapsed=0.0
         child%name = name
         child%parent => this%current
         this%root%handle = this%root%handle + 1 ! update the number of nodes
