@@ -1,7 +1,6 @@
 \documentclass[11pt]{article}
 
-\usepackage[latin1]{inputenc}
-\usepackage{times}
+\usepackage{lmodern}
 \usepackage[T1]{fontenc}
 
 \usepackage{underscore}
@@ -39,7 +38,8 @@ JSON-format text.
   \texttt{use parameter_list_type}\\
   \texttt{use parameter_list_json}
 \item[Derived Types]
-  \texttt{parameter_list},\texttt{ parameter_list_iterator}
+  \texttt{parameter_list},\texttt{ parameter_list_iterator},\\
+  \texttt{ parameter_entry},\texttt{ any_scalar},\texttt{ any_vector}
 \item[Procedures]
   \texttt{parameter_list_from_json_stream},
   \texttt{ parameter_list_to_json}
@@ -89,6 +89,20 @@ structure.  It has the following properties.
   deallocated or otherwise cease to exist.
 \end{itemize}
 
+Values of the class \texttt{parameter_entry} are held as the parameter
+values in a parameter list.  There are three different derived types of
+this class: \texttt{any_scalar}, which stores a scalar value of any intrinsic
+or derived type; \texttt{any_vector}, which stores a rank-1 array value of
+any intrinsic or derived type; and \texttt{parameter_list} itself, which
+gives rise to the hierarchical character of the parameter list data structure.
+For the most commo
+
+\begin{description}
+\item[any_scalar] stores a scalar value of any intrinsic or derived type;
+\item[any_vector] stores a rank-1 array value of any intrinsic or derived type;
+\item[parameter_list]
+\end{description}
+
 The derived type has the following type bound procedures.  Some have the
 optional intent-out arguments \texttt{stat} and \texttt{errmsg}.  If the
 integer \texttt{stat} is present, it is assigned the value 0 if no error
@@ -101,50 +115,52 @@ error unit and the program terminates.
 \subsection{Type bound subroutines}
 \begin{description}[style=nextline]\setlength{\itemsep}{0pt}
 \item[\texttt{set(name, value \Lbr,stat \Lbr,errmsg\Rbr\Rbr)}]
-  sets the value of the parameter with name \texttt{name} to \texttt{value},
-  which may be a scalar or rank-1 array of any type.  A copy of the passed
-  value, as created by sourced allocation, is stored in the parameter list
-  and thus caution should be exercised with derived type values; see
-  \emph{Limitations on values} below.  The parameter need not exist before
-  the call.  If it does, it must not be a sublist parameter and its existing
-  value must have the same rank as \texttt{value}, but not necessarily the
-  same type; its value is overwritten with \texttt{value}.
+  defines a parameter with the given \texttt{name} and assigns it the given
+  \texttt{value}, which may be a scalar or rank-1 array of any type.  A copy
+  of the passed value, as created by sourced allocation, is stored in the
+  parameter list and thus caution should be exercised with derived type values; see
+  \emph{Limitations on values} below.  If the parameter already exists, it must
+  not be a sublist parameter and its existing value must have the same rank as
+  \texttt{value}, but not necessarily the same type; its value is overwritten
+  with \texttt{value}.
 \item[\texttt{get(name, value \Lbr,default\Rbr\ \Lbr,stat \Lbr,errmsg\Rbr\Rbr)}]
-  retrieves the value of the parameter \texttt{name} in the argument
-  \texttt{value}.  This is a generic subroutine depending on the type and rank
-  of \texttt{value}.  The allowed possibilities for \texttt{value} are:
-  \begin{itemize}\setlength{\itemsep}{0pt}
-  \item a scalar variable of logical, integer, or real type.
-  \item an allocatable rank-1 array of logical, integer, or real type.
-  \item an allocatable deferred-length character variable, either scalar
-    or rank-1 array.  The allocated character length will be that of the
-    longest string; others will be left justified.
-  \item an allocatable \texttt{class(*)} scalar or rank-1 array.
-  \end{itemize}
-  The first three cases cover the most typical use cases.  The logical and
-  integer types are of the default kind, while the real kind is \texttt{int64}
-  from the intrinsic \texttt{iso_fortran_env} module (typically the same as
-  double precision).  The final case is the most general and covers all use
-  cases, but requires the application code to use the select-type construct
-  in order to make use of the returned value.
-  
-  The optional argument \texttt{default} is allowed in the first three cases.
-  It must have the same type and rank as \texttt{value}. If the named parameter
-  does not exist, it is created with the value prescribed by \texttt{default}
-  and that value is returned in \texttt{value}.
-
-  It is an error if the named parameter does not exist and \texttt{default}
-  is not present.  It is an error if the named parameter is a sublist.
-  It is an error if the type and rank of \texttt{value} does not match the
-  stored value of the named parameter.  Note that a \texttt{class(*)}
-  \texttt{value} will match any parameter value.
-\item[\texttt{print(unit, prefix)}]
-  writes the parameter list in a readable format to the logicald unit
-  \texttt{unit}.  \texttt{Prefix} is a character string that is used
-  for indentation.  Successive levels of parameter lists are indented
-  with multiple copies of \texttt{prefix}; it should usually be a string
-  of blanks, such as \texttt{"  "}.  This method may be retired in favor
-  of \texttt{parameter_list_to_json}; consider using it instead.
+  retrieves the value of the parameter \texttt{name}.  A copy of the value is
+  returned in \texttt{value}, which may be a scalar or rank-1 array of the
+  following intrinsic types: \texttt{integer(int32)}, \texttt{integer(int64)},
+  \texttt{real(real32)}, \texttt{real(real64)}, default \texttt{logical}, and
+  default \texttt{character}.  The kind parameters are those from the intrinsic module
+  \texttt{iso_fortran_env}, and should cover the default integer and real kinds,
+  as well as double precision.  An array \texttt{value} must be allocatable and
+  a character \texttt{value} must be deferred-length allocatable.  In these
+  latter cases, \texttt{value} is allocated with the proper size/length to hold
+  the parameter value.  If present, the optional argument \texttt{default} must
+  have the same type, kind, and rank as \texttt{value}. If the named parameter
+  does not exist, it is created with the value prescribed by \texttt{default},
+  and that value is return in \texttt{value}.  It is an error if the named
+  parameter does not exist and \texttt{default} is not present.  It is an
+  error if the named parameter is a sublist. It is an error if the type, kind,
+  and rank of \texttt{value} does not match the stored value of the named
+  parameter.  Use \texttt{get_any} when the type of the parameter value is not
+  one of those handled by this method.
+\item[\texttt{get_any(name, value \Lbr,default\Rbr\ \Lbr,stat \Lbr,errmsg\Rbr\Rbr)}]
+  retrieves the value of the parameter \texttt{name}.  A copy of the value is
+  returned in \texttt{value}, which is an allocatable \texttt{class(*)} variable
+  or rank-1 array.  This is a more general version of \texttt{get} that can
+  retrieve any type of parameter value.  The downside of \texttt{get_any} is
+  that the application code must use a select-type construct in order to use
+  the returned value, making it more complex to use.  If present, the optional
+  argument \texttt{default} must have the same rank as \texttt{value}.  If the
+  named parameter does not exist, it is created with the value prescribed by
+  \texttt{default}, and that value is returned in \texttt{value}.  It is an
+  error if the named parameter does not exist and \texttt{default} is not
+  present.  It is an error if the named parameter is a sublist.  It is an
+  error if the rank of \texttt{value} does not match that of the stored value
+  of the named parameter. \par
+  N.B. It would have been desirable to merge \texttt{get} and \texttt{get_any}
+  into a single generic subroutine, but this isn't possible because the
+  specific subroutines have an ambiguous interface---the \texttt{class(*)}
+  value argument of \texttt{get_any} also matches any of the specific types
+  of the value argument of \texttt{get}.
 \end{description}
 
 \subsection{Type bound functions}
@@ -155,11 +171,13 @@ error unit and the program terminates.
   does not already exist.  It is an error if the parameter exists but is
   not a sublist.
 \item[\texttt{is_parameter(name)}]
-  returns true if there is a parameter with name \texttt{name};
+  returns true if there is a parameter with the given \texttt{name};
   otherwise it returns false.
 \item[\texttt{is_sublist(name)}]
-  returns true if there is a sublist parameter with name \texttt{name};
+  returns true if there is a sublist parameter with the given \texttt{name};
   otherwise it returns false.
+\item[\texttt{count()}]
+  returns the number of parameters stored in the parameter list.
 \end{description}
 
 \subsection{Limitation on values}
@@ -218,10 +236,26 @@ a structure constructor expression (see below).
   returns the name of the current parameter.  The iterator must not be
   positioned at the end.
 \item[\texttt{value()}]
-  returns a \texttt{class(*)} pointer to the value of the current parameter.
-  The iterator must not be positioned at the end.
+  returns a \texttt{class(parameter_entry)} pointer to an object that holds
+  the value of the current parameter.  The iterator must not be positioned
+  at the end. The target of the pointer will be of one of three dynamic types:
+  \begin{description}\setlength{\itemsep}{0pt}
+  \item[\texttt{parameter_list}] if the parameter value is a sublist;
+  \item[\texttt{any_scalar}] if the parameter has a scalar value;
+  \item[\texttt{any_vector}] if the parameter has a vector value.
+  \end{description}
+  A select-type construct with stanzas for these three types is required
+  to access the value.  For sublists it is easier to use the \texttt{is_list}
+  method to identify whether the current parameter is a sublist, and if so
+  use the \texttt{sublist} method to acess the sublist.
 \item[\texttt{is_list()}]
   returns true if the current parameter value is a sublist; otherwise it
+  returns false.  The iterator must not be positioned at the end.
+\item[\texttt{is_scalar()}]
+  returns true if the current parameter has a scalar value; otherwise it
+  returns false.  The iterator must not be positioned at the end.
+\item[\texttt{is_vector()}]
+  returns true if the current parameter has a vector value; otherwise it
   returns false.  The iterator must not be positioned at the end.
 \item[\texttt{sublist()}]
   returns a \texttt{type(parameter_list)} pointer that is associated with
