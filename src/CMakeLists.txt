@@ -25,3 +25,9 @@ target_link_libraries(petaca yajl)  # for yajl-fort
 install(TARGETS petaca DESTINATION lib)
         
 install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY} DESTINATION include)
+
+### Preprocessor defines; mainly compiler bug workarounds.
+foreach (def ${Fortran_COMPILE_DEFINITIONS})
+  set_property (TARGET petaca APPEND PROPERTY COMPILE_DEFINITIONS ${def})
+endforeach ()
+

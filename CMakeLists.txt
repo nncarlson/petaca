@@ -9,8 +9,7 @@
 # ---------------------------------------------------------------------------- #
 cmake_minimum_required( VERSION 2.8.8 )
 
-# allow more human readable "if then else" constructs
-set( CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE )
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 # Modules/Compiler/NAG-Fortran.cmake is missing this.
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
@@ -20,7 +19,14 @@ endif()
 # ---------------------------------------------------------------------------- #
 # Project definitions
 # ---------------------------------------------------------------------------- #
-project(Petaca Fortran)
+project (Petaca Fortran C)
+
+# The parameter list stuff requires the yajl library.
+# If necessary set YAJL_INCLUDE_DIR and YAJL_LIBRARY_DIR.
+find_package (YAJL REQUIRED)
+if ("${YAJL_VERSION_STRING}" VERSION_LESS "2.0.1")
+  message(FATAL_ERROR "ERROR! version 2.0.1 or later of the yajl library is required")
+endif ()
 
 # Create all the Fortran module files in a directory at the root build directory
 set(Petaca_MODULE_DIR ${Petaca_BINARY_DIR}/mod_files/)
@@ -39,6 +45,43 @@ option(ENABLE_EXAMPLES "Build example programs" ON)
 if (ENABLE_TESTS)
   enable_testing()
 endif()
+
+#-------------------------------------------------------------------------------
+# Compiler Definitions
+#-------------------------------------------------------------------------------
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+message(STATUS "CMAKE_Fortran_COMPILER_ID=${CMAKE_Fortran_COMPILER_ID}")
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "NAG")
+  set (CMAKE_Fortran_FLAGS_RELEASE "-O3 -w=uda -DNDEBUG")
+  set (CMAKE_Fortran_FLAGS_DEBUG   "-g90")
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+  set (CMAKE_Fortran_FLAGS_RELEASE "-O3 -DNDEBUG")
+  set (CMAKE_Fortran_FLAGS_DEBUG   "-g")
+  message(STATUS "${CMAKE_Fortran_COMPILER_VERSION}")
+endif()
+
+# Fortran preprocessor defines
+set(Fortran_COMPILE_DEFINITIONS)
+include (CMakeFortranCompilerVersion)
+if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+  list (APPEND Fortran_COMPILE_DEFINITIONS INTEL_DPD200249493)
+  list (APPEND Fortran_COMPILE_DEFINITIONS INTEL_DPD200237118)
+  if (CMAKE_Fortran_COMPLER_VERSION VERSION_LESS "14.0.0")
+    list (APPEND Fortran_COMPILE_DEFINITIONS INTEL_DPD200237219 INTEL_DPD200237121)
+  elseif (CMAKE_Fortran_COMPLER_VERSION VERSION_LESS "13.1.1")
+  elseif (CMAKE_Fortran_COMPLER_VERSION VERSION_LESS "13.1.0")
+    list (APPEND Fortran_COMPILE_DEFINITIONS INTEL_DPD200237439)
+  elseif (CMAKE_Fortran_COMPLER_VERSION VERSION_LESS "13.0.1")
+    message (FATAL_ERROR "ERROR: Intel Fortran 13.0.1 or later is required; \
+             your version is ${CMAKE_Fortran_COMPILER_VERSION}")
+  endif ()
+elseif (CMAKE_Fortran_COMPILER_ID MATCHES NAG)
+  list (APPEND Fortran_COMPILE_DEFINITIONS NO_2008_SOURCED_ALLOC_ARRAY)
+endif ()
 
 #-------------------------------------------------------------------------------
 # Installation Definitions

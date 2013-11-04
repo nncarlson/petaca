@@ -134,12 +134,6 @@
 
 #ifdef __INTEL_COMPILER
 #define INTEL_WORKAROUND
-#define INTEL_WORKAROUND1
-#endif
-
-#ifdef NAGFOR
-#define NAG_WORKAROUND1
-#define NAG_WORKAROUND2
 #endif
 
 #include "f90_assert.fpp"
@@ -558,7 +552,7 @@ contains
       select type (pentry)
       type is (any_vector)
         vector => pentry%value_ptr()
-#if defined(NAG_WORKAROUND2)
+#ifdef NO_2008_SOURCED_ALLOC_ARRAY
         allocate(value(lbound(vector,1):ubound(vector,1)),source=vector)
 #else
         allocate(value,source=vector)
@@ -569,7 +563,7 @@ contains
     else
       if (present(default)) then
         call set_vector (this, name, default)
-#if defined(NAG_WORKAROUND2)
+#ifdef NO_2008_SOURCED_ALLOC_ARRAY
         allocate(value(lbound(default,1):ubound(default,1)),source=default)
 #else
         allocate(value,source=default)
@@ -997,14 +991,14 @@ contains
     class(parameter_list), intent(in) :: plist
     logical, intent(in), optional :: sublists_only
     type(parameter_list_iterator) :: iter
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
     class(*), pointer :: uptr
 #endif
     if (present(sublists_only)) iter%sublists_only = sublists_only
     iter%mapit = map_any_iterator(plist%params)
     if (iter%sublists_only) then
       do while (.not.iter%mapit%at_end())
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
         uptr => iter%mapit%value()
         select type (uptr)
 #else
@@ -1021,13 +1015,13 @@ contains
   !! Advances the iterator to the next parameter.
   subroutine iter_next (this)
     class(parameter_list_iterator), intent(inout) :: this
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
     class(*), pointer :: uptr
 #endif
     call this%mapit%next
     if (this%sublists_only) then
       do while (.not.this%mapit%at_end())
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
         uptr => this%mapit%value()
         select type (uptr)
 #else
@@ -1103,13 +1097,10 @@ contains
   function iter_scalar (this) result (scalar)
     class(parameter_list_iterator), intent(in) :: this
     class(*), pointer :: scalar
-#if defined(INTEL_WORKAROUND) || defined(NAG_WORKAROUND1)
     class(*), pointer :: uptr
     uptr => this%mapit%value()
     select type (uptr)
-#else
-    select type (uptr => this%mapit%value())
-#endif
+    !select type (uptr => this%mapit%value()) Requires F2008, R602/C602
     class is (any_scalar)
       scalar => uptr%value_ptr()
     class default
@@ -1123,13 +1114,10 @@ contains
   function iter_vector (this) result (vector)
     class(parameter_list_iterator), intent(in) :: this
     class(*), pointer :: vector(:)
-#if defined(INTEL_WORKAROUND) || defined(NAG_WORKAROUND1)
     class(*), pointer :: uptr
     uptr => this%mapit%value()
     select type (uptr)
-#else
-    select type (uptr => this%mapit%value())
-#endif
+    !select type (uptr => this%mapit%value()) Requires F2008, R602/C602
     class is (any_vector)
       vector => uptr%value_ptr()
     class default
@@ -1142,13 +1130,10 @@ contains
   function iter_sublist (this) result (sublist)
     class(parameter_list_iterator), intent(in) :: this
     class(parameter_list), pointer :: sublist
-#if (defined(INTEL_WORKAROUND) || defined(NAG_WORKAROUND1))
     class(*), pointer :: uptr
     uptr => this%mapit%value()
     select type (uptr)
-#else
-    select type (uptr => this%mapit%value())
-#endif
+    !select type (uptr => this%mapit%value()) Requires F2008, R602/C602
     class is (parameter_list)
       sublist => uptr
     class default

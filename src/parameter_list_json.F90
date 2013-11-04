@@ -93,11 +93,6 @@
 !!   integer when parsed by JSON.
 !!
 
-#ifdef __INTEL_COMPILER
-#define INTEL_WORKAROUND
-#define INTEL_WORKAROUND3
-#endif
-
 #include "f90_assert.fpp"
 
 module parameter_list_json
@@ -192,9 +187,6 @@ contains
     integer, parameter :: BUFFER_SIZE = 4096
     character(kind=c_char) :: buffer(BUFFER_SIZE)
     integer :: buflen, last_pos, curr_pos, ios
-#ifdef INTEL_WORKAROUND3
-    integer :: offset, bufsize
-#endif
 
     !TODO: check unit is open with unformatted stream access
 
@@ -207,39 +199,19 @@ contains
 
     inquire(unit,pos=last_pos)  ! starting position in stream
     do
+#ifdef INTEL_DPD200237439
+      do buflen = 1, size(buffer)
+        read(10,iostat=ios) buffer(buflen)
+        if (ios /= 0) exit
+      end do
+#else
       read(unit,iostat=ios) buffer
+#endif
       if (ios /= 0 .and. ios /= iostat_end) then
         write(error_unit,'(a,i0)') 'read error: iostat=', ios
         exit
       end if
 
-#ifdef INTEL_WORKAROUND3
-      !! The intel compiler doesn't advance the file position at all when the
-      !! EOF is encountered.  This means we don't know how many characters
-      !! were read before the EOF.  So we keep re-reading, halving the buffer
-      !! size each time until the buffer size is 0.  For successful reads we
-      !! keep the characters read (we know how many).  This way we fill up the
-      !! buffer with all the remaining characters and know how many there are.
-      if (ios == iostat_end) then ! file position not advanced
-        offset = 0
-        bufsize = size(buffer)/2
-        do
-          read(unit,iostat=ios) buffer(offset+1:offset+bufsize)
-          if (ios /= 0 .and. ios /= iostat_end) then
-            write(error_unit,'(a,i0)') 'read error: iostat=', ios
-            exit
-          end if
-          if (ios == iostat_end) then
-            if (bufsize == 1) exit
-          else
-            offset = offset + bufsize
-          end if
-          bufsize = max(1, bufsize/2)
-        end do
-        if (ios /= iostat_end) exit
-      end if
-
-#endif
       inquire(unit,pos=curr_pos)
       buflen = curr_pos - last_pos
       last_pos = curr_pos
@@ -249,6 +221,9 @@ contains
           errmsg = fyajl_get_error(parser, .true., buffer(:buflen))
           if (stat == FYAJL_STATUS_CLIENT_CANCELED) errmsg = errmsg // builder%errmsg
           deallocate(plist)
+#ifdef INTEL_DPD200249493
+          nullify(plist)
+#endif
           INSIST(.not.associated(plist))
           exit
         end if
@@ -347,15 +322,17 @@ contains
     class(plist_builder) :: this
     integer(fyajl_integer_kind), intent(in) :: value
     type(parameter_list), pointer :: plist
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
     class(*), pointer :: uptr
+#endif
+#ifdef INTEL_DPD200237121
     integer :: pval
 #endif
     !TODO: check for overflow from mismatched integer types.
     select case (this%state)
     case (STATE_PVAL)
       plist => this%pstack%peek() ! get current parameter list context
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237121
       pval = int(value)
       call plist%set (this%name, pval)  ! create the parameter
 #else
@@ -366,7 +343,7 @@ contains
     case (STATE_AVAL)
       if (.not.this%values%is_empty()) then
         !! Verify that the other values are integers too.
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
         uptr => this%values%peek()
         select type (uptr)
 #else
@@ -379,7 +356,7 @@ contains
           return
         end select
       end if
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237121
       pval = int(value)
       call this%values%push (pval) ! save the value for later use
 #else
@@ -397,7 +374,7 @@ contains
     class(plist_builder) :: this
     real(fyajl_real_kind), intent(in) :: value
     type(parameter_list), pointer :: plist
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
     class(*), pointer :: uptr
 #endif
     !TODO: check for overflow from mismatched real types.
@@ -410,7 +387,7 @@ contains
     case (STATE_AVAL)
       if (.not.this%values%is_empty()) then
         !! Verify that the other values are doubles too.
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
         uptr => this%values%peek()
         select type (uptr)
 #else
@@ -436,7 +413,7 @@ contains
     class(plist_builder) :: this
     logical, intent(in) :: value
     type(parameter_list), pointer :: plist
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
     class(*), pointer :: uptr
 #endif
     select case (this%state)
@@ -448,7 +425,7 @@ contains
     case (STATE_AVAL)
       if (.not.this%values%is_empty()) then
         !! Verify that the other values are logical too.
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
         uptr => this%values%peek()
         select type (uptr)
 #else
@@ -474,7 +451,7 @@ contains
     class(plist_builder) :: this
     character(*), intent(in) :: value
     type(parameter_list), pointer :: plist
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
     class(*), pointer :: uptr
 #endif
     select case (this%state)
@@ -486,7 +463,7 @@ contains
     case (STATE_AVAL)
       if (.not.this%values%is_empty()) then
         !! Verify that the other values are strings too.
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
         uptr => this%values%peek()
         select type (uptr)
 #else
@@ -526,13 +503,13 @@ contains
 
   integer function end_array (this) result (status)
     class(plist_builder) :: this
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
     class(*), pointer :: uptr
 #endif
     select case (this%state)
     case (STATE_AVAL)
       if (this%values%size() > 0) then
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
         uptr => this%values%peek()
         select type (uptr)
 #else
@@ -565,13 +542,13 @@ contains
       class(plist_builder) :: this
       integer, allocatable :: array(:)
       type(parameter_list), pointer :: plist
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
       class(*), pointer :: uptr
 #endif
       integer :: n
       allocate(array(this%values%size()))
       do n = 1, size(array)
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
         uptr => this%values%peek()
         select type (uptr)
 #else
@@ -589,13 +566,13 @@ contains
       class(plist_builder) :: this
       logical, allocatable :: array(:)
       type(parameter_list), pointer :: plist
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
       class(*), pointer :: uptr
 #endif
       integer :: n
       allocate(array(this%values%size()))
       do n = 1, size(array)
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
         uptr => this%values%peek()
         select type (uptr)
 #else
@@ -613,13 +590,13 @@ contains
       class(plist_builder) :: this
       real(kind(1.0d0)), allocatable :: array(:)
       type(parameter_list), pointer :: plist
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
       class(*), pointer :: uptr
 #endif
       integer :: n
       allocate(array(this%values%size()))
       do n = 1, size(array)
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
         uptr => this%values%peek()
         select type (uptr)
 #else
@@ -638,13 +615,13 @@ contains
       class(plist_builder) :: this
       character(:), allocatable :: array(:)
       type(parameter_list), pointer :: plist
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
       class(*), pointer :: uptr
 #endif
       integer :: n
       allocate(character(this%maxlen) :: array(this%values%size()))
       do n = 1, size(array)
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
         uptr => this%values%peek()
         select type (uptr)
 #else
@@ -682,7 +659,7 @@ contains
   subroutine unexpected_array_type (this, errmsg)
     class(plist_builder), intent(in) :: this
     character(:), allocatable :: errmsg
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
     class(*), pointer :: uptr
     uptr => this%values%peek()
     select type (uptr)
@@ -824,7 +801,7 @@ contains
 
     type(parameter_list_iterator) :: piter
     logical :: first_param
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
     class(parameter_entry), pointer :: pentry
 #endif
 
@@ -837,7 +814,7 @@ contains
         write(unit,'(a)') ','
       end if
       write(unit,'(a)',advance='no') indent // '"' // piter%name() // '"'
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
       pentry => piter%entry()
       select type (pentry)
 #else
