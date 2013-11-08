@@ -1,7 +1,3 @@
-#ifdef __INTEL_COMPILER
-#define INTEL_WORKAROUND
-#endif
-
 program example
 
   use map_any_type
@@ -9,7 +5,7 @@ program example
   type(map_any) :: map, map_copy
   type(map_any_iterator) :: iter
   class(*), pointer :: value
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
   class(*), pointer :: uptr
 #endif
 
@@ -38,7 +34,7 @@ program example
   !! Write the contents.
   iter = map_any_iterator(map)
   do while (.not.iter%at_end())
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200237118
     uptr => iter%value()
     select type (uptr)
 #else

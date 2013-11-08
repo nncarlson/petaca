@@ -31,11 +31,11 @@ program test_map_any_type
 
   integer :: stat = 0
 
-  call test_insertion_removal
-  call test_value_retrieval
-  call test_map_overwrite
-  call test_iterator
-  call test_clear
+  !call test_insertion_removal
+  !call test_value_retrieval
+  !call test_map_overwrite
+  !call test_iterator
+  !call test_clear
   call test_assignment
 
   call exit (stat)

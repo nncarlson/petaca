@@ -22,14 +22,6 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#ifdef __INTEL_COMPILER
-#define INTEL_WORKAROUND
-#endif
-
-#ifdef NAGFOR
-#define NAG_WORKAROUND1
-#endif
-
 program test_parameter_list_type
 
   use parameter_list_type
@@ -435,9 +427,7 @@ contains
     type(parameter_list_iterator) :: piter
 
     type point; real x, y; end type
-#if defined(INTEL_WORKAROUND) || defined(NAG_WORKAROUND1)
     class(parameter_entry), pointer :: pentry
-#endif
     class(*), pointer :: scalar, scalar1, vector(:), vector1(:)
 
     !! Populate a parameter list.
@@ -461,12 +451,8 @@ contains
     !! Walk the list again and check values this time.
     piter = parameter_list_iterator(p)
     do while (.not.piter%at_end())
-#if defined(INTEL_WORKAROUND) || defined(NAG_WORKAROUND1)
       pentry => piter%entry()
       select type (pentry)
-#else
-      select type (pentry => piter%entry())
-#endif
       type is (any_scalar)
         if (.not.piter%is_scalar()) call write_fail ('test_iterator failed test 6')
         if (piter%is_list()) call write_fail ('test_iterator failed test 7')

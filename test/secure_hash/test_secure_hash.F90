@@ -22,10 +22,6 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#ifdef __INTEL_COMPILER
-#define INTEL_WORKAROUND
-#endif
-
 module valid_hash_function
 
   use md5_hash_type
@@ -44,7 +40,7 @@ module valid_hash_function
 contains
 
   logical function valid_hash_aux (h)
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_NO_EXECUTE_COMMAND_LINE
     use ifport, only: system
 #endif
     class(secure_hash), intent(inout) :: h
@@ -61,7 +57,7 @@ contains
     type is (sha1_hash)
       command = 'sha1sum --quiet -c file.sum'
     end select
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_NO_EXECUTE_COMMAND_LINE
     comstat = system(command)
 #else
     call execute_command_line (command, exitstat=comstat)

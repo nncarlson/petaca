@@ -41,10 +41,6 @@
 !!    to a missing implementation of a Fortran 2008 feature.
 !!
 
-#ifdef __INTEL_COMPILER
-#define INTEL_WORKAROUND
-#endif
-
 #include "f90_assert.fpp"
 
 module secure_hash_factory
@@ -58,7 +54,7 @@ module secure_hash_factory
   public :: secure_hash, new_secure_hash
 
   interface new_secure_hash
-#ifdef INTEL_WORKAROUND
+#ifdef INTEL_DPD200242779
     ! Intel compiler can't distinguish the two specifics per F2008
     procedure new_secure_hash_alloc!, new_secure_hash_ptr
 #else
