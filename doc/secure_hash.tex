@@ -1,0 +1,73 @@
+\documentclass[11pt]{article}
+
+\usepackage[latin1]{inputenc}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+
+\usepackage{underscore}
+\usepackage{verbatim}
+\usepackage{enumitem}
+
+\usepackage[nofancy]{latex2man}
+
+\usepackage[margin=1.25in,letterpaper]{geometry}
+
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+%%% SET THE DATE
+\setDate{August 2013}
+\setVersion{1.0}
+
+\begin{Name}{3}{Secure Hashes}{Neil N. Carlson}{Petaca}{Secure Hashes}
+%%% THE ABSTRACT GOES HERE
+This collection of modules provides a common interface to several different
+secure hash or message digest algorithms.  Currently only MD5 and SHA1 are
+implemented, but others are easily implemented within the provided framework.
+\end{Name}
+
+\section{Synopsis}
+\begin{description}[style=nextline]
+\item[Usage]
+  \verb+use :: map_any_type+
+\item[Derived Types]
+  \texttt{map_any},\texttt{ map_any_iterator}
+\item[Parameters]
+\end{description}
+
+\section{Mo}
+
+module secure_hash_class defines the abstract base class secure_hash
+from which specific secure hash algorithms are derived.  It has the
+methods update, hexdigest, reset.
+
+instantiation.
+
+
+m = md5_hash()
+
+\section{SECTION TITLE}
+
+\subsection{Type bound subroutines}
+\begin{description}[style=nextline]\setlength{\itemsep}{0pt}
+\item[\texttt{some_subroutine(and_its_arguments)}]
+\end{description}
+
+\subsection{Type bound functions}
+\begin{description}[style=nextline]\setlength{\itemsep}{0pt}
+\item[\texttt{some_function(and_its_arguments)}]
+\end{description}
+
+\section{Example}
+\begin{verbatim}
+%%% SOME EXAMPLE CODE
+\end{verbatim}
+
+\section{Bugs}
+Bug reports and improvement suggestions should be directed to
+\Email{neil.n.carlson@gmail.com}
+
+\LatexManEnd
+
+\end{document}
