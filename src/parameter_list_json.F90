@@ -554,8 +554,10 @@ contains
 #else
         select type (uptr => this%values%peek())
 #endif
-        type is (integer(fyajl_integer_kind))
+        type is (integer)
           array(n) = uptr
+        class default
+          INSIST(.false.)
         end select
         call this%values%pop()
       end do
@@ -580,6 +582,8 @@ contains
 #endif
         type is (logical)
           array(n) = uptr
+        class default
+          INSIST(.false.)
         end select
         call this%values%pop()
       end do
@@ -604,6 +608,8 @@ contains
 #endif
         type is (real(fyajl_real_kind))
           array(n) = uptr
+        class default
+          INSIST(.false.)
         end select
         call this%values%pop()
       end do
@@ -629,6 +635,8 @@ contains
 #endif
         type is (character(*))
           array(n) = uptr
+        class default
+          INSIST(.false.)
         end select
         call this%values%pop()
       end do
