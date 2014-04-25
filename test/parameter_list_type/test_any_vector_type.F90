@@ -59,14 +59,30 @@ contains
 
     call x%get_value (val, errc)
     if (errc) call write_fail ('test_set_get_int32 failed test 1')
-    if (any(val /= [5,7])) call write_fail ('test_set_get_int32 failed test 2')
+    if (.not.allocated(val)) then
+      call write_fail ('test_set_get_int32 failed test 1b')
+    else
+      if (size(val) /= 2) then
+        call write_fail ('test_set_get_int32 failed test 1c')
+      else
+        if (any(val /= [5,7])) call write_fail ('test_set_get_int32 failed test 2')
+      end if
+    end if
     call x%get_value (bad, errc)
     if (.not.errc) call write_fail ('test_set_get_int32 failed test 3')
 
     call x%set_value ([11_int32]) ! overwrite
     call x%get_value (val, errc)
     if (errc) call write_fail ('test_set_get_int32 failed test 4')
-    if (any(val /= [11])) call write_fail ('test_set_get_int32 failed test 5')
+    if (.not.allocated(val)) then
+      call write_fail ('test_set_get_int32 failed test 4b')
+    else
+      if (size(val) /= 1) then
+        call write_fail ('test_set_get_int32 failed test 4c')
+      else
+        if (any(val /= [11])) call write_fail ('test_set_get_int32 failed test 5')
+      end if
+    end if
 
   end subroutine
 
@@ -81,14 +97,30 @@ contains
 
     call x%get_value (val, errc)
     if (errc) call write_fail ('test_set_get_int64 failed test 1')
-    if (any(val /= [5,7])) call write_fail ('test_set_get_int64 failed test 2')
+    if (.not.allocated(val)) then
+      call write_fail ('test_set_get_int64 failed test 1b')
+    else
+      if (size(val) /= 2) then
+        call write_fail ('test_set_get_int64 failed test 1c')
+      else
+        if (any(val /= [5,7])) call write_fail ('test_set_get_int64 failed test 2')
+      end if
+    end if
     call x%get_value (bad, errc)
     if (.not.errc) call write_fail ('test_set_get_int64 failed test 3')
 
     call x%set_value ([11_int64]) ! overwrite
     call x%get_value (val, errc)
     if (errc) call write_fail ('test_set_get_int64 failed test 4')
-    if (any(val /= [11])) call write_fail ('test_set_get_int64 failed test 5')
+    if (.not.allocated(val)) then
+      call write_fail ('test_set_get_int64 failed test 4b')
+    else
+      if (size(val) /= 1) then
+        call write_fail ('test_set_get_int64 failed test 4c')
+      else
+        if (any(val /= [11])) call write_fail ('test_set_get_int64 failed test 5')
+      end if
+    end if
 
   end subroutine
 
@@ -103,14 +135,30 @@ contains
 
     call x%get_value (val, errc)
     if (errc) call write_fail ('test_set_get_real32 failed test 1')
-    if (any(val /= [5.0,7.0])) call write_fail ('test_set_get_real32 failed test 2')
+    if (.not.allocated(val)) then
+      call write_fail ('test_set_get_real32 failed test 1b')
+    else
+      if (size(val) /= 2) then
+        call write_fail ('test_set_get_real32 failed test 1c')
+      else
+        if (any(val /= [5.0,7.0])) call write_fail ('test_set_get_real32 failed test 2')
+      end if
+    end if
     call x%get_value (bad, errc)
     if (.not.errc) call write_fail ('test_set_get_real32 failed test 3')
 
     call x%set_value ([11.0_real32]) ! overwrite
     call x%get_value (val, errc)
     if (errc) call write_fail ('test_set_get_real32 failed test 4')
-    if (any(val /= [11.0])) call write_fail ('test_set_get_real32 failed test 5')
+    if (.not.allocated(val)) then
+      call write_fail ('test_set_get_real32 failed test 4b')
+    else
+      if (size(val) /= 1) then
+        call write_fail ('test_set_get_real32 failed test 4c')
+      else
+        if (any(val /= [11.0])) call write_fail ('test_set_get_real32 failed test 5')
+      end if
+    end if
 
   end subroutine
 
@@ -125,14 +173,30 @@ contains
 
     call x%get_value (val, errc)
     if (errc) call write_fail ('test_set_get_real64 failed test 1')
-    if (any(val /= [5.0,7.0])) call write_fail ('test_set_get_real64 failed test 2')
+    if (.not.allocated(val)) then
+      call write_fail ('test_set_get_real64 failed test 1b')
+    else
+      if (size(val) /= 2) then
+        call write_fail ('test_set_get_real64 failed test 1c')
+      else
+        if (any(val /= [5.0,7.0])) call write_fail ('test_set_get_real64 failed test 2')
+      end if
+    end if
     call x%get_value (bad, errc)
     if (.not.errc) call write_fail ('test_set_get_real64 failed test 3')
 
     call x%set_value ([11.0_real64]) ! overwrite
     call x%get_value (val, errc)
     if (errc) call write_fail ('test_set_get_real64 failed test 4')
-    if (any(val /= [11.0])) call write_fail ('test_set_get_real64 failed test 5')
+    if (.not.allocated(val)) then
+      call write_fail ('test_set_get_real64 failed test 4b')
+    else
+      if (size(val) /= 1) then
+        call write_fail ('test_set_get_real64 failed test 4c')
+      else
+        if (any(val /= [11.0])) call write_fail ('test_set_get_real64 failed test 5')
+      end if
+    end if
 
   end subroutine
 
@@ -147,14 +211,30 @@ contains
 
     call x%get_value (val, errc)
     if (errc) call write_fail ('test_set_get_logical failed test 1')
-    if (any(val .neqv. [.true.,.false.])) call write_fail ('test_set_get_logical failed test 2')
+    if (.not.allocated(val)) then
+      call write_fail ('test_set_get_logical failed test 1b')
+    else
+      if (size(val) /= 2) then
+        call write_fail ('test_set_get_logical failed test 1c')
+      else
+        if (any(val .neqv. [.true.,.false.])) call write_fail ('test_set_get_logical failed test 2')
+      end if
+    end if
     call x%get_value (bad, errc)
     if (.not.errc) call write_fail ('test_set_get_logical failed test 3')
 
     call x%set_value ([.false.]) ! overwrite
     call x%get_value (val, errc)
     if (errc) call write_fail ('test_set_get_logical failed test 4')
-    if (any(val .neqv. [.false.])) call write_fail ('test_set_get_logical failed test 5')
+    if (.not.allocated(val)) then
+      call write_fail ('test_set_get_logical failed test 4b')
+    else
+      if (size(val) /= 1) then
+        call write_fail ('test_set_get_logical failed test 4c')
+      else
+        if (any(val .neqv. [.false.])) call write_fail ('test_set_get_logical failed test 5')
+      end if
+    end if
 
   end subroutine
 
@@ -169,14 +249,30 @@ contains
 
     call x%get_value (val, errc)
     if (errc) call write_fail ('test_set_get_character failed test 1')
-    if (any(val /= ['foo','bar'])) call write_fail ('test_set_get_character failed test 2')
+    if (.not.allocated(val)) then
+      call write_fail ('test_set_get_character failed test 1b')
+    else
+      if (size(val) /= 2) then
+        call write_fail ('test_set_get_character failed test 1c')
+      else
+        if (any(val /= ['foo','bar'])) call write_fail ('test_set_get_character failed test 2')
+      end if
+    end if
     call x%get_value (bad, errc)
     if (.not.errc) call write_fail ('test_set_get_character failed test 3')
 
     call x%set_value (['fubar']) ! overwrite
     call x%get_value (val, errc)
     if (errc) call write_fail ('test_set_get_character failed test 4')
-    if (any(val /= ['fubar'])) call write_fail ('test_set_get_character failed test 5')
+    if (.not.allocated(val)) then
+      call write_fail ('test_set_get_character failed test 4b')
+    else
+      if (size(val) /= 1) then
+        call write_fail ('test_set_get_character failed test 4c')
+      else
+        if (any(val /= ['fubar'])) call write_fail ('test_set_get_character failed test 5')
+      end if
+    end if
 
   end subroutine
 
@@ -187,30 +283,54 @@ contains
 
     call x%set_value ([1,2,3])
     call x%get_value (val)
-    select type (val)
-    type is (integer)
-      if (any(val /= [1,2,3])) call write_fail ('test_get_value failed test 1')
-    class default
-      call write_fail ('test_get_value failed test 2')
-    end select
+    if (.not.allocated(val)) then
+      call write_fail ('test_get_value failed test 1b')
+    else
+      if (size(val) /= 3) then
+        call write_fail ('test_get_value failed test 1c')
+      else
+        select type (val)
+        type is (integer)
+          if (any(val /= [1,2,3])) call write_fail ('test_get_value failed test 1')
+        class default
+          call write_fail ('test_get_value failed test 2')
+        end select
+      end if
+    end if
 
     call x%set_value ([1.0,3.14])
     call x%get_value (val)
-    select type (val)
-    type is (real)
-      if (any(val /= [1.0,3.14])) call write_fail ('test_get_value failed test 3')
-    class default
-      call write_fail ('test_get_value failed test 4')
-    end select
+    if (.not.allocated(val)) then
+      call write_fail ('test_get_value failed test 3b')
+    else
+      if (size(val) /= 2) then
+        call write_fail ('test_get_value failed test 3c')
+      else
+        select type (val)
+        type is (real)
+          if (any(val /= [1.0,3.14])) call write_fail ('test_get_value failed test 3')
+        class default
+          call write_fail ('test_get_value failed test 4')
+        end select
+      end if
+    end if
 
     call x%set_value (['biz','bat'])
     call x%get_value (val)
-    select type (val)
-    type is (character(*))
-      if (any(val /= ['biz','bat'])) call write_fail ('test_get_value failed test 5')
-    class default
-      call write_fail ('test_get_value failed test 6')
-    end select
+    if (.not.allocated(val)) then
+      call write_fail ('test_get_value failed test 5b')
+    else
+      if (size(val) /= 2) then
+        call write_fail ('test_get_value failed test 5c')
+      else
+        select type (val)
+        type is (character(*))
+          if (any(val /= ['biz','bat'])) call write_fail ('test_get_value failed test 5')
+        class default
+          call write_fail ('test_get_value failed test 6')
+        end select
+      end if
+    end if
 
   end subroutine
 

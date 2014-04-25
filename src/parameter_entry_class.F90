@@ -347,12 +347,27 @@ contains
     logical, intent(out) :: errc
     select type (v => this%value)
     type is (integer(int32))
+#ifdef INTEL_DPD200255963
+      if (allocated(value)) deallocate(value)
+      allocate(value(size(v)), source=v)
+#else
       value = v
+#endif
       errc = .false.
     class default
       errc = .true.
     end select
   end subroutine
+
+! A fragment that does what F2003 automatic reallocation should do:
+!if (allocated(this%value)) then
+!  if (allocated(value)) then
+!    if (size(value) /= size(value)) deallocate(value)
+!  end if
+!  if (.not.allocated(value)) allocate(value(size(this%value))
+!else
+!  if (allocated(value)) deallocate(value)
+!end if
 
   !! Return a int64 kind integer value.
   subroutine get_vector_int64 (this, value, errc)
@@ -361,7 +376,12 @@ contains
     logical, intent(out) :: errc
     select type (v => this%value)
     type is (integer(int64))
+#ifdef INTEL_DPD200255963
+      if (allocated(value)) deallocate(value)
+      allocate(value(size(v)), source=v)
+#else
       value = v
+#endif
       errc = .false.
     class default
       errc = .true.
@@ -375,7 +395,12 @@ contains
     logical, intent(out) :: errc
     select type (v => this%value)
     type is (real(real32))
+#ifdef INTEL_DPD200255963
+      if (allocated(value)) deallocate(value)
+      allocate(value(size(v)), source=v)
+#else
       value = v
+#endif
       errc = .false.
     class default
       errc = .true.
@@ -389,7 +414,12 @@ contains
     logical, intent(out) :: errc
     select type (v => this%value)
     type is (real(real64))
+#ifdef INTEL_DPD200255963
+      if (allocated(value)) deallocate(value)
+      allocate(value(size(v)), source=v)
+#else
       value = v
+#endif
       errc = .false.
     class default
       errc = .true.
@@ -402,7 +432,12 @@ contains
     logical, intent(out) :: errc
     select type (v => this%value)
     type is (character(*))
+#ifdef INTEL_DPD200255963
+      if (allocated(value)) deallocate(value)
+      allocate(value(size(v)), source=v)
+#else
       value = v
+#endif
       errc = .false.
     class default
       errc = .true.
@@ -415,7 +450,12 @@ contains
     logical, intent(out) :: errc
     select type (v => this%value)
     type is (logical)
+#ifdef INTEL_DPD200255963
+      if (allocated(value)) deallocate(value)
+      allocate(value(size(v)), source=v)
+#else
       value = v
+#endif
       errc = .false.
     class default
       errc = .true.
