@@ -73,6 +73,7 @@ contains
 
   elemental integer(int32) function swap32 (in) result (out)
     integer(int32), intent(in) :: in
+    out = 0 ! that argument of MVBITS is INTENT(INOUT)
     call mvbits (in,  0, 8, out, 24)
     call mvbits (in,  8, 8, out, 16)
     call mvbits (in, 16, 8, out,  8)
@@ -81,6 +82,7 @@ contains
 
   elemental integer(int64) function swap64 (in) result (out)
     integer(int64), intent(in) :: in
+    out = 0 ! that argument of MVBITS is INTENT(INOUT)
     call mvbits (in,  0, 8, out, 56)
     call mvbits (in,  8, 8, out, 48)
     call mvbits (in, 16, 8, out, 40)
