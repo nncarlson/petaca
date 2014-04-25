@@ -7,26 +7,26 @@ type you will need to add this flag yourself.  The default behavior of the
 compiler is to use non-standard semantics (pre-F2003) and this will break
 some parts of the library that rely on the modern standard.
 
-There is an optimization bug in the current version (14.0.2) and earlier
-that is not exposed by the library itself, but may likely be exposed by
-application code that uses the fortran_dynamic_linking module (see the
-test_fortran_dynamic_linking.F90 unit test, as an example).  The type of
-construct that triggers the bug is as follows
+TIPS
+----
+
+When using the fortran_dynamic_linking module you may find yourself needing
+to define an interface to a C function that uses call-by-value.  Suppose the
+function signature is "float cbrtf(float)".  The required interface and code
+would look like
 
   abstract interface
-    real function f(x)
-      real, value :: x  ! the value attribute is the likely culprit
+    real function f(x) bind(c)
+      real, value :: x
     end function
   end interface
   procedure(f), pointer :: fptr
-  
-  type(shlib) :: libm
-  type(c_funptr)  :: funptr
-
-  call libm%open ('libm.so', RTLD_NOW)
-  call libm%func ('cbrtf', funptr)  ! cube root function
+  type(c_funptr) :: funptr
+  ...
   call c_f_procpointer (funptr, fptr)
-  ! A call to fptr() is not set-up properly; e.g., fptr(8.0) /= 2.0
 
-The solution is to disable optimization for the the file (-O0), or
-to compile without -standard-semantics.
+For portability the BIND(C) is required to ensure that the VALUE attribute
+is interpreted as C's pass-by-value.  Without the BIND(C), the interpretation
+of the VALUE attribute may differ from compiler to compiler.
+
+See test_fortran_dynamic_linking.F90 for a full example.

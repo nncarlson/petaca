@@ -9,7 +9,7 @@ program shlib_type_test
   implicit none
 
   abstract interface
-    real function f(x)
+    real function f(x) bind(c)
       real, value :: x
     end function
   end interface
