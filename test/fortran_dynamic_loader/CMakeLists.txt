@@ -15,3 +15,9 @@ add_test(fortran_dynamic_loader test_fortran_dynamic_loader)
 
 # Shared library loaded by the test.
 add_library(mylib SHARED mylib.F90)
+
+### Work-around for Intel optimizer bug (14.0.2 and earlier)
+if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+  set_source_files_properties(test_fortran_dynamic_loader.F90 PROPERTIES
+                              COMPILE_FLAGS -O0)
+endif()
