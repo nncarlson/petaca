@@ -1,7 +1,7 @@
 If using the Intel Compiler ...
 -------------------------------
 
-The cmake configuration automatically uses the -standard-semantics compiler
+The cmake configuration automatically uses the "-assume realloc_lhs" compiler
 flag for the Debug and Release build types.  If you use a different build
 type you will need to add this flag yourself.  The default behavior of the
 compiler is to use non-standard semantics (pre-F2003) and this will break
