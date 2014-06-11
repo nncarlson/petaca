@@ -142,7 +142,7 @@ module parameter_list_type
   implicit none
   private
 
-  public :: parameter_entry, any_scalar, any_vector
+  public :: parameter_entry, any_scalar, any_vector, any_matrix
 
   type, extends(parameter_entry), public :: parameter_list
     private
@@ -153,16 +153,20 @@ module parameter_list_type
     procedure :: is_sublist
     procedure :: count
     procedure :: sublist
-    generic :: set => set_scalar, set_vector
+    generic :: set => set_scalar, set_vector, set_matrix
     procedure, private :: set_scalar
     procedure, private :: set_vector
-    generic :: get_any => get_any_scalar, get_any_vector
+    procedure, private :: set_matrix
+    generic :: get_any => get_any_scalar, get_any_vector, get_any_matrix
     procedure, private :: get_any_scalar
     procedure, private :: get_any_vector
+    procedure, private :: get_any_matrix
     generic :: get => get_scalar_logical, get_scalar_string, &
                get_scalar_int32, get_scalar_int64, get_scalar_real32, get_scalar_real64, &
                get_vector_logical, get_vector_string, &
-               get_vector_int32, get_vector_int64, get_vector_real32, get_vector_real64
+               get_vector_int32, get_vector_int64, get_vector_real32, get_vector_real64, &
+               get_matrix_logical, get_matrix_string, &
+               get_matrix_int32, get_matrix_int64, get_matrix_real32, get_matrix_real64
     procedure, private :: get_scalar_int32
     procedure, private :: get_scalar_int64
     procedure, private :: get_scalar_real32
@@ -175,6 +179,12 @@ module parameter_list_type
     procedure, private :: get_vector_real64
     procedure, private :: get_vector_logical
     procedure, private :: get_vector_string
+    procedure, private :: get_matrix_int32
+    procedure, private :: get_matrix_int64
+    procedure, private :: get_matrix_real32
+    procedure, private :: get_matrix_real64
+    procedure, private :: get_matrix_logical
+    procedure, private :: get_matrix_string
   end type
 
   type, public :: parameter_list_iterator
@@ -189,9 +199,11 @@ module parameter_list_type
     procedure :: is_list => iter_is_list
     procedure :: is_scalar => iter_is_scalar
     procedure :: is_vector => iter_is_vector
+    procedure :: is_matrix => iter_is_matrix
     procedure :: sublist => iter_sublist
     procedure :: scalar => iter_scalar
     procedure :: vector => iter_vector
+    procedure :: matrix => iter_matrix
     procedure :: count => iter_count
   end type parameter_list_iterator
 
@@ -278,6 +290,21 @@ contains
     end if
   end function cast_to_any_vector
 
+  !! Casts a CLASS(PARAMETER_ENTRY) pointer to a CLASS(ANY_MATRIX) pointer
+  !! provided the dynamic type of the pointer is of that class; otherwise a
+  !! null pointer is returned.
+  function cast_to_any_matrix (pentry) result (cast)
+    class(parameter_entry), pointer, intent(in) :: pentry
+    class(any_matrix), pointer :: cast
+    cast => null()
+    if (associated(pentry)) then
+      select type (pentry)
+      type is (any_matrix)
+        cast => pentry
+      end select
+    end if
+  end function cast_to_any_matrix
+
   !!!! OTHER AUXILLARY ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !! Returns a pointer to the parameter entry in the parameter list that
@@ -325,6 +352,21 @@ contains
     entry => cast_to_any_vector(find_entry(map, name))
 #endif
   end function find_any_vector_entry
+
+  !! Returns a CLASS(ANY_MATRIX) pointer to the named parameter value.
+  !! Pointer is null if no such parameter exists or is of the wrong kind.
+  function find_any_matrix_entry (map, name) result (entry)
+    class(map_any), intent(in) :: map
+    character(*), intent(in) :: name
+    class(any_matrix), pointer :: entry
+#ifdef INTEL_PRE_14_0_0
+    class(parameter_entry), pointer :: pentry
+    pentry => find_entry(map, name)
+    entry => cast_to_any_matrix(pentry)
+#else
+    entry => cast_to_any_matrix(find_entry(map, name))
+#endif
+  end function find_any_matrix_entry
 
   !! Returns a CLASS(PARAMETER_LIST) pointer to the named parameter sublist.
   !! Pointer is null if no such parameter exists or is of the wrong kind.
@@ -483,6 +525,37 @@ contains
 
   end subroutine set_vector
 
+  !! Sets the rank-2 array value of the named parameter.  If the parameter
+  !! exists, its value, which must be of type ANY_MATRIX, is overwritten with
+  !! the given value. If an error is encountered, STAT and ERRMSG return info.
+
+  subroutine set_matrix (this, name, value, stat, errmsg)
+
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    class(*), intent(in) :: value(:,:)
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+
+    class(parameter_entry), pointer :: pentry
+
+    call error_clear (stat, errmsg)
+    pentry => find_entry(this%params, name)
+    if (associated(pentry)) then
+      select type (pentry)
+      type is (parameter_list)
+        call error ('parameter is a sublist: "' // name // '"', stat, errmsg)
+      type is (any_matrix)
+        call pentry%set_value (value)
+      class default
+        call error ('not a matrix parameter: "' // name // '"', stat, errmsg)
+      end select
+    else
+      call this%params%insert(name, any_matrix(value))
+    end if
+
+  end subroutine set_matrix
+
   !! Returns the scalar value of the named parameter in the CLASS(*)
   !! allocatable variable VALUE.  If the named parameter does not exist
   !! and the optional argument DEFAULT is present, the parameter is
@@ -570,6 +643,56 @@ contains
     end if
 
   end subroutine get_any_vector
+
+  !! Returns the matrix value of the named parameter in the CLASS(*)
+  !! allocatable array VALUE.  If the named parameter does not exist
+  !! and the optional array DEFAULT is present, the parameter is
+  !! created and assigned the value specified by DEFAULT, and that value
+  !! returned by VALUE.  Otherwise it is an error.  It is an error if
+  !! the parameter exists and is a sublist, or it has a non-matrix value.
+
+  subroutine get_any_matrix (this, name, value, default, stat, errmsg)
+
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    class(*), allocatable, intent(out) :: value(:,:)
+    class(*), intent(in), optional :: default(:,:)
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+
+    class(parameter_entry), pointer :: pentry
+    class(*), pointer :: matrix(:,:)
+
+    call error_clear (stat, errmsg)
+    pentry => find_entry(this%params, name)
+    if (associated(pentry)) then
+      select type (pentry)
+      type is (any_matrix)
+        matrix => pentry%value_ptr()
+#ifdef NO_2008_SOURCED_ALLOC_ARRAY
+        allocate(value(lbound(matrix,1):ubound(matrix,1), &
+                       lbound(matrix,2):ubound(matrix,2)),source=matrix)
+#else
+        allocate(value,source=matrix)
+#endif
+      class default
+        call error ('not a matrix parameter: "' // name // '"', stat, errmsg)
+      end select
+    else
+      if (present(default)) then
+        call set_matrix (this, name, default)
+#ifdef NO_2008_SOURCED_ALLOC_ARRAY
+        allocate(value(lbound(default,1):ubound(default,1), &
+                       lbound(default,1):ubound(default,2)),source=default)
+#else
+        allocate(value,source=default)
+#endif
+      else
+        call error ('no such parameter: "' // name // '"', stat, errmsg)
+      end if
+    end if
+
+  end subroutine get_any_matrix
 
   !! The follow subroutines get the scalar value of the named parameter for
   !! various specific types.  If the parameter doesn't exist, it is created
@@ -979,6 +1102,210 @@ contains
 
   end subroutine get_vector_string
 
+  !! The follow subroutines get the rank-2 array value of the named parameter
+  !! for various specific types.  If the parameter doesn't exist, it is created
+  !! with the specified default value, if specified; otherwise it is an error.
+  !! It is an error if the parameter value type doesn't match the type of the
+  !! value argument.
+
+  subroutine get_matrix_int32 (this, name, value, default, stat, errmsg)
+
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    integer(int32), allocatable, intent(out) :: value(:,:)
+    integer(int32), intent(in), optional :: default(:,:)
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+
+    logical :: errc
+    class(parameter_entry), pointer :: pentry
+
+    call error_clear (stat, errmsg)
+    pentry => find_entry(this%params, name)
+    if (associated(pentry)) then
+      select type (pentry)
+      type is (any_matrix)
+        call pentry%get_value(value, errc)
+        if (errc) call error ('not an integer(int32) parameter: "' // name // '"', stat, errmsg)
+      class default
+        call error ('not a matrix parameter: "' // name // '"', stat, errmsg)
+      end select
+    else
+      if (present(default)) then
+        call set_matrix (this, name, default)
+        value = default
+      else
+        call error ('no such parameter: "' // name // '"', stat, errmsg)
+      end if
+    end if
+
+  end subroutine get_matrix_int32
+
+  subroutine get_matrix_int64 (this, name, value, default, stat, errmsg)
+
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    integer(int64), allocatable, intent(out) :: value(:,:)
+    integer(int64), intent(in), optional :: default(:,:)
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+
+    logical :: errc
+    class(parameter_entry), pointer :: pentry
+
+    call error_clear (stat, errmsg)
+    pentry => find_entry(this%params, name)
+    if (associated(pentry)) then
+      select type (pentry)
+      type is (any_matrix)
+        call pentry%get_value(value, errc)
+        if (errc) call error ('not an integer(int64) parameter: "' // name // '"', stat, errmsg)
+      class default
+        call error ('not a matrix parameter: "' // name // '"', stat, errmsg)
+      end select
+    else
+      if (present(default)) then
+        call set_matrix (this, name, default)
+        value = default
+      else
+        call error ('no such parameter: "' // name // '"', stat, errmsg)
+      end if
+    end if
+
+  end subroutine get_matrix_int64
+
+  subroutine get_matrix_real32 (this, name, value, default, stat, errmsg)
+
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    real(real32), allocatable, intent(out) :: value(:,:)
+    real(real32), intent(in), optional :: default(:,:)
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+
+    logical :: errc
+    class(parameter_entry), pointer :: pentry
+
+    call error_clear (stat, errmsg)
+    pentry => find_entry(this%params, name)
+    if (associated(pentry)) then
+      select type (pentry)
+      type is (any_matrix)
+        call pentry%get_value(value, errc)
+        if (errc) call error ('not an real(real64) parameter: "' // name // '"', stat, errmsg)
+      class default
+        call error ('not a matrix parameter: "' // name // '"', stat, errmsg)
+      end select
+    else
+      if (present(default)) then
+        call set_matrix (this, name, default)
+        value = default
+      else
+        call error ('no such parameter: "' // name // '"', stat, errmsg)
+      end if
+    end if
+
+  end subroutine get_matrix_real32
+
+  subroutine get_matrix_real64 (this, name, value, default, stat, errmsg)
+
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    real(real64), allocatable, intent(out) :: value(:,:)
+    real(real64), intent(in), optional :: default(:,:)
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+
+    logical :: errc
+    class(parameter_entry), pointer :: pentry
+
+    call error_clear (stat, errmsg)
+    pentry => find_entry(this%params, name)
+    if (associated(pentry)) then
+      select type (pentry)
+      type is (any_matrix)
+        call pentry%get_value(value, errc)
+        if (errc) call error ('not an real(real64) parameter: "' // name // '"', stat, errmsg)
+      class default
+        call error ('not a matrix parameter: "' // name // '"', stat, errmsg)
+      end select
+    else
+      if (present(default)) then
+        call set_matrix (this, name, default)
+        value = default
+      else
+        call error ('no such parameter: "' // name // '"', stat, errmsg)
+      end if
+    end if
+
+  end subroutine get_matrix_real64
+
+  subroutine get_matrix_logical (this, name, value, default, stat, errmsg)
+
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    logical, allocatable, intent(out) :: value(:,:)
+    logical, intent(in), optional :: default(:,:)
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+
+    logical :: errc
+    class(parameter_entry), pointer :: pentry
+
+    call error_clear (stat, errmsg)
+    pentry => find_entry(this%params, name)
+    if (associated(pentry)) then
+      select type (pentry)
+      type is (any_matrix)
+        call pentry%get_value (value, errc)
+        if (errc) call error ('not a logical parameter: "' // name // '"', stat, errmsg)
+      class default
+        call error ('not a matrix parameter: "' // name // '"', stat, errmsg)
+      end select
+    else
+      if (present(default)) then
+        call set_matrix (this, name, default)
+        value = default
+      else
+        call error ('no such parameter: "' // name // '"', stat, errmsg)
+      end if
+    end if
+
+  end subroutine get_matrix_logical
+
+  subroutine get_matrix_string (this, name, value, default, stat, errmsg)
+
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    character(:), allocatable, intent(out) :: value(:,:)
+    character(*), intent(in), optional :: default(:,:)
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+
+    logical :: errc
+    class(parameter_entry), pointer :: pentry
+
+    call error_clear (stat, errmsg)
+    pentry => find_entry(this%params, name)
+    if (associated(pentry)) then
+      select type (pentry)
+      type is (any_matrix)
+        call pentry%get_value (value, errc)
+        if (errc) call error ('not a string parameter: "' // name // '"', stat, errmsg)
+      class default
+        call error ('not a matrix parameter: "' // name // '"', stat, errmsg)
+      end select
+    else
+      if (present(default)) then
+        call set_matrix (this, name, default)
+        value = default
+      else
+        call error ('no such parameter: "' // name // '"', stat, errmsg)
+      end if
+    end if
+
+  end subroutine get_matrix_string
+
 !!!! PARAMETER_LIST_ITERATOR TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !! Defined PARAMETER_LIST_ITERATOR constructor that is positioned
@@ -1087,6 +1414,18 @@ contains
 #endif
   end function iter_is_vector
 
+  !! Returns true if the current parameter has a matrix value.
+  logical function iter_is_matrix (this) result (is_matrix)
+    class(parameter_list_iterator), intent(in) :: this
+#ifdef INTEL_PRE_14_0_0
+    class(parameter_entry), pointer :: pentry
+    pentry => iter_entry(this)
+    is_matrix = associated(cast_to_any_matrix(pentry))
+#else
+    is_matrix = associated(cast_to_any_matrix(iter_entry(this)))
+#endif
+  end function iter_is_matrix
+
   !! If the current parameter has a scalar value, return a CLASS(*)
   !! pointer to it; otherwise return a null pointer.
   !! N.B. See Note 1 regarding the NAG workaround.
@@ -1120,6 +1459,23 @@ contains
       vector => null()
     end select
   end function iter_vector
+
+  !! If the current parameter has a matrix value, return a CLASS(*)
+  !! rank-1 array pointer to it; otherwise return a null pointer.
+  !! N.B. See Note 1 regarding the NAG workaround.
+  function iter_matrix (this) result (matrix)
+    class(parameter_list_iterator), intent(in) :: this
+    class(*), pointer :: matrix(:,:)
+    class(*), pointer :: uptr
+    uptr => this%mapit%value()
+    select type (uptr)
+    !select type (uptr => this%mapit%value()) Requires F2008, R602/C602
+    class is (any_matrix)
+      matrix => uptr%value_ptr()
+    class default
+      matrix => null()
+    end select
+  end function iter_matrix
 
   !! If the current parameter is a sublist, return a pointer to it;
   !! otherwise return a null pointer.
