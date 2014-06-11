@@ -17,6 +17,10 @@ add_executable (test_any_vector_type test_any_vector_type.F90)
 target_link_libraries(test_any_vector_type petaca)
 add_test(any_vector test_any_vector_type)
 
+add_executable (test_any_matrix_type test_any_matrix_type.F90)
+target_link_libraries(test_any_matrix_type petaca)
+add_test(any_matrix test_any_matrix_type)
+
 add_executable (test_parameter_list_type test_parameter_list_type.F90)
 target_link_libraries(test_parameter_list_type petaca)
 add_test(parameter_list test_parameter_list_type)
