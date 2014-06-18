@@ -39,7 +39,8 @@ JSON-format text.
   \texttt{use parameter_list_json}
 \item[Derived Types]
   \texttt{parameter_list},\texttt{ parameter_list_iterator},\\
-  \texttt{ parameter_entry},\texttt{ any_scalar},\texttt{ any_vector}
+  \texttt{ parameter_entry},\texttt{ any_scalar},\texttt{ any_vector},%
+  \texttt{ any_matrix}
 \item[Procedures]
   \texttt{parameter_list_from_json_stream},
   \texttt{ parameter_list_to_json}
@@ -90,16 +91,18 @@ structure.  It has the following properties.
 \end{itemize}
 
 Values of the class \texttt{parameter_entry} are held as the parameter
-values in a parameter list.  There are three different derived types of
+values in a parameter list.  There are four different derived types of
 this class: \texttt{any_scalar}, which stores a scalar value of any intrinsic
 or derived type; \texttt{any_vector}, which stores a rank-1 array value of
-any intrinsic or derived type; and \texttt{parameter_list} itself, which
-gives rise to the hierarchical character of the parameter list data structure.
-For the most commo
+any intrinsic or derived type; \texttt{any_matrix}, which stores a rank-2
+array value of any intrinsic or derived type; and \texttt{parameter_list}
+itself, which gives rise to the hierarchical character of the parameter
+list data structure. %For the most commo
 
 \begin{description}
 \item[any_scalar] stores a scalar value of any intrinsic or derived type;
 \item[any_vector] stores a rank-1 array value of any intrinsic or derived type;
+\item[any_matrix] stores a rank-2 array value of any intrinsic or derived type;
 \item[parameter_list]
 \end{description}
 
@@ -116,8 +119,8 @@ error unit and the program terminates.
 \begin{description}[style=nextline]\setlength{\itemsep}{0pt}
 \item[\texttt{set(name, value \Lbr,stat \Lbr,errmsg\Rbr\Rbr)}]
   defines a parameter with the given \texttt{name} and assigns it the given
-  \texttt{value}, which may be a scalar or rank-1 array of any type.  A copy
-  of the passed value, as created by sourced allocation, is stored in the
+  \texttt{value}, which may be a scalar or rank-1 or rank-2 array of any type.
+  A copy of the passed value, as created by sourced allocation, is stored in the
   parameter list and thus caution should be exercised with derived type values; see
   \emph{Limitations on values} below.  If the parameter already exists, it must
   not be a sublist parameter and its existing value must have the same rank as
@@ -125,8 +128,8 @@ error unit and the program terminates.
   with \texttt{value}.
 \item[\texttt{get(name, value \Lbr,default\Rbr\ \Lbr,stat \Lbr,errmsg\Rbr\Rbr)}]
   retrieves the value of the parameter \texttt{name}.  A copy of the value is
-  returned in \texttt{value}, which may be a scalar or rank-1 array of the
-  following intrinsic types: \texttt{integer(int32)}, \texttt{integer(int64)},
+  returned in \texttt{value}, which may be a scalar or rank-1 or rank-2 array of
+  the following intrinsic types: \texttt{integer(int32)}, \texttt{integer(int64)},
   \texttt{real(real32)}, \texttt{real(real64)}, default \texttt{logical}, and
   default \texttt{character}.  The kind parameters are those from the intrinsic module
   \texttt{iso_fortran_env}, and should cover the default integer and real kinds,
@@ -145,7 +148,7 @@ error unit and the program terminates.
 \item[\texttt{get_any(name, value \Lbr,default\Rbr\ \Lbr,stat \Lbr,errmsg\Rbr\Rbr)}]
   retrieves the value of the parameter \texttt{name}.  A copy of the value is
   returned in \texttt{value}, which is an allocatable \texttt{class(*)} variable
-  or rank-1 array.  This is a more general version of \texttt{get} that can
+  or rank-1 or rank-2 array.  This is a more general version of \texttt{get} that can
   retrieve any type of parameter value.  The downside of \texttt{get_any} is
   that the application code must use a select-type construct in order to use
   the returned value, making it more complex to use.  If present, the optional
@@ -242,9 +245,10 @@ a structure constructor expression (see below).
   \begin{description}\setlength{\itemsep}{0pt}
   \item[\texttt{parameter_list}] if the parameter value is a sublist;
   \item[\texttt{any_scalar}] if the parameter has a scalar value;
-  \item[\texttt{any_vector}] if the parameter has a vector value.
+  \item[\texttt{any_vector}] if the parameter has a rank-1 array value.
+  \item[\texttt{any_matrix}] if the parameter has a rank-2 array value.
   \end{description}
-  A select-type construct with stanzas for these three types is required
+  A select-type construct with stanzas for these four types is required
   to access the value.  For sublists it is easier to use the \texttt{is_list}
   method to identify whether the current parameter is a sublist, and if so
   use the \texttt{sublist} method to acess the sublist.
@@ -255,7 +259,10 @@ a structure constructor expression (see below).
   returns true if the current parameter has a scalar value; otherwise it
   returns false.  The iterator must not be positioned at the end.
 \item[\texttt{is_vector()}]
-  returns true if the current parameter has a vector value; otherwise it
+  returns true if the current parameter has a rank-1 array value; otherwise it
+  returns false.  The iterator must not be positioned at the end.
+\item[\texttt{is_matrix()}]
+  returns true if the current parameter has a rank-2 array value; otherwise it
   returns false.  The iterator must not be positioned at the end.
 \item[\texttt{sublist()}]
   returns a \texttt{type(parameter_list)} pointer that is associated with
@@ -291,9 +298,11 @@ as JSON text that conforms to a subset of the JSON format:
     A \emph{value} may be also be a JSON \emph{array}, which is an ordered
     list of comma-separated \emph{values} enclosed in brackets (\texttt{[}
     and \texttt{]}).  To represent an array parameter value, the values in
-    a JSON array are limited to scalars of the same primitive type.
-    JSON would allow array values of
-    different types and even general JSON values (object and array).
+    a JSON array are limited to scalars of the same primitive type or
+    such JSON arrays themselves.  However, nesting is limited to 1 level
+    (rank-2 arrays) and the sub-arrays must all have the same length.
+    JSON would allow array values of different types and even general JSON
+    values (object and array) with arbitrary nesting.
   \item
     A \emph{value} may also be a JSON object which is interpreted as a
     parameter sublist.

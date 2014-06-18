@@ -5,7 +5,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
-!! Copyright (c) 2011, 2013 Neil N. Carlson
+!! Copyright (c) 2011, 2013, 2014 Neil N. Carlson
 !!
 !! Permission is hereby granted, free of charge, to any person obtaining a
 !! copy of this software and associated documentation files (the "Software"),
@@ -32,32 +32,32 @@
 !! PARAMETER_LIST TYPE BOUND PROCEDURES
 !!
 !!  SET(NAME, VALUE [,STAT [,ERRMSG]]) defines a parameter with the given NAME
-!!    and assigns it the given VALUE, which may be a scalar or rank-1 array of
-!!    any intrinsic or derived type. If the parameter already exists and has a
-!!    value with the same rank as VALUE, its value is replaced with the given
-!!    one; the type of the values need not be the same.  Otherwise it is an
-!!    error.  Note that a shallow copy of the passed value, as created by
+!!    and assigns it the given VALUE, which may be a scalar, or array of rank 1
+!!    or 2 of any intrinsic or derived type. If the parameter already exists
+!!    and has a value with the same rank as VALUE, its value is replaced with
+!!    the given one; the type of the values need not be the same.  Otherwise it
+!!    is an error.  Note that a shallow copy of the passed value, as created by
 !!    sourced-allocation, is stored in the parameter list.  This differs from
 !!    a deep copy for derived-type values with (direct or indirect) pointer
 !!    components.
 !!
 !!  GET(NAME, VALUE [,DEFAULT] [,STAT [,ERRMSG]]) gets the value of the named
 !!    parameter.  A copy of the value is returned in the argument VALUE, which
-!!    may be a scalar or rank-1 array of the following specific types: integer
-!!    (int32, int64 kinds), real (real32, real64 kinds), default logical and
-!!    character. An array argument must be allocatable and a character argument
-!!    must be deferred-length allocatable.  VALUE is allocated in these latter
-!!    cases with the proper size/length to hold the parameter value. If present,
-!!    the optional argument DEFAULT must have the same type, kind and rank as
-!!    VALUE.  If the named parameter does not exist, it is created with the
-!!    value prescribed by DEFAULT, and that value is return in VALUE.  It is an
-!!    error if the named parameter does not exist and DEFAULT is not present.
+!!    may be a scalar or array of rank 1 or 2 of the following specific types:
+!!    integer (int32, int64 kinds), real (real32, real64 kinds), default logical
+!!    and character. An array argument must be allocatable and a character
+!!    argument must be deferred-length allocatable.  VALUE is allocated in these
+!!    latter cases with the proper size/length to hold the parameter value. If
+!!    present, the optional argument DEFAULT must have the same type, kind and
+!!    rank as VALUE.  If the named parameter does not exist, it is created with
+!!    the value prescribed by DEFAULT, and that value is return in VALUE. It is
+!!    an error if the named parameter does not exist and DEFAULT is not present.
 !!    It is an error if the type, kind and rank of VALUE does not match the
 !!    stored value of the named parameter.
 !!
 !!  GET_ANY(NAME, VALUE [,DEFAULT] [,STAT [,ERRMSG]]) gets the value of the
-!!    named parameter.  A copy of the value is returned in VALUE, which is
-!!    an allocatable CLASS(*) variable or rank-1 array.  This is a more
+!!    named parameter.  A copy of the value is returned in VALUE, which is an
+!!    allocatable CLASS(*) variable or array of rank 1 or 2.  This is a more
 !!    general version of GET in that any type of parameter value can be
 !!    returned.  The downside is that the application code must use a select-
 !!    type construct in order to use the returned value.  It is an error if
@@ -103,7 +103,9 @@
 !!
 !!  IS_SCALAR() returns true if the current parameter has a scalar value.
 !!
-!!  IS_VECTOR() returns true if the current parameter has a vector value.
+!!  IS_VECTOR() returns true if the current parameter has a rank-1 array value.
+!!
+!!  IS_MATRIX() returns true if the current parameter has a rank-2 array value.
 !!
 !!  SUBLIST() returns a TYPE(PARAMETER_LIST) pointer to the current parameter
 !!    sublist, if it is indeed a sublist; otherwise it returns a null pointer.
@@ -115,21 +117,25 @@
 !!    current parameter provided it is a vector; otherwise it returns a null
 !!    pointer.
 !!
+!!  MATRIX() returns a rank-2 CLASS(*) array pointer to the value of the
+!!    current parameter provided it is a matrix; otherwise it returns a null
+!!    pointer.
+!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! NOTES
 !!
-!! 1) The passed-object argument of the VALUE_PTR method of the ANY_SCALAR and
-!!    ANY_VECTOR types is declared with the target attribute (the function
-!!    returns a pointer to a non-pointer component of the object).  This means
-!!    that the object, in the caller, must also have the target attribute.
-!!    In the untweaked procedures that reference this note, the object is an
-!!    associate name in a class-is block of a select-type construct.  That
-!!    associate name should have the target attribute (the selector does) but
-!!    recent changes to the NAG compiler have broken that (edit 942 and earlier
-!!    work but 962 does not).  In this case this result is silent run time
-!!    errors further up the calling chain -- pointers silently lose their
-!!    targets.
+!! 1) The passed-object argument of the VALUE_PTR method of the ANY_SCALAR,
+!!    ANY_VECTOR, and ANY_MATRIX types is declared with the target attribute
+!!    (the function returns a pointer to a non-pointer component of the object).
+!!    This means that the object, in the caller, must also have the target
+!!    attribute.  In the untweaked procedures that reference this note, the
+!!    object is an associate name in a class-is block of a select-type
+!!    construct.  That associate name should have the target attribute (the
+!!    selector does) but recent changes to the NAG compiler have broken that
+!!    (edit 942 and earlier work but 962 does not).  In this case this result
+!!    is silent run time errors further up the calling chain -- pointers
+!!    silently lose their targets.
 !!
 
 #include "f90_assert.fpp"

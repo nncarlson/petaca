@@ -163,7 +163,7 @@ module parameter_list_json
     procedure :: push_array => array_push_array
     procedure :: pop_array => array_pop_array
     procedure :: to_array => array_to_array
-#ifdef __INTEL_COMPILER
+#ifdef INTEL_DPD200357694
     final :: array_data_delete
 #endif
   end type array_data
@@ -521,7 +521,7 @@ contains
             rarray2(1:this%array%shape(1),1:this%array%shape(2)) => flat_array
             call plist%set (this%name, rarray2) ! create the parameter
           type is (character(*))
-#if defined(__INTEL_COMPILER) || defined(NAG_88549)
+#if defined(INTEL_DPD200357704) || defined(NAG_88549)
             !! Neither the Intel nor NAG compiler are correctly defining
             !! the deferred length parameters of the CARRAY2 pointer.
             this%errmsg = 'multi-dimensional string arrays are not supported'
@@ -632,7 +632,7 @@ contains
  !! ARRAY_DATA TYPE-BOUND PROCEDURES
  !!
 
-#if defined(__INTEL_COMPILER) || defined(INTEL_DPD200357693)
+#if defined(INTEL_DPD200357694) || defined(INTEL_DPD200357693)
   !! Somehow this keeps the intrinsic finalization, which should be
   !! sufficient, from causing a segfault.
   subroutine array_data_delete (this)
