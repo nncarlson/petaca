@@ -9,17 +9,12 @@
 # ---------------------------------------------------------------------------- #
 cmake_minimum_required( VERSION 2.8.12 )
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-
-# Modules/Compiler/NAG-Fortran.cmake is missing this.
-if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
-  set(CMAKE_Fortran_COMPILE_OPTIONS_PIC "-PIC")
-endif()
-
 # ---------------------------------------------------------------------------- #
 # Project definitions
 # ---------------------------------------------------------------------------- #
 project (Petaca Fortran C)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${Petaca_SOURCE_DIR}/cmake/Modules/")
 
 # The parameter list stuff requires the yajl library.
 # If necessary set YAJL_INCLUDE_DIR and YAJL_LIBRARY_DIR.
