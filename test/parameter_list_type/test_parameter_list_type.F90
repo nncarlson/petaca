@@ -549,6 +549,7 @@ contains
     type(parameter_list), pointer :: sl, sl2
     type(parameter_list_iterator) :: piter
 
+    integer :: j
     type point; real x, y; end type
     class(parameter_entry), pointer :: pentry
     class(*), pointer :: scalar, scalar1, vector(:), vector1(:), matrix(:,:), matrix1(:,:)
