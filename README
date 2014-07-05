@@ -7,6 +7,14 @@ type you will need to add this flag yourself.  The default behavior of the
 compiler is to use non-standard semantics (pre-F2003) and this will break
 some parts of the library that rely on the modern standard.
 
+If using the NAG Compiler ...
+-----------------------------
+
+Do not use the run-time debugging option -C=intovf, which checks for integer
+overflow, as this will trip the secure hash functions which intentionally use
+the default wrap-around behavior of integer addition.  Note that this flag is
+included as part of -C=all; use -C -C=dangling instead of -C=all.
+
 TIPS
 ----
 
