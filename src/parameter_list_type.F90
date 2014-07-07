@@ -75,6 +75,15 @@
 !!  IS_SUBLIST(NAME) returns true if there is a parameter with the given name
 !!    and it is a sublist.
 !!
+!!  IS_SCALAR(NAME) returns true if there is a parameter with the given name
+!!    and it is a scalar.
+!!
+!!  IS_VECTOR(NAME) returns true if there is a parameter with the given name
+!!    and it is a rank-1 array.
+!!
+!!  IS_MATRIX(NAME) returns true if there is a parameter with the given name
+!!    and it is a rank-2 array.
+!!
 !!  COUNT() returns the number of parameters stored in the parameter list.
 !!
 !! PARAMETER_LIST_ITERATOR TYPE BOUND PROCEDURES
@@ -157,6 +166,9 @@ module parameter_list_type
   contains
     procedure :: is_parameter
     procedure :: is_sublist
+    procedure :: is_scalar
+    procedure :: is_vector
+    procedure :: is_matrix
     procedure :: count
     procedure :: sublist
     generic :: set => set_scalar, set_vector, set_matrix
@@ -230,8 +242,8 @@ contains
   !! map value is accessed via a CLASS(*) pointer.  We know, however, that
   !! the dynamic type of the value is of class PARAMENTER_ENTRY.
   !!
-  !! A CLASS(PARAMETER_ENTRY) pointer has one of three possible dynamic types:
-  !! PARAMETER_LIST, ANY_SCALAR, or ANY_VECTOR.
+  !! A CLASS(PARAMETER_ENTRY) pointer has one of four possible dynamic types:
+  !! PARAMETER_LIST, ANY_SCALAR, ANY_VECTOR, or ANY_MATRIX.
   !!
   !! For convenience each routine can be passed a null pointer; a null pointer
   !! is returned in that case.
@@ -433,6 +445,27 @@ contains
     is_sublist = associated(cast_to_parameter_list(find_entry(this%params, name)))
 #endif
   end function is_sublist
+
+  !! Returns true if the named parameter exists and is a scalar.
+  logical function is_scalar (this, name)
+    class(parameter_list), intent(in) :: this
+    character(*), intent(in) :: name
+    is_scalar = associated(find_any_scalar_entry(this%params, name))
+  end function is_scalar
+
+  !! Returns true if the named parameter exists and is a vector.
+  logical function is_vector (this, name)
+    class(parameter_list), intent(in) :: this
+    character(*), intent(in) :: name
+    is_vector = associated(find_any_vector_entry(this%params, name))
+  end function is_vector
+
+  !! Returns true if the named parameter exists and is a matrix.
+  logical function is_matrix (this, name)
+    class(parameter_list), intent(in) :: this
+    character(*), intent(in) :: name
+    is_matrix = associated(find_any_matrix_entry(this%params, name))
+  end function is_matrix
 
   !! Returns the number of stored parameters.
   integer function count (this)

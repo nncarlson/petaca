@@ -45,7 +45,8 @@ contains
 
  !!
  !! A basic test that we can populate a parameter list with simple parameters.
- !! Tests the count, is_parameter, is_sublist methods.
+ !! Tests the count, is_parameter, is_sublist, is_scalar, is_vector, is_matrix
+ !! methods.
  !!
 
   subroutine test_basic
@@ -67,28 +68,44 @@ contains
     if (p%count() /= 2) call write_fail ('test_basic failed test 3')
     call p%set ('wat', ['biz','bat'])
     if (p%count() /= 3) call write_fail ('test_basic failed test 4')
+    call p%set ('bah', [[1,2],[3,4]])
+    if (p%count() /= 3) call write_fail ('test_basic failed test 5')
 
-    !! Check that they are recognized as parameters, but not sublists.
-    if (.not.p%is_parameter('foo')) call write_fail ('test_basic failed test 5')
-    if (.not.p%is_parameter('bar')) call write_fail ('test_basic failed test 6')
-    if (.not.p%is_parameter('wat')) call write_fail ('test_basic failed test 7')
-    if (p%is_sublist('foo')) call write_fail ('test_basic failed test 8')
-    if (p%is_sublist('bar')) call write_fail ('test_basic failed test 9')
-    if (p%is_sublist('wat')) call write_fail ('test_basic failed test 10')
+    !! Check that they are recognized as parameters, and of the correct type.
+    if (.not.p%is_parameter('foo')) call write_fail ('test_basic failed test 6')
+    if (p%is_sublist('foo')) call write_fail ('test_basic failed test 7')
+    if (.not.p%is_scalar('foo')) call write_fail ('test_basic failed test 8')
+    if (p%is_vector('foo')) call write_fail ('test_basic failed test 9')
+    if (p%is_matrix('foo')) call write_fail ('test_basic failed test 10')
+    if (.not.p%is_parameter('bar')) call write_fail ('test_basic failed test 1')
+    if (p%is_sublist('bar')) call write_fail ('test_basic failed test 12')
+    if (p%is_scalar('bar')) call write_fail ('test_basic failed test 13')
+    if (.not.p%is_vector('bar')) call write_fail ('test_basic failed test 14')
+    if (p%is_matrix('bar')) call write_fail ('test_basic failed test 15')
+    if (.not.p%is_parameter('wat')) call write_fail ('test_basic failed test 16')
+    if (p%is_sublist('wat')) call write_fail ('test_basic failed test 17')
+    if (.not.p%is_parameter('bah')) call write_fail ('test_basic failed test 18')
+    if (p%is_sublist('bah')) call write_fail ('test_basic failed test 19')
+    if (p%is_scalar('bah')) call write_fail ('test_basic failed test 20')
+    if (p%is_vector('bah')) call write_fail ('test_basic failed test 21')
+    if (.not.p%is_matrix('bah')) call write_fail ('test_basic failed test 22')
 
     !! Replace the value of a parameter; different rank -- should fail
     call p%set ('foo', [1,2], stat=stat)
-    if (stat == 0) call write_fail ('test_basic failed test 11')
-    if (p%count() /= 3) call write_fail ('test_basic failed test 12')
+    if (stat == 0) call write_fail ('test_basic failed test 23')
+    if (p%count() /= 3) call write_fail ('test_basic failed test 24')
 
     !! Replace the value of a parameter; same rank -- should succeed.
     call p%set ('bar', [1,2], stat=stat)
-    if (stat /= 0) call write_fail ('test_basic failed test 13')
-    if (p%count() /= 3) call write_fail ('test_basic failed test 14')
+    if (stat /= 0) call write_fail ('test_basic failed test 25')
+    if (p%count() /= 3) call write_fail ('test_basic failed test 26')
 
     !! Verify that a non-existant parameter does not exist.
-    if (p%is_parameter('dummy')) call write_fail ('test_basic failed test 15')
-    if (p%is_sublist('dummy')) call write_fail ('test_basic failed test 16')
+    if (p%is_parameter('dummy')) call write_fail ('test_basic failed test 27')
+    if (p%is_sublist('dummy')) call write_fail ('test_basic failed test 28')
+    if (p%is_scalar('dummy')) call write_fail ('test_basic failed test 29')
+    if (p%is_vector('dummy')) call write_fail ('test_basic failed test 30')
+    if (p%is_matrix('dummy')) call write_fail ('test_basic failed test 31')
 
   end subroutine
 
