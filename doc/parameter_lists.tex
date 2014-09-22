@@ -164,6 +164,12 @@ error unit and the program terminates.
   specific subroutines have an ambiguous interface---the \texttt{class(*)}
   value argument of \texttt{get_any} also matches any of the specific types
   of the value argument of \texttt{get}.
+\item[\texttt{set_name(name)}]
+  sets the name of the parameter list to \texttt{name}.  A parameter list
+  created by \texttt{sublist} is automatically assigned a default name. It is
+  the name of the parent parameter list appended with "\texttt{->}" followed
+  by the sublist parameter name.  Use this function to override the default
+  name.
 \end{description}
 
 \subsection{Type bound functions}
@@ -190,6 +196,11 @@ error unit and the program terminates.
   otherwise it returns false.
 \item[\texttt{count()}]
   returns the number of parameters stored in the parameter list.
+\item[\texttt{name()}]
+  returns the name of the parameter list.  If no name was assigned to the
+  parameter list, the name "\texttt{ANONYMOUS}" is returned.  Be careful not
+  to confuse the name of a sublist parameter with the name of the parameter
+  list that is its value; they are not the same thing.
 \end{description}
 
 \subsection{Limitation on values}

@@ -86,6 +86,16 @@
 !!
 !!  COUNT() returns the number of parameters stored in the parameter list.
 !!
+!!  NAME() returns the name of the parameter list.  If no name was assigned to
+!!    the parameter list, the name 'ANONYMOUS' is returned.  Be careful not to
+!!    confuse the name of a sublist parameter with the name of the parameter
+!!    list that is its value; they are not the same thing.
+!!
+!!  SET_NAME(NAME) sets the name of the parameter list to NAME.  A parameter
+!!    list created by SUBLIST is automatically assigned a default name.  It is
+!!    the name of the parent parameter list appended with '->' followed by the
+!!    sublist parameter name.  Use this function to override the default name. 
+!!
 !! PARAMETER_LIST_ITERATOR TYPE BOUND PROCEDURES
 !!
 !!  PARAMETER_LIST_ITERATOR(PLIST [,SUBLISTS_ONLY]) is a constructor that
@@ -161,9 +171,11 @@ module parameter_list_type
 
   type, extends(parameter_entry), public :: parameter_list
     private
-    character(:), allocatable :: name
+    character(:), allocatable :: name_
     type(map_any) :: params = map_any()
   contains
+    procedure :: name
+    procedure :: set_name
     procedure :: is_parameter
     procedure :: is_sublist
     procedure :: is_scalar
@@ -205,6 +217,12 @@ module parameter_list_type
     procedure, private :: get_matrix_string
   end type
 
+#ifdef INTEL_BUG20140921
+  interface parameter_list
+    procedure parameter_list_intel
+  end interface
+#endif
+
   type, public :: parameter_list_iterator
     private
     type(map_any_iterator) :: mapit
@@ -230,6 +248,15 @@ module parameter_list_type
   end interface
 
 contains
+
+#ifdef INTEL_BUG20140921
+  !! Has the same effect that the default constructor should but does not.
+  function parameter_list_intel (name) result (plist)
+    character(*), intent(in), optional :: name
+    type(parameter_list) :: plist
+    if (present(name)) plist%name_ = name
+  end function parameter_list_intel
+#endif
 
   !!
   !! AUXILLARY CLASS-CASTING FUNCTIONS
@@ -405,6 +432,9 @@ contains
   end subroutine error_clear
 
   subroutine error (errmsg_, stat, errmsg)
+#ifdef NAGFOR
+    use,intrinsic :: f90_unix, only: exit
+#endif
     use,intrinsic :: iso_fortran_env, only: error_unit
     character(*), intent(in) :: errmsg_
     integer, intent(out), optional :: stat
@@ -414,11 +444,29 @@ contains
       if (present(errmsg)) errmsg = errmsg_
     else
       write(error_unit,'(a)') 'ERROR: ' // errmsg_
-      stop
+      call exit (1)
     end if
   end subroutine error
 
 !!!! PARAMETER_LIST TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !! Returns the name of this parameter list.
+  function name (this)
+    class(parameter_list), intent(in) :: this
+    character(:), allocatable :: name
+    if (allocated(this%name_)) then
+      name = this%name_
+    else
+      name = 'ANONYMOUS'
+    end if
+  end function name
+
+  !! Sets the name of this parameter list.
+  subroutine set_name (this, name)
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    this%name_ = name
+  end subroutine set_name
 
   !! Returns true if the named parameter exists.
   logical function is_parameter (this, name)
@@ -490,7 +538,7 @@ contains
     call error_clear (stat, errmsg)
     pentry => find_entry(this%params, name)
     if (.not.associated(pentry)) then
-      call this%params%insert (name, parameter_list(name))
+      call this%params%insert (name, parameter_list(this%name()//'->'//name))
       !! IMPORTANT: pentry must point to the one in the map which is a copy!
       pentry => find_entry(this%params, name)
       ASSERT(associated(pentry))

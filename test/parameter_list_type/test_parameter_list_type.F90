@@ -38,6 +38,7 @@ program test_parameter_list_type
   call test_overwrite
   call test_sublists
   call test_iterator
+  call test_name
 
   call exit (stat)
 
@@ -68,8 +69,8 @@ contains
     if (p%count() /= 2) call write_fail ('test_basic failed test 3')
     call p%set ('wat', ['biz','bat'])
     if (p%count() /= 3) call write_fail ('test_basic failed test 4')
-    call p%set ('bah', [[1,2],[3,4]])
-    if (p%count() /= 3) call write_fail ('test_basic failed test 5')
+    call p%set ('bah', reshape([1,2,3,4],shape=[2,2]))
+    if (p%count() /= 4) call write_fail ('test_basic failed test 5')
 
     !! Check that they are recognized as parameters, and of the correct type.
     if (.not.p%is_parameter('foo')) call write_fail ('test_basic failed test 6')
@@ -93,12 +94,12 @@ contains
     !! Replace the value of a parameter; different rank -- should fail
     call p%set ('foo', [1,2], stat=stat)
     if (stat == 0) call write_fail ('test_basic failed test 23')
-    if (p%count() /= 3) call write_fail ('test_basic failed test 24')
+    if (p%count() /= 4) call write_fail ('test_basic failed test 24')
 
     !! Replace the value of a parameter; same rank -- should succeed.
     call p%set ('bar', [1,2], stat=stat)
     if (stat /= 0) call write_fail ('test_basic failed test 25')
-    if (p%count() /= 3) call write_fail ('test_basic failed test 26')
+    if (p%count() /= 4) call write_fail ('test_basic failed test 26')
 
     !! Verify that a non-existant parameter does not exist.
     if (p%is_parameter('dummy')) call write_fail ('test_basic failed test 27')
@@ -144,6 +145,8 @@ contains
     call p%set ('i64matrix', i64matrixref)
     call p%set ('r32', 1.0_real32)
     call p%set ('r64', 2.0_real64)
+    call p%set ('r32array', [3.0_real32,4.0_real32])
+    call p%set ('r64array', [5.0_real64,6.0_real64])
     r32matrixref = reshape([real(real32) :: 3, 4, 5, 6, 7, 8], shape=[3,2])
     call p%set ('r32matrix', r32matrixref)
     r64matrixref = reshape([real(real64) :: 3, 4, 5, 6, 7, 8], shape=[3,2])
@@ -647,11 +650,11 @@ contains
         matrix1 => piter%matrix()
         if (.not.associated(matrix,matrix1)) call write_fail ('test_iterator failed test B1m')
         select type (matrix)
-        type is (real)
+        type is (integer)
           if (piter%name() /= 'matrix') call write_fail ('test_iterator failed test 19m')
           if (any(matrix /= reshape([1,2,3,4,5,6],shape=[2,3]))) call write_fail ('test_iterator failed test 20m')
           select type (matrix1)
-          type is (real)
+          type is (integer)
             if (any(matrix1 /= reshape([1,2,3,4,5,6],shape=[2,3]))) call write_fail ('test_iterator failed test B2m')
             if (any(matrix1 /= matrix)) call write_fail ('test_iterator failed test B3m')
           class default
@@ -674,6 +677,25 @@ contains
       call piter%next
     end do
 
+  end subroutine
+
+ !!
+ !! Test parameter list name
+ !!
+
+  subroutine test_name
+    type(parameter_list) :: p
+    type(parameter_list), pointer :: sl
+    if (p%name() /= 'ANONYMOUS') call write_fail ('test_name failed test 1')
+    sl => p%sublist('fiz')
+    if (sl%name() /= 'ANONYMOUS->fiz') call write_fail ('test_name failed test 2')
+    call p%set_name('foo')
+    if (p%name() /= 'foo') call write_fail ('test_name failed test 3')
+    sl => p%sublist('bar')
+    sl => sl%sublist('fubar')
+    if (sl%name() /= 'foo->bar->fubar') call write_fail ('test_name failed test 4')
+    call sl%set_name ('biz')
+    if (sl%name() /= 'biz') call write_fail ('test_name failed test 5')
   end subroutine
 
   subroutine write_fail (errmsg)
