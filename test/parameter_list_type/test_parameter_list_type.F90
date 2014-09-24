@@ -686,9 +686,9 @@ contains
   subroutine test_name
     type(parameter_list) :: p
     type(parameter_list), pointer :: sl
-    if (p%name() /= 'ANONYMOUS') call write_fail ('test_name failed test 1')
+    if (p%name() /= '$') call write_fail ('test_name failed test 1')
     sl => p%sublist('fiz')
-    if (sl%name() /= 'ANONYMOUS->fiz') call write_fail ('test_name failed test 2')
+    if (sl%name() /= '$->fiz') call write_fail ('test_name failed test 2')
     call p%set_name('foo')
     if (p%name() /= 'foo') call write_fail ('test_name failed test 3')
     sl => p%sublist('bar')

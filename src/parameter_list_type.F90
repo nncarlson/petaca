@@ -457,7 +457,7 @@ contains
     if (allocated(this%name_)) then
       name = this%name_
     else
-      name = 'ANONYMOUS'
+      name = '$'
     end if
   end function name
 

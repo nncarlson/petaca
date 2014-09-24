@@ -110,6 +110,10 @@ module parameter_list_json
 
   public :: parameter_list_from_json_stream
   public :: parameter_list_to_json
+  
+  interface parameter_list_from_json_stream
+    procedure parameter_list_from_json_stream_default, parameter_list_from_json_stream_name
+  end interface
 
   !! Private data structure to hold the hierarchy of parameter lists under construction.
   type parameter_list_stack
@@ -203,12 +207,30 @@ module parameter_list_json
 
 contains
 
-  subroutine parameter_list_from_json_stream (unit, plist, errmsg)
+  subroutine parameter_list_from_json_stream_default (unit, plist, errmsg)
+    integer, intent(in) :: unit
+    type(parameter_list), pointer, intent(out) :: plist
+    character(:), allocatable :: errmsg
+    allocate(plist)
+    call parameter_list_from_json_stream_aux (unit, plist, errmsg)
+  end subroutine parameter_list_from_json_stream_default
+
+  subroutine parameter_list_from_json_stream_name (unit, name, plist, errmsg)
+    integer, intent(in) :: unit
+    character(*), intent(in) :: name
+    type(parameter_list), pointer, intent(out) :: plist
+    character(:), allocatable :: errmsg
+    allocate(plist)
+    call plist%set_name (name)
+    call parameter_list_from_json_stream_aux (unit, plist, errmsg)
+  end subroutine parameter_list_from_json_stream_name
+
+  subroutine parameter_list_from_json_stream_aux (unit, plist, errmsg)
 
     use,intrinsic :: iso_fortran_env, only: error_unit
 
     integer, intent(in) :: unit
-    type(parameter_list), pointer, intent(out) :: plist
+    type(parameter_list), pointer :: plist
     character(:), allocatable :: errmsg
 
     type(plist_builder), target :: builder
@@ -222,7 +244,6 @@ contains
     !TODO: check unit is open with unformatted stream access
 
     !! Initialize the parser
-    allocate(plist)
     call builder%init (plist)
     call parser%init (builder)
     call parser%set_option (FYAJL_ALLOW_COMMENTS)
@@ -272,7 +293,7 @@ contains
       end if
     end do
 
-  end subroutine parameter_list_from_json_stream
+  end subroutine parameter_list_from_json_stream_aux
 
   subroutine init (this, plist)
     class(plist_builder), intent(out) :: this

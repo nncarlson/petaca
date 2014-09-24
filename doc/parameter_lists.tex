@@ -198,7 +198,7 @@ error unit and the program terminates.
   returns the number of parameters stored in the parameter list.
 \item[\texttt{name()}]
   returns the name of the parameter list.  If no name was assigned to the
-  parameter list, the name "\texttt{ANONYMOUS}" is returned.  Be careful not
+  parameter list, the name "\texttt{\$}" is returned.  Be careful not
   to confuse the name of a sublist parameter with the name of the parameter
   list that is its value; they are not the same thing.
 \end{description}
@@ -350,6 +350,12 @@ text representation of a parameter list object.
   unassociated return value indicates an error condition, in which case the
   allocatable deferred-length character argument \texttt{errmsg} is assigned
   an explanatory error message.
+\item[\texttt{call parameter_list_from_json_stream (unit, name, plist, errmsg)}]
+  does exactly the same thing as the preceding subroutine except that plist is
+  assigned the name \texttt{name} instead of the default ("\texttt{\$}").  Although
+  the name can be reset after the fact, this would not be reflected in the names
+  of any sublists created by the stream, whose names are automatically generated
+  from the name of their parent parameter lists.
 \item[\texttt{call parameter_list_to_json (plist, unit)}]
   writes the JSON text representation of the parameter list \texttt{plist}
   to \texttt{unit}, which must be connected for formatted write access.
