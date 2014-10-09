@@ -54,7 +54,7 @@ module secure_hash_factory
   public :: secure_hash, new_secure_hash
 
   interface new_secure_hash
-#ifdef INTEL_DPD200242779
+#ifdef NO_2008_GENERIC_RESOLUTION
     ! Intel compiler can't distinguish the two specifics per F2008
     procedure new_secure_hash_alloc!, new_secure_hash_ptr
 #else

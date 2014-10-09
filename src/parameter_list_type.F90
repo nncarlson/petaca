@@ -359,7 +359,7 @@ contains
     class(map_any), intent(in) :: map
     character(*), intent(in) :: name
     class(parameter_entry), pointer :: pentry
-#ifdef INTEL_PRE_14_0_0
+#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
     class(*), pointer :: uptr
     uptr => map%value(name)
     pentry => cast_to_parameter_entry(uptr)
@@ -374,7 +374,7 @@ contains
     class(map_any), intent(in) :: map
     character(*), intent(in) :: name
     class(any_scalar), pointer :: entry
-#ifdef INTEL_PRE_14_0_0
+#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
     class(parameter_entry), pointer :: pentry
     pentry => find_entry(map, name)
     entry => cast_to_any_scalar(pentry)
@@ -389,7 +389,7 @@ contains
     class(map_any), intent(in) :: map
     character(*), intent(in) :: name
     class(any_vector), pointer :: entry
-#ifdef INTEL_PRE_14_0_0
+#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
     class(parameter_entry), pointer :: pentry
     pentry => find_entry(map, name)
     entry => cast_to_any_vector(pentry)
@@ -404,7 +404,7 @@ contains
     class(map_any), intent(in) :: map
     character(*), intent(in) :: name
     class(any_matrix), pointer :: entry
-#ifdef INTEL_PRE_14_0_0
+#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
     class(parameter_entry), pointer :: pentry
     pentry => find_entry(map, name)
     entry => cast_to_any_matrix(pentry)
@@ -472,7 +472,7 @@ contains
   logical function is_parameter (this, name)
     class(parameter_list), intent(in) :: this
     character(*), intent(in) :: name
-#ifdef INTEL_PRE_14_0_0
+#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
     class(parameter_entry), pointer :: pentry
     pentry => find_entry(this%params, name)
     is_parameter = associated(pentry)
@@ -485,7 +485,7 @@ contains
   logical function is_sublist (this, name)
     class(parameter_list), intent(in) :: this
     character(*), intent(in) :: name
-#ifdef INTEL_PRE_14_0_0
+#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
     class(parameter_entry), pointer :: pentry
     pentry => find_entry(this%params, name)
     is_sublist = associated(cast_to_parameter_list(pentry))
@@ -1462,7 +1462,7 @@ contains
   function iter_entry (this)
     class(parameter_list_iterator), intent(in) :: this
     class(parameter_entry), pointer :: iter_entry
-#ifdef INTEL_PRE_14_0_0
+#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
     class(*), pointer :: uptr
     uptr => this%mapit%value()
     iter_entry => cast_to_parameter_entry(uptr)
@@ -1480,7 +1480,7 @@ contains
   !! Returns true if the current parameter has a scalar value.
   logical function iter_is_scalar (this) result (is_scalar)
     class(parameter_list_iterator), intent(in) :: this
-#ifdef INTEL_PRE_14_0_0
+#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
     class(parameter_entry), pointer :: pentry
     pentry => iter_entry(this)
     is_scalar = associated(cast_to_any_scalar(pentry))
@@ -1492,7 +1492,7 @@ contains
   !! Returns true if the current parameter has a vector value.
   logical function iter_is_vector (this) result (is_vector)
     class(parameter_list_iterator), intent(in) :: this
-#ifdef INTEL_PRE_14_0_0
+#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
     class(parameter_entry), pointer :: pentry
     pentry => iter_entry(this)
     is_vector = associated(cast_to_any_vector(pentry))
@@ -1504,7 +1504,7 @@ contains
   !! Returns true if the current parameter has a matrix value.
   logical function iter_is_matrix (this) result (is_matrix)
     class(parameter_list_iterator), intent(in) :: this
-#ifdef INTEL_PRE_14_0_0
+#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
     class(parameter_entry), pointer :: pentry
     pentry => iter_entry(this)
     is_matrix = associated(cast_to_any_matrix(pentry))
