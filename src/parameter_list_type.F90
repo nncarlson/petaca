@@ -187,6 +187,7 @@ module parameter_list_type
     procedure, private :: set_scalar
     procedure, private :: set_vector
     procedure, private :: set_matrix
+    procedure :: set_sublist
     generic :: get_any => get_any_scalar, get_any_vector, get_any_matrix
     procedure, private :: get_any_scalar
     procedure, private :: get_any_vector
@@ -549,6 +550,30 @@ contains
     end if
 
   end function sublist
+
+  !! Creates the named sublist parameter and sets its value to the value of
+  !! the given parameter list.  It is an error if the parameter exists. 
+
+  subroutine set_sublist (this, name, value, stat, errmsg)
+
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    class(parameter_list), intent(in) :: value
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+
+    type(parameter_list), pointer :: sublist
+
+    call error_clear (stat, errmsg)
+    if (this%is_parameter(name)) then
+      call error ('parameter already exists:  "' // name // '"', stat, errmsg)
+    else
+      call this%params%insert (name, value)
+      sublist => this%sublist(name)
+      call sublist%set_name(this%name()//'->'//name)
+    end if
+
+  end subroutine set_sublist
 
   !! Sets the scalar value of the named parameter.  If the parameter exists,
   !! its value, which must be of type ANY_SCALAR, is overwritten with the

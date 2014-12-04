@@ -108,7 +108,7 @@ module parameter_list_json
   implicit none
   private
 
-  public :: parameter_list_from_json_stream
+  public :: parameter_list_from_json_stream, parameters_from_json_stream
   public :: parameter_list_to_json
   
   interface parameter_list_from_json_stream
@@ -211,8 +211,16 @@ contains
     integer, intent(in) :: unit
     type(parameter_list), pointer, intent(out) :: plist
     character(:), allocatable :: errmsg
+    integer :: stat
     allocate(plist)
-    call parameter_list_from_json_stream_aux (unit, plist, errmsg)
+    call parameters_from_json_stream (unit, plist, stat, errmsg)
+    if (stat /= 0) then
+      deallocate(plist)
+#ifdef INTEL_DPD200249493
+      nullify(plist)
+#endif
+      INSIST(.not.associated(plist))
+    end if
   end subroutine parameter_list_from_json_stream_default
 
   subroutine parameter_list_from_json_stream_name (unit, name, plist, errmsg)
@@ -220,28 +228,40 @@ contains
     character(*), intent(in) :: name
     type(parameter_list), pointer, intent(out) :: plist
     character(:), allocatable :: errmsg
+    integer :: stat
     allocate(plist)
     call plist%set_name (name)
-    call parameter_list_from_json_stream_aux (unit, plist, errmsg)
+    call parameters_from_json_stream (unit, plist, stat, errmsg)
+    if (stat /= 0) then
+      deallocate(plist)
+#ifdef INTEL_DPD200249493
+      nullify(plist)
+#endif
+      INSIST(.not.associated(plist))
+    end if
   end subroutine parameter_list_from_json_stream_name
 
-  subroutine parameter_list_from_json_stream_aux (unit, plist, errmsg)
+
+  subroutine parameters_from_json_stream (unit, plist, stat, errmsg)
 
     use,intrinsic :: iso_fortran_env, only: error_unit
 
     integer, intent(in) :: unit
-    type(parameter_list), pointer :: plist
-    character(:), allocatable :: errmsg
+    type(parameter_list), target :: plist
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     type(plist_builder), target :: builder
     type(fyajl_parser),  target :: parser
-    type(fyajl_status) :: stat
+    type(fyajl_status) :: yajl_stat
 
     integer, parameter :: BUFFER_SIZE = 4096
     character(kind=c_char) :: buffer(BUFFER_SIZE)
     integer :: buflen, last_pos, curr_pos, ios
 
     !TODO: check unit is open with unformatted stream access
+    
+    stat = 0
 
     !! Initialize the parser
     call builder%init (plist)
@@ -268,32 +288,28 @@ contains
       buflen = curr_pos - last_pos
       last_pos = curr_pos
       if (buflen > 0) then
-        call parser%parse (buffer(:buflen), stat)
-        if (stat /= FYAJL_STATUS_OK) then
+        call parser%parse (buffer(:buflen), yajl_stat)
+        if (yajl_stat /= FYAJL_STATUS_OK) then
           errmsg = fyajl_get_error(parser, .true., buffer(:buflen))
-          if (stat == FYAJL_STATUS_CLIENT_CANCELED) errmsg = errmsg // builder%errmsg
-          deallocate(plist)
-#ifdef INTEL_DPD200249493
-          nullify(plist)
-#endif
-          INSIST(.not.associated(plist))
+          if (yajl_stat == FYAJL_STATUS_CLIENT_CANCELED) errmsg = errmsg // builder%errmsg
+          stat = -1
           exit
         end if
       end if
 
       if (ios == iostat_end) then
-        call parser%complete_parse (stat)
+        call parser%complete_parse (yajl_stat)
         !call plist%print(output_unit, ' ')
-        if (stat /= FYAJL_STATUS_OK) then
+        if (yajl_stat /= FYAJL_STATUS_OK) then
           errmsg = fyajl_get_error(parser, .false., buffer(:buflen))
-          if (stat == FYAJL_STATUS_CLIENT_CANCELED) errmsg = errmsg // builder%errmsg
-          deallocate(plist)
+          if (yajl_stat == FYAJL_STATUS_CLIENT_CANCELED) errmsg = errmsg // builder%errmsg
+          stat = -1
         end if
         exit
       end if
     end do
 
-  end subroutine parameter_list_from_json_stream_aux
+  end subroutine parameters_from_json_stream
 
   subroutine init (this, plist)
     class(plist_builder), intent(out) :: this
