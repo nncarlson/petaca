@@ -86,6 +86,9 @@
 !!
 !! 3. We assume the storage size for a default character (len=1) to be 1 byte.
 !!
+!! 4. For non-interoperable types the argument to c_loc must be a scalar,
+!!    so we pass just the first element of the array in these cases (dicey?)
+!!
 
 #ifdef NAGFOR
 #define NAG_WORKAROUND
@@ -414,7 +417,7 @@ contains
     logical(log16), intent(in), target :: data(*) ! See Note 1
     integer, intent(in) :: len
     integer(int8), pointer :: ptr(:)
-    call c_f_pointer (c_loc(data), ptr, shape=[2*len]) ! See Note 2
+    call c_f_pointer (c_loc(data(1)), ptr, shape=[2*len]) ! See Notes 2, 4
     call this%process_bytes (ptr, size(ptr))
   end subroutine update_log16
 
@@ -449,7 +452,7 @@ contains
     logical(log32), intent(in), target :: data(*) ! See Note 1
     integer, intent(in) :: len
     integer(int8), pointer :: ptr(:)
-    call c_f_pointer (c_loc(data), ptr, shape=[4*len]) ! See Note 2
+    call c_f_pointer (c_loc(data(1)), ptr, shape=[4*len]) ! See Notes 2, 4
     call this%process_bytes (ptr, size(ptr))
   end subroutine update_log32
 
@@ -484,7 +487,7 @@ contains
     logical(log64), intent(in), target :: data(*) ! See Note 1
     integer, intent(in) :: len
     integer(int8), pointer :: ptr(:)
-    call c_f_pointer (c_loc(data), ptr, shape=[8*len]) ! See Note 2
+    call c_f_pointer (c_loc(data(1)), ptr, shape=[8*len]) ! See Notes 2, 4
     call this%process_bytes (ptr, size(ptr))
   end subroutine update_log64
 
@@ -589,7 +592,7 @@ contains
     real(real128), intent(in), target :: data(*) ! See Note 1
     integer, intent(in) :: len
     integer(int8), pointer :: ptr(:)
-    call c_f_pointer (c_loc(data), ptr, shape=[16*len]) ! See Note 2
+    call c_f_pointer (c_loc(data(1)), ptr, shape=[16*len]) ! See Notes 2, 4
     call this%process_bytes (ptr, size(ptr))
   end subroutine update_real128
 
