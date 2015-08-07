@@ -223,12 +223,15 @@ module yajl_fort
       use,intrinsic :: iso_c_binding
       type(c_ptr), value :: handle
       end subroutine
-    function yajl_config (handle, option, enable) result(stat) bind(c)
-      use,intrinsic :: iso_c_binding
-      type(c_ptr), value :: handle
-      integer(c_int), value :: option, enable
-      integer(c_int) :: stat
-      end function
+    !yajl_config is a varargs function, and this 'single argument' declaration
+    !has been found to be non-portable.  See the 'extra' interfaces below for
+    !the replacement.
+    !function yajl_config (handle, option, enable) result(stat) bind(c)
+    !  use,intrinsic :: iso_c_binding
+    !  type(c_ptr), value :: handle
+    !  integer(c_int), value :: option, enable
+    !  integer(c_int) :: stat
+    !  end function
     function yajl_parse (handle, buffer, length) result(stat) bind(c)
       use,intrinsic :: iso_c_binding
       type(c_ptr), value :: handle
@@ -264,6 +267,22 @@ module yajl_fort
       type(c_ptr), value :: handle
       type(c_ptr), value :: str
       end subroutine
+  end interface
+
+  !! INTEROPERABLE INTERFACES TO EXTRA YAJL C FUNCTIONS (yajl_ext.c)
+  interface
+    function yajl_set_option (handle, option) result(stat) bind(c)
+      use,intrinsic :: iso_c_binding
+      type(c_ptr), value :: handle
+      integer(c_int), value :: option
+      integer(c_int) :: stat
+      end function
+    function yajl_unset_option (handle, option) result(stat) bind(c)
+      use,intrinsic :: iso_c_binding
+      type(c_ptr), value :: handle
+      integer(c_int), value :: option
+      integer(c_int) :: stat
+      end function
   end interface
 
   !! The Fortran yajl emitter.  This holds the handle to the C yajl generator
@@ -438,14 +457,14 @@ contains
     class(fyajl_parser), intent(in) :: this
     integer(c_int), intent(in) :: option
     integer :: stat
-    stat = yajl_config(this%handle, option, 1) ! ignore return code
+    stat = yajl_set_option(this%handle, option) ! ignore return code
   end subroutine
 
   subroutine unset_option (this, option)
     class(fyajl_parser), intent(in) :: this
     integer(c_int), intent(in) :: option
     integer :: stat
-    stat = yajl_config(this%handle, option, 0) ! ignore return code
+    stat = yajl_unset_option(this%handle, option) ! ignore return code
   end subroutine
 
   subroutine parse (this, buffer, stat)

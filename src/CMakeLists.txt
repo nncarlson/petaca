@@ -3,6 +3,7 @@ set(Petaca_SOURCE_FILES
       fortran_dynamic_loader.F90
       map_any_type.F90
       yajl_fort.F90
+      yajl_ext.c
       parameter_entry_class.F90
       parameter_list_type.F90
       parameter_list_json.F90
