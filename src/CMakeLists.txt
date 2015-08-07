@@ -17,6 +17,7 @@ set(Petaca_SOURCE_FILES
                             
 include_directories(${Petaca_INCLUDE_DIR})
 include_directories(${Petaca_MODULE_DIR})
+include_directories(${YAJL_INCLUDE_DIR}) # for yajl_ext.c
 
 add_library(petaca ${Petaca_SOURCE_FILES})
 
