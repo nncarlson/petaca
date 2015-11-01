@@ -13,8 +13,13 @@ set(Petaca_SOURCE_FILES
       secure_hash/md5_hash_type.F90
       secure_hash/sha1_hash_type.F90
       timer_tree_type.F90)
-                            
-                            
+
+if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
+  set_property (SOURCE secure_hash/md5_hash_type.F90
+                       secure_hash/sha1_hash_type.F90
+                PROPERTY COMPILE_FLAGS -fno-range-check)
+endif()
+
 include_directories(${Petaca_INCLUDE_DIR})
 include_directories(${Petaca_MODULE_DIR})
 include_directories(${YAJL_INCLUDE_DIR}) # for yajl_ext.c

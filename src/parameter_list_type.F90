@@ -1206,12 +1206,25 @@ contains
     else
       if (present(default)) then
         call set_vector (this, name, default)
+#ifdef GNU_54070
+        allocate(character(len(default)) :: value(size(default)))
+        call gnu_copy (default, value)
+#else
         value = default
+#endif
       else
         call error ('no such parameter: "' // name // '"', stat, errmsg)
       end if
     end if
 
+#ifdef GNU_54070
+  contains
+    subroutine gnu_copy (a, b)
+      character(*), intent(in)  :: a(:)
+      character(*), intent(out) :: b(:)
+      b = a
+    end subroutine
+#endif
   end subroutine get_vector_string
 
   !! The follow subroutines get the rank-2 array value of the named parameter
@@ -1410,12 +1423,25 @@ contains
     else
       if (present(default)) then
         call set_matrix (this, name, default)
+#ifdef GNU_54070
+        allocate(character(len(default)) :: value(size(default,1),size(default,2)))
+        call gnu_copy (default, value)
+#else
         value = default
+#endif
       else
         call error ('no such parameter: "' // name // '"', stat, errmsg)
       end if
     end if
 
+#ifdef GNU_54070
+  contains
+    subroutine gnu_copy (a, b)
+      character(*), intent(in)  :: a(:,:)
+      character(*), intent(out) :: b(:,:)
+      b = a
+    end subroutine
+#endif
   end subroutine get_matrix_string
 
 !!!! PARAMETER_LIST_ITERATOR TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
