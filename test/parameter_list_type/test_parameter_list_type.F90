@@ -39,7 +39,6 @@ program test_parameter_list_type
   call test_sublists
   call test_iterator
   call test_name
-  call test_set_sublist
 
   call exit (stat)
 
@@ -697,38 +696,6 @@ contains
     if (sl%name() /= 'foo->bar->fubar') call write_fail ('test_name failed test 4')
     call sl%set_name ('biz')
     if (sl%name() /= 'biz') call write_fail ('test_name failed test 5')
-  end subroutine
-
- !!
- !! Test setting sublist value
- !!
-
-  subroutine test_set_sublist
-    type(parameter_list) :: p1, p2
-    type(parameter_list), pointer :: sublist
-    integer :: n
-    character(:), allocatable :: s
-    !! Populate the list P2.
-    call p2%set ('a', 1)
-    call p2%set ('b', 'foo')
-    sublist => p2%sublist('c')
-    call sublist%set ('d', 'bar')
-    !! Make P2 a sublist of P1. 
-    call p1%set_sublist ('x', p2)
-    !! Check that it is the same as P2.
-    if (p1%is_sublist('x')) then
-      sublist => p1%sublist('x')
-      if (sublist%name() /= '$->x') call write_fail ('test_set_sublist failed test 2')
-      call sublist%get ('a', n)
-      if (n /= 1) call write_fail ('test_set_sublist failed test 3')
-      call sublist%get ('b', s)
-      if (s /= 'foo') call write_fail ('test_set_sublist failed test 4')
-      sublist => sublist%sublist('c')
-      call sublist%get ('d', s)
-      if (s /= 'bar') call write_fail ('test_set_sublist failed test 5')
-    else
-      call write_fail ('test_set_sublist failed test 1')
-    end if
   end subroutine
 
   subroutine write_fail (errmsg)
