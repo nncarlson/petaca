@@ -1,7 +1,3 @@
-project(TimerTreeTest)
-
-include(CTest)
-
 # Want test modules in the build directory.
 unset(CMAKE_Fortran_MODULE_DIRECTORY)
 

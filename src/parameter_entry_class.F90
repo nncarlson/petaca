@@ -489,10 +489,6 @@ contains
 #if defined(INTEL_DPD200255963)
       if (allocated(value)) deallocate(value)
       allocate(value(size(v)), source=v)
-#elif defined(GNU_54070)
-      if (allocated(value)) deallocate(value)
-      allocate(character(len(v)) :: value(size(v)))
-      call gnu_copy (v, value)
 #else
       value = v
 #endif
@@ -500,14 +496,6 @@ contains
     class default
       errc = .true.
     end select
-#ifdef GNU_54070
-  contains
-    subroutine gnu_copy (a, b)
-      character(*), intent(in)  :: a(:)
-      character(*), intent(out) :: b(:)
-      b = a
-    end subroutine
-#endif
   end subroutine
 
   subroutine get_vector_logical (this, value, errc)
@@ -721,10 +709,6 @@ contains
 #if defined(INTEL_DPD200255963)
       if (allocated(value)) deallocate(value)
       allocate(value(size(v,1),size(v,2)), source=v)
-#elif defined(GNU_54070)
-      if (allocated(value)) deallocate(value)
-      allocate(character(len(v)) :: value(size(v,1),size(v,2)))
-      call gnu_copy (v, value)
 #else
       value = v
 #endif
@@ -732,14 +716,6 @@ contains
     class default
       errc = .true.
     end select
-#ifdef GNU_54070
-  contains
-    subroutine gnu_copy (a, b)
-      character(*), intent(in)  :: a(:,:)
-      character(*), intent(out) :: b(:,:)
-      b = a
-    end subroutine
-#endif
   end subroutine
 
   subroutine get_matrix_logical (this, value, errc)
