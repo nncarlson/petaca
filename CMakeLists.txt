@@ -101,8 +101,7 @@ elseif(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
   endif()
 elseif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
   if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "6.0.0")
-    message(FATAL_ERROR "GFortran versions prior to 6.0 are not supported; "
-        "your version is ${CMAKE_Fortran_COMPILER_VERSION}")
+    list(APPEND Fortran_COMPILE_DEFINITIONS NO_2008_SOURCED_ALLOC_ARRAY)
   endif()
   list(APPEND Fortran_COMPILE_DEFINITIONS NO_2008_GENERIC_RESOLUTION)
   list(APPEND Fortran_COMPILE_DEFINITIONS NO_2008_LHS_POLY_REALLOC)
@@ -110,6 +109,18 @@ elseif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
   list(APPEND Fortran_COMPILE_DEFINITIONS GNU_61767)
   # Eliminate spurious runtime check errors caused by GCC gug PR67505
   set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} -fcheck=no-recursion")
+  # GFortran warning
+  if(NOT WIN32)
+    string(ASCII 27 esc)
+    set(BoldRed "${esc}[1;31m")
+    set(ResetColor "${esc}[m")
+  endif()
+  message(WARNING "${BoldRed}"
+      "GFortran ${CMAKE_Fortran_COMPILER_VERSION} has incomplete/flawed support of "
+      "finalization (PR37336), unlimited polymorphic variables (PR67564), and "
+      "deferred-length character variables (PR68241), which may result in the "
+      "code not executing properly; see https://gcc.gnu.org/bugzilla/query.cgi."
+      "${ResetColor}")
 endif()
 
 # Append preprocessor defines to the compiler flags
@@ -119,14 +130,6 @@ endforeach()
 message(STATUS "The Fortran compiler identification is "
     "${CMAKE_Fortran_COMPILER_ID} ${CMAKE_Fortran_COMPILER_VERSION}")
 message(STATUS "CMAKE_Fortran_FLAGS=${CMAKE_Fortran_FLAGS}")
-
-# GFortran warning
-if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
-  message(WARNING "The GFortran 6.0 compiler has incomplete/flawed support "
-      "of finalization (PR37336), unlimited polymorphic variables (PR67564), "
-      "and deferred-length character variables (PR68241), which may result "
-      "in the code not executing properly.")
-endif()
 
 #-------------------------------------------------------------------------------
 # Installation Definitions
