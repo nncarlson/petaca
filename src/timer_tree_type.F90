@@ -70,15 +70,15 @@
 !!    an optional integer HANDLE returned by START is specified, only the
 !!    accumulated times for that timer and its decendents are written.
 !!
-!!  READ(HANDLE, CPU) returns, in the default real argument CPU, the elapsed
+!!  READ(HANDLE, TIME) returns, in the default real argument TIME, the elapsed
 !!    time for the timer associated with the HANDLE returned by START.  The
 !!    timer may be running or stopped.
 !!
-!!  SERIALIZE(TREE, NAME, CPU) returns the current state of the timer tree
+!!  SERIALIZE(TREE, NAME, TIME) returns the current state of the timer tree
 !!    in flat arrays.  Timers may be running or stopped and their state is
 !!    unaltered.  The allocatable, deferred-length character array NAME and
-!!    allocatable default real array CPU return the timer names and elapsed
-!!    cpu times indexed by tree node number.  The allocatable default integer
+!!    allocatable default real array TIME return the timer names and elapsed
+!!    times indexed by tree node number.  The allocatable default integer
 !!    array TREE returns the structure of the tree as a sequence of node
 !!    numbers: node numbers appear in matching pairs, like opening and closing
 !!    parentheses, with the intervening sequence describing the trees of its
@@ -86,8 +86,8 @@
 !!    of the pairs appear in sequential order.  This enables a simple
 !!    reconstruction of the tree; see USING THE OUTPUT OF SERIALIZE below.
 !!
-!!  DESERIALIZE(TREE, NAME, CPU) defines the state of the timer tree using
-!!    the TREE, NAME, and CPU arrays as returned by SERIALIZE.  This can be
+!!  DESERIALIZE(TREE, NAME, TIME) defines the state of the timer tree using
+!!    the TREE, NAME, and TIME arrays as returned by SERIALIZE.  This can be
 !!    used to initialize a timer tree with results from a previous simulation,
 !!    for example.  Note that timer handles are not preserved.
 !!
@@ -104,9 +104,9 @@
 !!  CALL START_TIMER (NAME [,HANDLE])
 !!  CALL STOP_TIMER (NAME [,STAT [,ERRMSG]])
 !!  CALL WRITE_TIMER_TREE (UNIT, INDENT [,HANDLE])
-!!  CALL READ_TIMER (HANDLE, CPU)
-!!  CALL SERIALIZE_TIMER_TREE (TREE, NAME, CPU)
-!!  CALL DESERIALIZE_TIMER_TREE (TREE, NAME, CPU)
+!!  CALL READ_TIMER (HANDLE, TIME)
+!!  CALL SERIALIZE_TIMER_TREE (TREE, NAME, TIME)
+!!  CALL DESERIALIZE_TIMER_TREE (TREE, NAME, TIME)
 !!
 !! In addition there is the subroutine
 !!
@@ -124,17 +124,15 @@
 !! with a particular key, wherever it occurs in the tree, would be a simple
 !! post-processing step.
 !!
-!! For portability the Fortran intrinsic subroutine CPU_TIME is used to
-!! acquire the processor time, and thus the resolution of the timers is
-!! limited by the resolution of this subroutine, which varies from one
-!! system to another but is typically not very fine.  As a result, these
-!! timers are not well suited to timing computationally short bits of code.
+!! The intrinsic subroutine SYSTEM_CLOCK is used to read the wall-clock time.
+!! This provides an accurate measure of real time in threaded contexts. 
 !!
 
 #include "f90_assert.fpp"
 
 module timer_tree_type
 
+  use,intrinsic :: iso_fortran_env, only: int64
   implicit none
   private
 
@@ -156,8 +154,8 @@ module timer_tree_type
   type :: node
     integer :: handle = 0
     character(:), allocatable :: name
-    real :: cpu_elapsed  = 0.0
-    real :: cpu_start = 0.0
+    real :: time  = 0.0
+    integer(int64) :: count = 0
     type(node), pointer :: parent  => null()
     type(node), pointer :: sibling => null()
     type(node), pointer :: child   => null()
@@ -182,7 +180,7 @@ contains
     end if
     ASSERT(associated(this%current))
     this%current => sibling_with_name(this%current%child)
-    call cpu_time (this%current%cpu_start)
+    call system_clock (this%current%count)
     if (present(handle)) handle = this%current%handle
     this%max_name_len = max(len(name), this%max_name_len)
   contains
@@ -209,7 +207,7 @@ contains
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
     character(:), allocatable :: msg
-    real :: cpu_stop
+    integer(int64) :: count, count_rate, count_max
     INSIST(associated(this%current))
     if (name /= this%current%name) then
       msg = 'TIMER_TREE%STOP: current timer is ' // this%current%name // '; cannot stop ' // name
@@ -217,8 +215,12 @@ contains
       return
     end if
     if (present(stat)) stat = 0
-    call cpu_time (cpu_stop)
-    this%current%cpu_elapsed = this%current%cpu_elapsed + (cpu_stop - this%current%cpu_start)
+    call system_clock (count, count_rate, count_max)
+    if (count >= this%current%count) then
+      this%current%time = this%current%time + (count-this%current%count)/real(count_rate)
+    else  ! the counter wrapped
+      this%current%time = this%current%time + (count_max-(this%current%count-count-1))/real(count_rate)
+    end if
     this%current => this%current%parent
   end subroutine timer_tree_stop
 
@@ -265,7 +267,7 @@ contains
       type(node), intent(in) :: timer
       integer, intent(in) :: tab
       type(node), pointer :: child
-      write(unit,fmt='(3a,es12.5)') repeat(' ',tab), timer%name, ':', timer%cpu_elapsed
+      write(unit,fmt='(3a,es12.5)') repeat(' ',tab), timer%name, ':', timer%time
       child => timer%child
       do while (associated(child))
         call write_tree (child, tab+indent)
@@ -274,20 +276,20 @@ contains
     end subroutine write_tree
   end subroutine timer_tree_write
 
-  subroutine timer_tree_serialize (this, tree, name, cpu)
+  subroutine timer_tree_serialize (this, tree, name, time)
     class(timer_tree), intent(in) :: this
     integer, allocatable, intent(out) :: tree(:)
     character(:), allocatable, intent(out) :: name(:)
-    real, allocatable, intent(out) :: cpu(:)
+    real, allocatable, intent(out) :: time(:)
     type(node), pointer :: child
     integer :: n, m
     ASSERT(associated(this%root))
     n = timer_tree_size(this)
-    allocate(tree(2*n), cpu(n))
+    allocate(tree(2*n), time(n))
     allocate(character(this%max_name_len)::name(n))
     call accumulate_elapsed_time (this) ! for any running timers
     !! Global counters referenced by the recursive calls to SERIALIZE.
-    n = 0 ! last defined location in name and CPU; also the last assigned node number.
+    n = 0 ! last defined location in name and TIME; also the last assigned node number.
     m = 0 ! last defined location in TREE.
     !! Serialize the trees rooted at each of the children; the root node
     !! isn't a real timer so we can't just call SERIALIZE on the root node.
@@ -305,7 +307,7 @@ contains
       n = n + 1
       ASSERT(n <= size(name))
       name(n) = timer%name
-      cpu(n) = timer%cpu_elapsed
+      time(n) = timer%time
       !! Start of nesting for this node.
       this_n = n ! local to this recursive invocation; n is global.
       m = m + 1
@@ -324,14 +326,14 @@ contains
     end subroutine serialize
   end subroutine timer_tree_serialize
 
-  subroutine timer_tree_deserialize (this, tree, name, cpu)
+  subroutine timer_tree_deserialize (this, tree, name, time)
     class(timer_tree), intent(out) :: this
     integer, intent(in) :: tree(:)
     character(*), intent(in) :: name(:)
-    real, intent(in) :: cpu(:)
+    real, intent(in) :: time(:)
     integer :: n, m, j
     type(node), pointer :: timer
-    ASSERT(size(name) == size(cpu))
+    ASSERT(size(name) == size(time))
     ASSERT(size(tree) == 2*size(name))
     INSIST(minval(tree) >= 1 .and. maxval(tree) <= size(name))
     INSIST(valid_tree())
@@ -344,7 +346,7 @@ contains
       else
         timer => this%current ! save pointer to timer before next stop changes it
         call this%stop (trim(name(n)))
-        timer%cpu_elapsed = cpu(n)  ! overwrite with the correct data
+        timer%time = time(n)  ! overwrite with the correct data
       end if
     end do
   contains
@@ -373,20 +375,24 @@ contains
     end function valid_tree
   end subroutine timer_tree_deserialize
 
-  subroutine timer_tree_read (this, handle, cpu)
+  subroutine timer_tree_read (this, handle, time)
     class(timer_tree), intent(in) :: this
     integer, intent(in) :: handle
-    real, intent(out) :: cpu
+    real, intent(out) :: time
     type(node), pointer :: timer
-    real :: cpu_now
+    integer(int64) :: count, count_rate, count_max
     ASSERT(associated(this%root))
     ASSERT(handle > 0 .and. handle <= this%root%handle)
     timer => timer_with_handle(this, handle)
     ASSERT(associated(timer))
-    cpu = timer%cpu_elapsed
+    time = timer%time
     if (running(this, timer)) then  ! add the time since it was started
-      call cpu_time (cpu_now)
-      cpu = cpu + (cpu_now - timer%cpu_start)
+      call system_clock (count, count_rate, count_max)
+      if (count >= timer%count) then
+        time = time + (count-timer%count)/real(count_rate)
+      else  ! the counter wrapped
+        time = time + (count_max-(timer%count-count-1))/real(count_rate)
+      end if
     end if
   end subroutine timer_tree_read
 
@@ -398,13 +404,17 @@ contains
   subroutine accumulate_elapsed_time (this)
     class(timer_tree), intent(in) :: this
     type(node), pointer :: timer
-    real :: cpu_now
+    integer(int64) :: count, count_rate, count_max
     ASSERT(associated(this%current))
-    call cpu_time (cpu_now)
+    call system_clock (count, count_rate, count_max)
     timer => this%current
     do while (associated(timer%parent))
-      timer%cpu_elapsed = timer%cpu_elapsed + (cpu_now - timer%cpu_start)
-      timer%cpu_start = cpu_now
+      if (count >= timer%count) then
+        timer%time = timer%time + (count-timer%count)/real(count_rate)
+      else  ! the counter wrapped
+        timer%time = timer%time + (count_max-(timer%count-count-1))/real(count_rate)
+      end if
+      timer%count = count
       timer => timer%parent
     end do
   end subroutine accumulate_elapsed_time
@@ -488,28 +498,28 @@ contains
     call global%write (unit, indent, handle)
   end subroutine write_timer_tree
 
-  subroutine serialize_timer_tree (tree, name, cpu)
+  subroutine serialize_timer_tree (tree, name, time)
     integer, allocatable, intent(out) :: tree(:)
     character(:), allocatable, intent(out) :: name(:)
-    real, allocatable, intent(out) :: cpu(:)
-    call global%serialize (tree, name, cpu)
+    real, allocatable, intent(out) :: time(:)
+    call global%serialize (tree, name, time)
   end subroutine serialize_timer_tree
 
-  subroutine deserialize_timer_tree (tree, name, cpu)
+  subroutine deserialize_timer_tree (tree, name, time)
     integer, intent(in) :: tree(:)
     character(*), intent(in) :: name(:)
-    real, intent(in) :: cpu(:)
-    call global%deserialize (tree, name, cpu)
+    real, intent(in) :: time(:)
+    call global%deserialize (tree, name, time)
   end subroutine deserialize_timer_tree
 
   subroutine reset_timer_tree ()
     call timer_tree_delete (global)
   end subroutine reset_timer_tree
 
-  subroutine read_timer (handle, cpu)
+  subroutine read_timer (handle, time)
     integer, intent(in) :: handle
-    real, intent(out) :: cpu
-    call global%read (handle, cpu)
+    real, intent(out) :: time
+    call global%read (handle, time)
   end subroutine read_timer
 
 end module timer_tree_type
