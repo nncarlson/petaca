@@ -1,42 +1,54 @@
+# This module finds the YAJL library and include file directory.
+# YAJL_FOUND is set to True if both are found, and the following
+# variables are returned.
 #
-# Find libyajl
+#  YAJL_INCLUDE_DIRS
+#  YAJL_LIBRARIES
+#  YAJL_VERSION
 #
-# yajl is the json parser wrapped by yajl-fort
+# This module also defines the imported library target "yajl".  It is
+# generally enough to include "yajl" as a target link library; cmake
+# will automatically handle adding the appropriate compile include flags
+# and collection of link libraries.
 #
-# YAJL_FOUND          - true if yajl was found
-# YAJL_INCLUDE_DIRS   - where to find the header file yajl/yajl_common.h
-# YAJL_LIBRARIES      - where to find the library libyail
-#
-# YAJL_VERSION_MAJOR  - the major version of yajl
-# YAJL_VERSION_MINOR  - the minor version of yajl
-# YAJL_VERSION_PATCH  - the patch version of yajl
-# YAJL_VERSION_STRING - the yajl version string (x.y.z)
-#
+# Set the variable CMAKE_PREFIX_PATH to provide a hint to the module for
+# where to find the library and header file.  This is searched before the
+# standard system locations.
 
-find_path(YAJL_INCLUDE_DIR yajl/yajl_version.h)
+find_path(YAJL_INCLUDE_DIR yajl/yajl_common.h)
+find_library(YAJL_LIBRARY NAMES yajl yajl_s) 
 
-if(YAJL_INCLUDE_DIR AND EXISTS "${YAJL_INCLUDE_DIR}/yajl/yajl_version.h")
-  file(STRINGS "${YAJL_INCLUDE_DIR}/yajl/yajl_version.h" YAJL_H REGEX "^#define YAJL_MAJOR .*$")
-  string(REGEX REPLACE "^.*YAJL_MAJOR ([0-9]+).*$" "\\1" YAJL_VERSION_MAJOR "${YAJL_H}")
-  file(STRINGS "${YAJL_INCLUDE_DIR}/yajl/yajl_version.h" YAJL_H REGEX "^#define YAJL_MINOR .*$")
-  string(REGEX REPLACE "^.*YAJL_MINOR ([0-9]+).*$" "\\1" YAJL_VERSION_MINOR "${YAJL_H}")
-  file(STRINGS "${YAJL_INCLUDE_DIR}/yajl/yajl_version.h" YAJL_H REGEX "^#define YAJL_MICRO .*$")
-  string(REGEX REPLACE "^.*YAJL_MICRO ([0-9]+).*$" "\\1" YAJL_VERSION_PATCH "${YAJL_H}")
-  set(YAJL_VERSION_STRING "${YAJL_VERSION_MAJOR}.${YAJL_VERSION_MINOR}.${YAJL_VERSION_PATCH}")
+if(NOT YAJL_VERSION)
+  if(YAJL_INCLUDE_DIR AND YAJL_LIBRARY)
+    set(yajl_version_h ${YAJL_INCLUDE_DIR}/yajl/yajl_version.h)
+    include(SearchHeaderFile)
+    search_header_file(${yajl_version_h} "YAJL_MAJOR" _major)
+    search_header_file(${yajl_version_h} "YAJL_MINOR" _minor)
+    search_header_file(${yajl_version_h} "YAJL_MICRO" _micro)
+    set(YAJL_VERSION ${_major}.${_minor}.${_micro})
+    unset(_major)
+    unset(_minor)
+    unset(_micro)
+    unset(yajl_version_h)
+  else()
+    set(YAJL_VERSION YAJL_VERSION-NOTFOUND)
+  endif()
 endif()
- 
-find_library(YAJL_LIBRARY NAMES yajl yajl_s HINTS ${YAJL_LIBRARY_DIR})
- 
-INCLUDE(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(YAJL REQUIRED_VARS YAJL_LIBRARY YAJL_INCLUDE_DIR
-                                  VERSION_VAR YAJL_VERSION_STRING)
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(YAJL
+    REQUIRED_VARS YAJL_LIBRARY YAJL_INCLUDE_DIR 
+    VERSION_VAR YAJL_VERSION)
 
 if(YAJL_FOUND)
   set(YAJL_INCLUDE_DIRS ${YAJL_INCLUDE_DIR})
   set(YAJL_LIBRARIES ${YAJL_LIBRARY})
-  add_library(yajl UNKNOWN IMPORTED)
-  set_target_properties(yajl PROPERTIES
-    IMPORTED_LOCATION "${YAJL_LIBRARY}"
-    IMPORTED_INCLUDE_DIRECTORIES ${YAJL_INCLUDE_DIR})
+  mark_as_advanced(YAJL_INCLUDE_DIR YAJL_LIBRARY)
+  if(NOT TARGET yajl)
+    add_library(yajl UNKNOWN IMPORTED)
+    set_target_properties(yajl PROPERTIES
+        IMPORTED_LOCATION "${YAJL_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${YAJL_INCLUDE_DIRS}"
+        INTERFACE_LINK_LIBRARIES "${YAJL_LIBRARIES}")
+  endif()
 endif()
-

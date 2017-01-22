@@ -19,7 +19,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${Petaca_SOURCE_DIR}/cmake/Modules/"
 # The parameter list stuff requires the yajl library.
 # If necessary set YAJL_INCLUDE_DIR and YAJL_LIBRARY_DIR.
 find_package(YAJL REQUIRED)
-if(YAJL_VERSION_STRING VERSION_LESS "2.0.1")
+if(YAJL_VERSION VERSION_LESS "2.0.1")
   message(FATAL_ERROR "libyajl 2.0.1 or later is required")
 endif()
 
