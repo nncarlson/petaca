@@ -14,16 +14,20 @@ program shlib_type_test
     end function
   end interface
   procedure(f), pointer :: fptr
-  
+
   integer :: status = 0
-  
-  call test_libm_cbrtf
+
+  !call test_libm_cbrtf
   call test_mylib_square
   call test_mylib_var
-  
+
   call exit (status)
-  
+
 contains
+
+  ! The libm.so library is no longer an actual library on some platforms, but
+  ! a linker script which the system dlopen does not know how to deal with.
+  ! Thus this test is too fragile to be used.  Code retained for reference.
 
   subroutine test_libm_cbrtf
 
@@ -40,14 +44,14 @@ contains
       write(error_unit,*) 'test_libm_cbrtf failed'
     end if
     call libm%close
-  
+
   end subroutine test_libm_cbrtf
-  
+
   subroutine test_mylib_square
-  
+
     type(c_funptr)  :: funptr
     type(shlib) :: mylib
-  
+
     call mylib%open('./libmylib.so', RTLD_NOW)
     call mylib%func ('square', funptr)  ! square function
     call c_f_procpointer (funptr, fptr)
@@ -57,9 +61,9 @@ contains
       write(error_unit,*) 'test_mylib_square failed'
     end if
     call mylib%close
-  
+
   end subroutine test_mylib_square
-  
+
   subroutine test_mylib_var
     type(shlib) :: mylib
     integer, pointer :: n
