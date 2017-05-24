@@ -21,15 +21,24 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
                 PROPERTY COMPILE_FLAGS -fno-range-check)
 endif()
 
-include_directories(${Petaca_INCLUDE_DIR})
-include_directories(${Petaca_MODULE_DIR})
+set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod_files/)
+
 include_directories(${YAJL_INCLUDE_DIR}) # for yajl_ext.c
 
 add_library(petaca ${Petaca_SOURCE_FILES})
 
-target_link_libraries(petaca dl) # for fortran_dynamic_loader
-target_link_libraries(petaca yajl)  # for yajl-fort
+target_link_libraries(petaca PUBLIC yajl dl)
 
-install(TARGETS petaca DESTINATION lib)
-        
+target_include_directories(petaca PUBLIC
+    $<BUILD_INTERFACE:${Petaca_INCLUDE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_Fortran_MODULE_DIRECTORY}>
+    $<INSTALL_INTERFACE:include>
+)
+
+install(TARGETS petaca
+        EXPORT  truchas
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+)
+
 install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY} DESTINATION include)

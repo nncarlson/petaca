@@ -23,10 +23,6 @@ if(YAJL_VERSION VERSION_LESS "2.0.1")
   message(FATAL_ERROR "libyajl 2.0.1 or later is required")
 endif()
 
-# Put all module files in a subdirectory of the root build directory
-set(Petaca_MODULE_DIR ${Petaca_BINARY_DIR}/mod_files/)
-set(CMAKE_Fortran_MODULE_DIRECTORY ${Petaca_MODULE_DIR})
-
 set(Petaca_INCLUDE_DIR ${Petaca_SOURCE_DIR}/include)
 
 # ---------------------------------------------------------------------------- #
