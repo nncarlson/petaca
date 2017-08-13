@@ -339,7 +339,6 @@ contains
       call write_fail ('test_get_any failed test 6')
     end select
 
-#ifndef GNU_67564
     call p%get_any ('d', vector, default=['foo','bar'])
     select type (vector)
     type is (character(*))
@@ -355,7 +354,6 @@ contains
     class default
       call write_fail ('test_get_any failed test 8m')
     end select
-#endif
 
     !call p%set ('e', [point(1.0,2.0)])
     call p%get_any ('e', vector, default=[point(1.0,2.0)])
@@ -408,7 +406,6 @@ contains
       call write_fail ('test_get_any failed test 16')
     end select
 
-#ifndef GNU_67564
     call p%get_any ('d', vector, default=[point(1.0,2.0)])
     select type (vector)
     type is (character(*))
@@ -424,7 +421,6 @@ contains
     class default
       call write_fail ('test_get_any failed test 18m')
     end select
-#endif
 
     call p%get_any ('e', vector, default=[13])
     select type (vector)

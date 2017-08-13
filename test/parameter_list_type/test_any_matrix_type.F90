@@ -37,9 +37,7 @@ program test_any_matrix_type
   call test_set_get_real32
   call test_set_get_real64
   call test_set_get_logical
-#ifndef GNU_67564
   call test_set_get_character
-#endif
   call test_get_value
   call test_value_ptr
   call test_derived_type_value
@@ -250,7 +248,6 @@ contains
 
   end subroutine
 
-#ifndef GNU_67564
   subroutine test_set_get_character
 
     type(any_matrix) :: x
@@ -290,7 +287,6 @@ contains
     end if
 
   end subroutine
-#endif
 
   subroutine test_get_value
 
@@ -336,7 +332,6 @@ contains
       end if
     end if
 
-#ifndef GNU_67564
     cref = reshape(['biz','bat'], shape=[2,1])
     call x%set_value (cref)
     call x%get_value (val)
@@ -354,7 +349,6 @@ contains
         end select
       end if
     end if
-#endif
 
   end subroutine
 
@@ -386,7 +380,6 @@ contains
       call write_fail ('test_value_ptr failed test 4')
     end select
 
-#ifndef GNU_67564
     cref = reshape(['biz','bat'], shape=[2,1])
     call x%set_value (cref)
     val => x%value_ptr()
@@ -396,7 +389,6 @@ contains
     class default
       call write_fail ('test_value_ptr failed test 6')
     end select
-#endif
 
   end subroutine
 
