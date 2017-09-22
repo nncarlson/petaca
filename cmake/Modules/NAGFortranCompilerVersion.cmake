@@ -10,7 +10,7 @@
 # the compiler with the "-version" flag. 
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
-  if(NOT CMAKE_Fortran_COMPILER_VERSION)
+  if(NOT CMAKE_Fortran_COMPILER_VERSION OR CMAKE_Fortran_COMPILER_VERSION VERSION_EQUAL "0.0.0.0")
     execute_process(COMMAND ${CMAKE_Fortran_COMPILER} -V ERROR_VARIABLE _info)
     if(${_info} MATCHES "([0-9]+)\\.([0-9]+)\\.?([0-9]+)?")
       set(_major "${CMAKE_MATCH_1}")
