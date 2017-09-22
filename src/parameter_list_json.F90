@@ -109,8 +109,9 @@ module parameter_list_json
   private
 
   public :: parameter_list_from_json_stream, parameters_from_json_stream
+  public :: parameter_list_from_json_string, parameters_from_json_string
   public :: parameter_list_to_json
-  
+
   interface parameter_list_from_json_stream
     procedure parameter_list_from_json_stream_default, parameter_list_from_json_stream_name
   end interface
@@ -260,7 +261,7 @@ contains
     integer :: buflen, last_pos, curr_pos, ios
 
     !TODO: check unit is open with unformatted stream access
-    
+
     stat = 0
 
     !! Initialize the parser
@@ -310,6 +311,63 @@ contains
     end do
 
   end subroutine parameters_from_json_stream
+
+
+  subroutine parameter_list_from_json_string(string, plist, errmsg)
+    character(*), intent(in), target :: string
+    type(parameter_list), pointer, intent(out) :: plist
+    character(:), allocatable, intent(out) :: errmsg
+    integer :: stat
+    allocate(plist)
+    call parameters_from_json_string(string, plist, stat, errmsg)
+    if (stat /= 0) then
+      deallocate(plist)
+#ifdef INTEL_DPD200249493
+      nullify(plist)
+#endif
+      INSIST(.not.associated(plist))
+    end if
+  end subroutine parameter_list_from_json_string
+
+
+  subroutine parameters_from_json_string(string, plist, stat, errmsg)
+
+    use,intrinsic :: iso_c_binding, only: c_loc, c_f_pointer
+
+    character(*), intent(in), target :: string
+    type(parameter_list), target :: plist
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    type(plist_builder), target :: builder
+    type(fyajl_parser),  target :: parser
+    type(fyajl_status) :: yajl_stat
+    character, pointer :: buffer(:)
+
+    stat = 0
+
+    !! This may be a little dicey...
+    call c_f_pointer(c_loc(string(1:1)), buffer, shape=[len(string)])
+
+    call builder%init(plist)
+    call parser%init(builder)
+    call parser%parse(buffer, yajl_stat)
+    if (yajl_stat /= FYAJL_STATUS_OK) then
+      errmsg = fyajl_get_error(parser, .true., buffer)
+      if (yajl_stat == FYAJL_STATUS_CLIENT_CANCELED) errmsg = errmsg // builder%errmsg
+      stat = -1
+      return
+    end if
+    call parser%complete_parse(yajl_stat)
+    if (yajl_stat /= FYAJL_STATUS_OK) then
+      errmsg = fyajl_get_error(parser, .false., buffer)
+      if (yajl_stat == FYAJL_STATUS_CLIENT_CANCELED) errmsg = errmsg // builder%errmsg
+      stat = -1
+      return
+    end if
+
+  end subroutine parameters_from_json_string
+
 
   subroutine init (this, plist)
     class(plist_builder), intent(out) :: this
@@ -714,7 +772,7 @@ contains
     end if
 
     if (allocated(this%mold)) then
-      if (.not.same_type_as(value, this%mold)) then
+      if (.not.my_same_type_as(value, this%mold)) then
         status = FYAJL_TERMINATE_PARSING
 #ifdef INTEL_DPD200237118
         uptr => this%mold
@@ -1058,5 +1116,33 @@ contains
     end do
 
   end subroutine parameter_list_to_json_aux
+
+  !! The behavior of the intrinsic SAME_TYPE_AS function is processor-dependent
+  !! when applied to CLASS(*) variables with intrinsic dynamic type, making it
+  !! useless for the present need.  Hence this custom version.  The variables
+  !! will have one of the types returned for values by the YAJL_FORT parser,
+  !! namely an integer and real of one specific kind, default logical and
+  !! character.
+
+  logical function my_same_type_as(a, b)
+    class(*), intent(in) :: a, b
+    my_same_type_as = (type_num(a) == type_num(b))
+  contains
+    integer function type_num(a)
+      class(*), intent(in) :: a
+      select type (a)
+      type is (integer(fyajl_integer_kind))
+        type_num = 1
+      type is (real(fyajl_real_kind))
+        type_num = 2
+      type is (logical)
+        type_num = 3
+      type is (character(*))
+        type_num = 4
+      class default
+        INSIST(.false.)
+      end select
+    end function type_num
+  end function my_same_type_as
 
 end module parameter_list_json

@@ -13,3 +13,7 @@ add_test(any_matrix test_any_matrix_type)
 add_executable (test_parameter_list_type test_parameter_list_type.F90)
 target_link_libraries(test_parameter_list_type petaca)
 add_test(parameter_list test_parameter_list_type)
+
+add_executable (test_parameter_list_json test_parameter_list_json.F90)
+target_link_libraries(test_parameter_list_json petaca)
+add_test(parameter_list_json test_parameter_list_json)
