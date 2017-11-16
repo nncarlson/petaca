@@ -197,7 +197,12 @@ module json
 
   type, extends(json_struct), public :: json_array
     private
+#ifdef INTEL_BUG20171115
+    type(array_element), pointer :: first => null()
+    type(array_element), pointer :: last => null()
+#else
     type(array_element), pointer :: first => null(), last => null()
+#endif
   contains
     procedure :: append => array_append_value
     procedure :: write => array_write
