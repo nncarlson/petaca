@@ -1131,9 +1131,9 @@ contains
     integer function type_num(a)
       class(*), intent(in) :: a
       select type (a)
-      type is (integer(fyajl_integer_kind))
+      type is (integer)
         type_num = 1
-      type is (real(fyajl_real_kind))
+      type is (real(kind(1.0d0)))
         type_num = 2
       type is (logical)
         type_num = 3

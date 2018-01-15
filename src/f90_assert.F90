@@ -42,7 +42,7 @@ subroutine f90_assert (file, line)
   integer,      intent(in) :: line
 
   write(error_unit,fmt='(3a,i4.4)') 'Assertion failed at ', file, ':', line
-  stop
+  stop 1
 
 end subroutine f90_assert
 
