@@ -34,6 +34,7 @@ program test_parameter_list_json
 
   call test_vector_valid
   call test_vector_invalid
+  call test_string_array
 
   call exit (stat)
 
@@ -77,6 +78,22 @@ contains
     if (associated(plist)) call write_fail('test_vector_invalid failed test 5')
     call parameter_list_from_json_string('{"array":[true,"boy"]}', plist, errmsg)
     if (associated(plist)) call write_fail('test_vector_invalid failed test 6')
+  end subroutine
+
+  !! This tests the construction of string-valued arrays, which trips bugs in
+  !! some compilers.
+
+  subroutine test_string_array
+    type(parameter_list), pointer :: plist
+    character(:), allocatable :: errmsg, array(:)
+    integer :: stat
+    call parameter_list_from_json_string('{"array":["foo","bar"]}', plist, errmsg)
+    if (.not.associated(plist)) call write_fail('test_string_array failed test 1')
+    call plist%get('array', array, stat=stat, errmsg=errmsg)
+    if (stat /= 0) call write_fail('test_string_array failed test 2: ' // errmsg)
+    if (size(array) /= 2) call write_fail('test_string_array failed test3')
+    if (array(1) /= 'foo') call write_fail('test_string_array failed test4: "' // array(1) // '"')
+    if (array(2) /= 'bar') call write_fail('test_string_array failed test5: "' // array(2) // '"')
   end subroutine
 
   subroutine write_fail(errmsg)
