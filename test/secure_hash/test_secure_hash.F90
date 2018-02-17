@@ -60,9 +60,6 @@ contains
 #ifdef NO_2008_EXECUTE_COMMAND_LINE
     comstat = system(command)
 #else
-#ifdef INTEL_CHECK_BUG
-    comstat = 0
-#endif
     call execute_command_line (command, exitstat=comstat)
 #endif
     valid_hash_aux = (comstat == 0)

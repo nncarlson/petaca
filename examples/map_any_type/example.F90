@@ -5,7 +5,7 @@ program example
   type(map_any) :: map, map_copy
   type(map_any_iterator) :: iter
   class(*), pointer :: value
-#if defined(INTEL_BUG20180115) || defined(INTEL_DPD200237118)
+#if defined(INTEL_BUG20180115)
   class(*), pointer :: uptr
 #endif
 
@@ -34,7 +34,7 @@ program example
   !! Write the contents.
   iter = map_any_iterator(map)
   do while (.not.iter%at_end())
-#if defined(INTEL_BUG20180115) || defined(INTEL_DPD200237118)
+#if defined(INTEL_BUG20180115)
     uptr => iter%value()
     select type (uptr)
 #else

@@ -168,9 +168,6 @@ module parameter_list_json
     procedure :: push_array => array_push_array
     procedure :: pop_array => array_pop_array
     procedure :: to_array => array_to_array
-#ifdef INTEL_DPD200357694
-    final :: array_data_delete
-#endif
   end type array_data
 
   !! Parsing state labels.
@@ -185,11 +182,7 @@ module parameter_list_json
     integer :: state
     type(parameter_list_stack) :: pstack
     character(:), allocatable :: name
-#ifdef INTEL_DPD200357693
-    type(array_data) :: array
-#else
     type(array_data), allocatable :: array
-#endif
     character(:), allocatable :: errmsg
   contains
     procedure :: init
@@ -215,13 +208,7 @@ contains
     integer :: stat
     allocate(plist)
     call parameters_from_json_stream (unit, plist, stat, errmsg)
-    if (stat /= 0) then
-      deallocate(plist)
-#ifdef INTEL_DPD200249493
-      nullify(plist)
-#endif
-      INSIST(.not.associated(plist))
-    end if
+    if (stat /= 0) deallocate(plist)
   end subroutine parameter_list_from_json_stream_default
 
   subroutine parameter_list_from_json_stream_name (unit, name, plist, errmsg)
@@ -233,13 +220,7 @@ contains
     allocate(plist)
     call plist%set_name (name)
     call parameters_from_json_stream (unit, plist, stat, errmsg)
-    if (stat /= 0) then
-      deallocate(plist)
-#ifdef INTEL_DPD200249493
-      nullify(plist)
-#endif
-      INSIST(.not.associated(plist))
-    end if
+    if (stat /= 0) deallocate(plist)
   end subroutine parameter_list_from_json_stream_name
 
 
@@ -272,14 +253,7 @@ contains
 
     inquire(unit,pos=last_pos)  ! starting position in stream
     do
-#ifdef INTEL_DPD200237439
-      do buflen = 1, size(buffer)
-        read(10,iostat=ios) buffer(buflen)
-        if (ios /= 0) exit
-      end do
-#else
       read(unit,iostat=ios) buffer
-#endif
       if (ios /= 0 .and. ios /= iostat_end) then
         write(error_unit,'(a,i0)') 'read error: iostat=', ios
         exit
@@ -320,13 +294,7 @@ contains
     integer :: stat
     allocate(plist)
     call parameters_from_json_string(string, plist, stat, errmsg)
-    if (stat /= 0) then
-      deallocate(plist)
-#ifdef INTEL_DPD200249493
-      nullify(plist)
-#endif
-      INSIST(.not.associated(plist))
-    end if
+    if (stat /= 0) deallocate(plist)
   end subroutine parameter_list_from_json_string
 
 
@@ -448,31 +416,16 @@ contains
     class(plist_builder) :: this
     integer(fyajl_integer_kind), intent(in) :: value
     type(parameter_list), pointer :: plist
-#ifdef INTEL_DPD200237121
-    integer :: pval
-#endif
     !TODO: check for overflow from mismatched integer types.
     select case (this%state)
     case (STATE_PVAL)
       plist => this%pstack%peek() ! get current parameter list context
-#ifdef INTEL_DPD200237121
-      pval = int(value)
-      call plist%set (this%name, pval)  ! create the parameter
-#else
       call plist%set (this%name, int(value))  ! create the parameter
-#endif
       this%state = STATE_NAME ! expecting the next parameter name or map end
       status = FYAJL_CONTINUE_PARSING
     case (STATE_AVAL)
-#ifndef INTEL_DPD200357693
       ASSERT(allocated(this%array))
-#endif
-#ifdef INTEL_DPD200237121
-      pval = int(value)
-      call this%array%push_scalar (pval, status, this%errmsg)
-#else
       call this%array%push_scalar (int(value), status, this%errmsg)
-#endif
       this%state = STATE_AVAL ! expecting the next array value or array end
     case default
       call unexpected_event (this, this%errmsg)
@@ -492,9 +445,7 @@ contains
       this%state = STATE_NAME ! expecting the next parameter name or map end
       status = FYAJL_CONTINUE_PARSING
     case (STATE_AVAL)
-#ifndef INTEL_DPD200357693
       ASSERT(allocated(this%array))
-#endif
       call this%array%push_scalar (real(value,kind(1.0d0)), status, this%errmsg)
       this%state = STATE_AVAL ! expecting the next array value or array end
     case default
@@ -514,9 +465,7 @@ contains
       this%state = STATE_NAME ! expecting the next parameter name or map end
       status = FYAJL_CONTINUE_PARSING
     case (STATE_AVAL)
-#ifndef INTEL_DPD200357693
       ASSERT(allocated(this%array))
-#endif
       call this%array%push_scalar (value, status, this%errmsg)
       this%state = STATE_AVAL ! expecting the next array value or array end
     case default
@@ -536,9 +485,7 @@ contains
       this%state = STATE_NAME ! expecting the next parameter name or map end
       status = FYAJL_CONTINUE_PARSING
     case (STATE_AVAL)
-#ifndef INTEL_DPD200357693
       ASSERT(allocated(this%array))
-#endif
       call this%array%push_scalar (value, status, this%errmsg)
       this%state = STATE_AVAL ! expecting the next array value or array end
     case default
@@ -551,25 +498,13 @@ contains
     class(plist_builder) :: this
     select case (this%state)
     case (STATE_PVAL)
-#ifdef INTEL_DPD200357693
-      ASSERT(.not.allocated(this%array%shape))
-      ASSERT(.not.allocated(this%array%index))
-      ASSERT(.not.allocated(this%array%mold))
-      ASSERT(this%array%values%size() == 0)
-      this%array%complete = .false.
-      this%array%dim = 0
-      this%array%maxlen = 0
-#else
       ASSERT(.not.allocated(this%array))
       allocate(this%array)
-#endif
       call this%array%push_array (status, this%errmsg)
       INSIST(status == FYAJL_CONTINUE_PARSING)
       this%state = STATE_AVAL ! looking for an array value
     case (STATE_AVAL)
-#ifndef INTEL_DPD200357693
       ASSERT(allocated(this%array))
-#endif
       call this%array%push_array (status, this%errmsg)
       this%state = STATE_AVAL ! looking for an array value
     case default
@@ -582,7 +517,7 @@ contains
     class(plist_builder) :: this
     type(parameter_list), pointer :: plist
     class(*), allocatable, target :: flat_array(:)
-#if defined(INTEL_DPD200357656) || defined(NAG_88538)
+#if defined(NAG_88538)
     integer, pointer :: iarray2(:,:)
     logical, pointer :: larray2(:,:)
     real(kind(1.0d0)), pointer :: rarray2(:,:)
@@ -592,9 +527,7 @@ contains
 #endif
     select case (this%state)
     case (STATE_AVAL)
-#ifndef INTEL_DPD200357693
       INSIST(allocated(this%array))
-#endif
       call this%array%pop_array (status, this%errmsg)
       if (status == FYAJL_TERMINATE_PARSING) return
       if (this%array%complete) then
@@ -604,7 +537,7 @@ contains
         case (1)
           call plist%set (this%name, flat_array) ! create the parameter
         case (2)
-#if defined(INTEL_DPD200357656) || defined(NAG_88538)
+#if defined(NAG_88538)
           select type (flat_array)
           type is (integer)
             iarray2(1:this%array%shape(1),1:this%array%shape(2)) => flat_array
@@ -616,7 +549,7 @@ contains
             rarray2(1:this%array%shape(1),1:this%array%shape(2)) => flat_array
             call plist%set (this%name, rarray2) ! create the parameter
           type is (character(*))
-#if defined(INTEL_DPD200357704) || defined(NAG_88549)
+#if defined(NAG_88549)
             !! Neither the Intel nor NAG compiler are correctly defining
             !! the deferred length parameters of the CARRAY2 pointer.
             this%errmsg = 'multi-dimensional string arrays are not supported'
@@ -638,14 +571,7 @@ contains
           status = FYAJL_TERMINATE_PARSING
           return
         end select
-#ifdef INTEL_DPD200357693
-        call array_data_delete (this%array)
-        this%array%complete = .false.
-        this%array%dim = 0
-        this%array%maxlen = 0
-#else
         deallocate(this%array)
-#endif
         this%state = STATE_NAME ! expecting the next parameter name or map end
         status = FYAJL_CONTINUE_PARSING
       else
@@ -727,28 +653,12 @@ contains
  !! ARRAY_DATA TYPE-BOUND PROCEDURES
  !!
 
-#if defined(INTEL_DPD200357694) || defined(INTEL_DPD200357693)
-  !! Somehow this keeps the intrinsic finalization, which should be
-  !! sufficient, from causing a segfault.
-  subroutine array_data_delete (this)
-    type(array_data), intent(inout) :: this
-    if (allocated(this%shape)) deallocate(this%shape)
-    if (allocated(this%index)) deallocate(this%index)
-    if (allocated(this%mold)) deallocate(this%mold)
-  end subroutine array_data_delete
-#endif
-
-
   subroutine array_push_scalar (this, value, status, errmsg)
 
     class(array_data), intent(inout) :: this
     class(*), intent(in) :: value
     integer, intent(out) :: status
     character(:), allocatable :: errmsg
-#ifdef INTEL_DPD200237118
-    class(*), pointer :: uptr
-    target :: this
-#endif
 
     if (allocated(this%shape)) then
       if (this%dim == 1) then
@@ -774,12 +684,7 @@ contains
     if (allocated(this%mold)) then
       if (.not.my_same_type_as(value, this%mold)) then
         status = FYAJL_TERMINATE_PARSING
-#ifdef INTEL_DPD200237118
-        uptr => this%mold
-        select type (uptr)
-#else
         select type (uptr => this%mold)
-#endif
         type is (integer)
           errmsg = 'expecting an integer value'
         type is (real(kind(1.0d0)))
@@ -841,10 +746,6 @@ contains
     class(array_data), intent(inout) :: this
     integer, intent(out) :: status
     character(:), allocatable :: errmsg
-#ifdef INTEL_DPD200237118
-    class(*), pointer :: uptr
-    target :: this
-#endif
 
     if (allocated(this%index)) then
       if (this%index(this%dim) == 0) then
@@ -869,12 +770,7 @@ contains
     this%dim = this%dim + 1
     if (this%dim > size(this%shape)) this%complete = .true.
 
-#ifdef INTEL_DPD200237118
-    uptr => this%mold
-    select type (uptr)
-#else
     select type (uptr => this%mold)
-#endif
     type is (character(*))
       deallocate(this%mold)
       allocate(character(this%maxlen) :: this%mold)
@@ -957,18 +853,10 @@ contains
   subroutine queue_to_array_integer (this, array)
     class(value_queue) :: this
     integer, intent(out) :: array(:)
-#ifdef INTEL_DPD200237118
-    class(*), pointer :: uptr
-#endif
     integer :: n
     ASSERT(size(array) == this%size())
     do n = 1, size(array)
-#ifdef INTEL_DPD200237118
-      uptr => this%peek()
-      select type (uptr)
-#else
       select type (uptr => this%peek())
-#endif
       type is (integer)
         array(n) = uptr
       class default
@@ -981,18 +869,10 @@ contains
   subroutine queue_to_array_logical (this, array)
     class(value_queue) :: this
     logical, intent(out) :: array(:)
-#ifdef INTEL_DPD200237118
-    class(*), pointer :: uptr
-#endif
     integer :: n
     ASSERT(size(array) == this%size())
     do n = 1, size(array)
-#ifdef INTEL_DPD200237118
-      uptr => this%peek()
-      select type (uptr)
-#else
       select type (uptr => this%peek())
-#endif
       type is (logical)
         array(n) = uptr
       class default
@@ -1005,18 +885,10 @@ contains
   subroutine queue_to_array_real (this, array)
     class(value_queue) :: this
     real(kind(1.0d0)), intent(out) :: array(:)
-#ifdef INTEL_DPD200237118
-    class(*), pointer :: uptr
-#endif
     integer :: n
     ASSERT(size(array) == this%size())
     do n = 1, size(array)
-#ifdef INTEL_DPD200237118
-      uptr => this%peek()
-      select type (uptr)
-#else
       select type (uptr => this%peek())
-#endif
       type is (real(fyajl_real_kind))
         array(n) = uptr
       class default
@@ -1029,13 +901,13 @@ contains
   subroutine queue_to_array_string (this, array)
     class(value_queue) :: this
     character(*), intent(out) :: array(:)
-#if defined(INTEL_BUG20180115) || defined(INTEL_DPD200237118)
+#if defined(INTEL_BUG20180115)
     class(*), pointer :: uptr
 #endif
     integer :: n
     ASSERT(size(array) == this%size())
     do n = 1, size(array)
-#if defined(INTEL_BUG20180115) || defined(INTEL_DPD200237118)
+#if defined(INTEL_BUG20180115)
       uptr => this%peek()
       select type (uptr)
 #else
@@ -1079,9 +951,6 @@ contains
 
     type(parameter_list_iterator) :: piter
     logical :: first_param
-#ifdef INTEL_DPD200237118
-    class(parameter_entry), pointer :: pentry
-#endif
 
     piter = parameter_list_iterator(plist)
     first_param = .true.
@@ -1092,12 +961,7 @@ contains
         write(unit,'(a)') ','
       end if
       write(unit,'(a)',advance='no') indent // '"' // piter%name() // '"'
-#ifdef INTEL_DPD200237118
-      pentry => piter%entry()
-      select type (pentry)
-#else
       select type (pentry => piter%entry())
-#endif
       type is (parameter_list)
         write(unit,'(a)') ': {'
         call parameter_list_to_json_aux (pentry, indent//'  ', unit)

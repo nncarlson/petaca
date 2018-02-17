@@ -1401,19 +1401,11 @@ contains
     class(parameter_list), intent(in) :: plist
     logical, intent(in), optional :: sublists_only
     type(parameter_list_iterator) :: iter
-#ifdef INTEL_DPD200237118
-    class(*), pointer :: uptr
-#endif
     if (present(sublists_only)) iter%sublists_only = sublists_only
     iter%mapit = map_any_iterator(plist%params)
     if (iter%sublists_only) then
       do while (.not.iter%mapit%at_end())
-#ifdef INTEL_DPD200237118
-        uptr => iter%mapit%value()
-        select type (uptr)
-#else
         select type (uptr => iter%mapit%value())
-#endif
         class is (parameter_list)
           exit
         end select
@@ -1425,18 +1417,10 @@ contains
   !! Advances the iterator to the next parameter.
   subroutine iter_next (this)
     class(parameter_list_iterator), intent(inout) :: this
-#ifdef INTEL_DPD200237118
-    class(*), pointer :: uptr
-#endif
     call this%mapit%next
     if (this%sublists_only) then
       do while (.not.this%mapit%at_end())
-#ifdef INTEL_DPD200237118
-        uptr => this%mapit%value()
-        select type (uptr)
-#else
         select type (uptr => this%mapit%value())
-#endif
         class is (parameter_list)
           exit
         end select
