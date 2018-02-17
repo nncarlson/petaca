@@ -517,14 +517,7 @@ contains
     class(plist_builder) :: this
     type(parameter_list), pointer :: plist
     class(*), allocatable, target :: flat_array(:)
-#if defined(NAG_88538)
-    integer, pointer :: iarray2(:,:)
-    logical, pointer :: larray2(:,:)
-    real(kind(1.0d0)), pointer :: rarray2(:,:)
-    character(:), pointer :: carray2(:,:)
-#else
     class(*), pointer :: array2(:,:)
-#endif
     select case (this%state)
     case (STATE_AVAL)
       INSIST(allocated(this%array))
@@ -537,35 +530,8 @@ contains
         case (1)
           call plist%set (this%name, flat_array) ! create the parameter
         case (2)
-#if defined(NAG_88538)
-          select type (flat_array)
-          type is (integer)
-            iarray2(1:this%array%shape(1),1:this%array%shape(2)) => flat_array
-            call plist%set (this%name, iarray2) ! create the parameter
-          type is (logical)
-            larray2(1:this%array%shape(1),1:this%array%shape(2)) => flat_array
-            call plist%set (this%name, larray2) ! create the parameter
-          type is (real(kind(1.0d0)))
-            rarray2(1:this%array%shape(1),1:this%array%shape(2)) => flat_array
-            call plist%set (this%name, rarray2) ! create the parameter
-          type is (character(*))
-#if defined(NAG_88549)
-            !! Neither the Intel nor NAG compiler are correctly defining
-            !! the deferred length parameters of the CARRAY2 pointer.
-            this%errmsg = 'multi-dimensional string arrays are not supported'
-            status = FYAJL_TERMINATE_PARSING
-            return
-#else
-            carray2(1:this%array%shape(1),1:this%array%shape(2)) => flat_array
-            call plist%set (this%name, carray2) ! create the parameter
-#endif
-          class default
-            INSIST(.false.)
-          end select
-#else
           array2(1:this%array%shape(1),1:this%array%shape(2)) => flat_array
           call plist%set (this%name, array2) ! create the parameter
-#endif
         case default
           this%errmsg = 'arrays of rank greater than 2 are not supported'
           status = FYAJL_TERMINATE_PARSING
