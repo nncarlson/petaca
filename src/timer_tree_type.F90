@@ -439,9 +439,6 @@ contains
 
   !! Set optional error return arguments or stop with message.
   subroutine error_handler (message, stat, errmsg)
-#ifdef NAGFOR
-    use f90_unix, only: exit
-#endif
     use,intrinsic :: iso_fortran_env, only: error_unit
     character(*), intent(in) :: message
     integer, intent(out), optional :: stat
@@ -452,7 +449,7 @@ contains
       return
     else
       write(error_unit,'(a)') message
-      call exit (1)
+      stop 1
     end if
   end subroutine error_handler
 

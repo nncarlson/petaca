@@ -1,8 +1,5 @@
 program shlib_type_test
 
-#ifdef NAGFOR
-  use,intrinsic :: f90_unix, only: exit
-#endif
   use,intrinsic :: iso_fortran_env, only: error_unit
   use,intrinsic :: iso_c_binding, only: c_funptr, c_ptr, c_f_procpointer, c_f_pointer, c_float
   use fortran_dynamic_loader
@@ -21,7 +18,7 @@ program shlib_type_test
   call test_mylib_square
   call test_mylib_var
 
-  call exit (status)
+  if (status /= 0) stop 1
 
 contains
 

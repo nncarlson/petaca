@@ -26,9 +26,6 @@ program test_parameter_list_json
 
   use parameter_list_type
   use parameter_list_json
-#ifdef NAGFOR
-  use,intrinsic :: f90_unix, only: exit
-#endif
 
   integer :: stat = 0
 
@@ -36,7 +33,7 @@ program test_parameter_list_json
   call test_vector_invalid
   call test_string_array
 
-  call exit (stat)
+  if (stat /= 0) stop 1
 
 contains
 

@@ -263,9 +263,6 @@ contains
   subroutine error_handler (proc, cptr, stat, errmsg)
 
     use,intrinsic :: iso_fortran_env, only: error_unit
-#ifdef NAGFOR
-    use,intrinsic :: f90_unix, only: exit
-#endif
 
     character(*), intent(in) :: proc
     type(c_ptr),  intent(in) :: cptr
@@ -280,7 +277,7 @@ contains
       if (present(errmsg)) errmsg = string
     else
       write(error_unit,'(3a)') proc, ': ', string
-      call exit (1)
+      stop 1
     end if
 
   end subroutine error_handler

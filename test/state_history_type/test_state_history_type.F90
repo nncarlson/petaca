@@ -25,9 +25,6 @@
 program test_state_history_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-#ifdef NAGFOR
-  use f90_unix, only: exit
-#endif
   use state_history_type
   implicit none
 
@@ -43,7 +40,7 @@ program test_state_history_type
   call test_flush
   call test_defined
 
-  call exit (status)
+  if (status /= 0) stop 1
 
 contains
 

@@ -26,9 +26,6 @@ program test_any_scalar_type
 
   use parameter_entry_class
   use,intrinsic :: iso_fortran_env, only: int32, int64, real32, real64
-#ifdef NAGFOR
-  use,intrinsic :: f90_unix, only: exit
-#endif
 
   integer :: stat = 0
 
@@ -44,7 +41,7 @@ program test_any_scalar_type
   call test_assignment
   call test_shallow_assignment
 
-  call exit (stat)
+  if (stat /= 0) stop 1
 
 contains
 

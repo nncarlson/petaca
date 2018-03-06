@@ -432,9 +432,6 @@ contains
   end subroutine error_clear
 
   subroutine error (errmsg_, stat, errmsg)
-#ifdef NAGFOR
-    use,intrinsic :: f90_unix, only: exit
-#endif
     use,intrinsic :: iso_fortran_env, only: error_unit
     character(*), intent(in) :: errmsg_
     integer, intent(out), optional :: stat
@@ -444,7 +441,7 @@ contains
       if (present(errmsg)) errmsg = errmsg_
     else
       write(error_unit,'(a)') 'ERROR: ' // errmsg_
-      call exit (1)
+      stop 1
     end if
   end subroutine error
 

@@ -297,9 +297,6 @@ program test_secure_hash
   use secure_hash_factory
   use valid_hash_function
   use,intrinsic :: iso_fortran_env
-#ifdef NAGFOR
-  use,intrinsic :: f90_unix, only: exit
-#endif
   implicit none
 
   integer :: stat = 0
@@ -334,7 +331,7 @@ program test_secure_hash
 
   call test_noncontiguous
 
-  call exit (stat)
+  if (stat /= 0) stop 1
 
 contains
 

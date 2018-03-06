@@ -26,9 +26,6 @@ program test_parameter_list_type
 
   use parameter_list_type
   use,intrinsic :: iso_fortran_env, only: int32, int64, real32, real64
-#ifdef NAGFOR
-  use,intrinsic :: f90_unix, only: exit
-#endif
 
   integer :: stat = 0
 
@@ -40,7 +37,7 @@ program test_parameter_list_type
   call test_iterator
   call test_name
 
-  call exit (stat)
+  if (stat /= 0) stop 1
 
 contains
 

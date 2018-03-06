@@ -25,9 +25,6 @@
 program test_map_any_type
 
   use map_any_type
-#ifdef NAGFOR
-  use,intrinsic :: f90_unix, only: exit
-#endif
 
   integer :: stat = 0
 
@@ -38,7 +35,7 @@ program test_map_any_type
   call test_clear
   call test_assignment
 
-  call exit (stat)
+  if (stat /= 0) stop 1
 
 contains
 

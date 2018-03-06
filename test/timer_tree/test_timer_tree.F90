@@ -24,9 +24,6 @@
 
 program test_timer_tree
 
-#ifdef NAGFOR
-  use f90_unix, only: exit
-#endif
   use timer_tree_type
   implicit none
 
@@ -47,7 +44,7 @@ program test_timer_tree
   call test_cpu_2 ()
   call test_handle ()
 
-  call exit (status)
+  if (status /= 0) stop 1
 
 contains
 
