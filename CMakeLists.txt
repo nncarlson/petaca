@@ -14,7 +14,7 @@ cmake_minimum_required(VERSION 3.3)
 # ---------------------------------------------------------------------------- #
 project(Petaca Fortran C)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${Petaca_SOURCE_DIR}/cmake/Modules/")
+set(CMAKE_MODULE_PATH "${Petaca_SOURCE_DIR}/cmake/")
 
 # The parameter list stuff requires the yajl library.
 # If necessary set YAJL_INCLUDE_DIR and YAJL_LIBRARY_DIR.
@@ -118,4 +118,10 @@ endif()
 
 if(ENABLE_EXAMPLES)
   add_subdirectory(examples)
+endif()
+
+option(BUILD_HTML "Build HTML documentation (requires Sphinx)" OFF)
+if(BUILD_HTML)
+  find_package(Sphinx REQUIRED)
+  add_subdirectory(doc/sphinx)
 endif()
