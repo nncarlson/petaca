@@ -179,7 +179,7 @@ module json
 
   type, public :: json_object_iterator
     private
-#ifdef GNU_61767
+#ifdef GNU_PR61767
     integer, allocatable :: dummy
 #endif
     type(object_member), pointer :: member => null()
@@ -218,7 +218,7 @@ module json
 
   type, public :: json_array_iterator
     private
-#ifdef GNU_61767
+#ifdef GNU_PR61767
     integer, allocatable :: dummy
 #endif
     type(array_element), pointer :: element => null()
@@ -294,7 +294,7 @@ contains
   subroutine json_real_write (this, unit)
     class(json_real), intent(in) :: this
     integer, intent(in) :: unit
-    write(unit,'(g0)') this%value  !FIXME: need proper format
+    write(unit,'(es13.5)') this%value  !FIXME: need proper format
   end subroutine json_real_write
 
   subroutine json_string_write (this, unit)
@@ -713,7 +713,7 @@ contains
     status = FYAJL_CONTINUE_PARSING
   end function store_value
 
-  subroutine json_from_stream (unit, value, stat, errmsg)
+  subroutine json_from_stream (unit, value, stat, errmsg, bufsize)
 
     use,intrinsic :: iso_fortran_env, only: error_unit, iostat_end
     use,intrinsic :: iso_c_binding, only: c_char
@@ -722,18 +722,25 @@ contains
     class(json_value), allocatable, intent(out) :: value
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    integer, intent(in), optional :: bufsize  ! for testing purposes mostly
 
     type(json_builder), target :: builder
     type(fyajl_parser), target :: parser
     type(fyajl_status) :: yajl_stat
 
     integer, parameter :: BUFFER_SIZE = 4096
-    character(kind=c_char) :: buffer(BUFFER_SIZE)
+    character(kind=c_char), allocatable :: buffer(:)
     integer :: buflen, last_pos, curr_pos, ios
 
     !TODO: check unit is open with unformatted stream access
 
     stat = 0
+
+    if (present(bufsize)) then
+      allocate(buffer(bufsize))
+    else
+      allocate(buffer(BUFFER_SIZE))
+    end if
 
     !! Initialize the parser
     call parser%init (builder)

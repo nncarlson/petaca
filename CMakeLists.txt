@@ -80,7 +80,7 @@ elseif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
   list(APPEND Fortran_COMPILE_DEFINITIONS NO_2008_GENERIC_RESOLUTION)
   list(APPEND Fortran_COMPILE_DEFINITIONS NO_2008_LHS_POLY_REALLOC)
   list(APPEND Fortran_COMPILE_DEFINITIONS GNU_67564)
-  list(APPEND Fortran_COMPILE_DEFINITIONS GNU_61767)
+  list(APPEND Fortran_COMPILE_DEFINITIONS GNU_PR61767)
   # Eliminate spurious runtime check errors caused by GCC gug PR67505
   set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} -fcheck=no-recursion")
   # GFortran warning

@@ -540,6 +540,9 @@ contains
       type(c_ptr), intent(in) :: cptr
       integer(c_size_t), intent(in) :: len
       character(len,kind=c_char), pointer :: fptr
+#ifdef __IBMC__
+      fptr => null() ! XLF does not see the next line as defining FPTR
+#endif
       call c_f_pointer (cptr, fptr)
     end function
   end function f_string_pointer
@@ -747,6 +750,9 @@ contains
       type(c_ptr), intent(in) :: cptr
       integer(c_size_t), intent(in) :: len
       character(len,kind=c_char), pointer :: fptr
+#ifdef __IBMC__
+      fptr => null() ! XLF does not see the next line as defining FPTR
+#endif
       call c_f_pointer (cptr, fptr)
     end function
   end subroutine get_buffer

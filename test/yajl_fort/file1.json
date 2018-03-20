@@ -1,0 +1,87 @@
+{
+   "physical-constants": {
+      "stefan-boltzmann": 5.67e-14
+   },
+   "mesh": {
+      "lo": [0,0,0],
+      "hi": [119,19,14],
+      "box-size": 30,
+      "prob-lo": [0.0, 0.0, -0.15],
+      "prob-hi": [1.2, 0.2, 0.0]
+   },
+   "laser-scan-path": {
+      "laser": {
+         "type": "gaussian",
+         "power": 100.0, // [W]
+         "sigma": 0.035  // [mm]
+      },
+      "laser-absorp": 0.4,
+      "laser-time-constant": 0.01,
+      "scan-path": {
+         "start-coord": [0.20, 0.0],
+         "command-file": "path1.json"
+      },
+      "write-plotfile": true,
+      "plotfile-dt": 0.02 // [ms]
+   },
+   "phase-properties": {
+      "IN625-sol": {
+         "conductivity": 0.03,
+         "density": 7.5e-3,
+         "specific-heat": 750.0
+      }
+   },
+   "model": {
+      "solid": "IN625-sol",
+      "liquid": "IN625-sol",
+      "solidus-temp": 1531.0,
+      "liquidus-temp": 1616.0,
+      "latent-heat": 2.1754e5,  // [g-mm^2/ms^2/g]
+      "smoothing-radius": 10.0,
+      "bc": {
+         "top": {
+            "condition": "flux",
+            "sides": ["zhi"],
+            "data": "laser"
+         },
+         "top-rad": {
+            "condition": "radiation",
+            "sides": ["zhi"],
+            "emissivity": 0.6,
+            "ambient-temp": 300.0
+         },
+         "bottom": {
+            "condition": "htc",
+            "sides": ["zlo"],
+            "coefficient": 1.0e-4, // [W/mm^2-K]
+            "ambient-temp": 300.0
+         },
+         "adiabatic": {
+            "condition": "flux",
+            "sides": ["xlo", "xhi", "ylo", "yhi"],
+            "data": 0.0
+         }
+      }
+   },
+   "solver": {
+      "temp-rel-tol": 1.0e-2,
+      "num-cycles": 2,
+      "nlk-max-itr": 5,
+      "nlk-tol": 0.01
+   },
+   "sim-control": {
+      "initial-time": 0.0,
+      "initial-time-step": 1.0e-6,
+      "min-time-step": 1.0e-9,
+      "output-times": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+   },
+   "initial-temperature": {
+      "type": "constant",
+      "value": 300.0
+   },
+
+   // This sublist is consumed by AMREX_INIT
+   "amrex": {
+      "amrex": {"fpe_trap_invalid": 1}
+   }
+}
