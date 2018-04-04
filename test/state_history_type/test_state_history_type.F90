@@ -39,6 +39,7 @@ program test_state_history_type
   call test_deltas
   call test_flush
   call test_defined
+  call test_assignment
 
   if (status /= 0) stop 1
 
@@ -283,6 +284,41 @@ contains
     end if
 
   end subroutine test_defined
+
+  subroutine test_assignment
+
+    integer :: n
+    logical :: pass
+    real(r8) :: t, dt, x(5), xref(5)
+    type(state_history), allocatable :: h
+    type(state_history) :: hcopy
+    real(r8), parameter :: TREF = 2.0_r8
+    integer, parameter :: MVEC = 5
+
+    xref = poly(TREF)
+    allocate(h)
+    call h%init(MVEC, size(xref))
+
+    t = -0.625_r8
+    dt = 0.375_r8
+    do n = 1, 3
+      call h%record_state(t, poly(t))
+      hcopy = h
+      t = t + dt
+    end do
+    call h%record_state(t, poly(t+1)) ! pollute the data
+    deallocate(h)
+
+    call hcopy%interp_state(TREF, x)
+    x = x - xref
+    pass = all(x(:3) == 0.0_r8) .and. all(x(4:) /= 0.0_r8)
+
+    if (.not.pass) then
+      status = 1
+      write(0,*) 'test_assignment failed'
+    end if
+
+  end subroutine test_assignment
 
   function poly (t) result (p)
     real(r8), intent(in) :: t

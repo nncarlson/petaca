@@ -162,7 +162,8 @@ module state_history_type
     final :: delete
     procedure, private :: init_state
     procedure, private :: init_size
-    generic :: init => init_state, init_size
+    procedure, private :: init_copy
+    generic :: init => init_state, init_size, init_copy
     procedure :: defined
     procedure :: flush
     procedure :: real_kind
@@ -176,6 +177,8 @@ module state_history_type
     procedure :: record_state
     procedure :: interp_state
     procedure :: revise
+    generic :: assignment(=) => copy
+    procedure, private :: copy
   end type state_history
 
 contains
@@ -203,6 +206,23 @@ contains
       allocate(this%d(j)%ptr(vlen))
     end do
   end subroutine init_size
+
+  subroutine init_copy(this, src)
+    class(state_history), intent(out) :: this
+    class(state_history), intent(in)  :: src
+    integer :: j
+    this%mvec = src%mvec
+    this%vlen = src%vlen
+    this%nvec = src%nvec
+    allocate(this%t(this%mvec), this%d(this%mvec))
+    do j = 1, this%mvec
+      allocate(this%d(j)%ptr(this%vlen))
+    end do
+    do j = 1, this%nvec
+      this%t(j) = src%t(j)
+      this%d(j)%ptr = src%d(j)%ptr
+    end do
+  end subroutine init_copy
 
   elemental subroutine delete (this)
     type(state_history), intent(inout) :: this
@@ -431,5 +451,21 @@ contains
     end do
     defined = .true.
   end function defined
+
+  !! Defined assignment subroutine
+  subroutine copy(lhs, rhs)
+    class(state_history), intent(inout) :: lhs
+    class(state_history), intent(in) :: rhs
+    integer :: j
+    if (lhs%mvec /= rhs%mvec .or. lhs%vlen /= rhs%vlen) then
+      call init_copy(lhs, rhs)
+    else
+      lhs%nvec = rhs%nvec
+      do j = 1, lhs%nvec
+        lhs%t(j) = rhs%t(j)
+        lhs%d(j)%ptr = rhs%d(j)%ptr
+      end do
+    end if
+  end subroutine copy
 
 end module state_history_type
