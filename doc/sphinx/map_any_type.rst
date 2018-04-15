@@ -1,3 +1,5 @@
+.. _map_any-module:
+
 =======================
 The map_any_type module
 =======================

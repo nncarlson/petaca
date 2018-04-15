@@ -8,7 +8,6 @@ repeatedly across many software projects.
    * Build instructions
    * Convert documentation to html for:
 
-     * parameter_list_type and parameter_list_json modules
      * secure_hash module
      * state_history_type module
 
@@ -18,6 +17,7 @@ repeatedly across many software projects.
    :maxdepth: 2
    :caption: Contents:
 
+   parameter_lists
    map_any_type
    fortran_dynamic_loader
    timer_tree_type
