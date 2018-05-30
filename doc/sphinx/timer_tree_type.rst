@@ -145,8 +145,8 @@ The following subroutines operate on the global timer tree.
   is specified, only the accumulated times for that timer and its decendents
   are written.
 
-``call read_timer(handle, cpu)``
-  Returns in the default real argument ``cpu``, the elapsed time for the timer
+``call read_timer(handle, time)``
+  Returns in the default real argument ``time``, the elapsed time for the timer
   corresponding to the ``handle`` returned by ``start_timer``.  The timer may
   be running or stopped.
 
@@ -165,7 +165,7 @@ the timer tree.  The following subroutines provide such functionality.
   Get the current state of the timer tree in flat arrays. Timers may be
   running or stopped and their state is unaltered.  The deferred-length,
   allocatable character array ``name`` and allocatable default real array
-  ``time`` return the timer names and elapsed cpu times indexed by tree node
+  ``time`` return the timer names and elapsed times indexed by tree node
   number. The allocatable default integer array ``tree`` returns the structure
   of the tree as a sequence of node numbers: node numbers appear in matching
   pairs, like opening and closing parentheses, with the intervening sequence
@@ -219,7 +219,7 @@ specific instance rather than the global timer tree.
   Same interface as ``stop_timer``.
 ``write(unit, indent [,handle])``
   Same interface as ``write_timer_tree``.
-``read(handle, cpu)``
+``read(handle, time)``
   Same interface as ``read_timer``.
 ``serialize(tree, name, time)``
   Same interface as ``serialize_timer_tree``.
