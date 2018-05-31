@@ -74,27 +74,7 @@ elseif(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
         "your version is ${CMAKE_Fortran_COMPILER_VERSION}")
   endif()
 elseif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
-  if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "6.0.0")
-    list(APPEND Fortran_COMPILE_DEFINITIONS NO_2008_SOURCED_ALLOC_ARRAY)
-  endif()
   list(APPEND Fortran_COMPILE_DEFINITIONS NO_2008_GENERIC_RESOLUTION)
-  list(APPEND Fortran_COMPILE_DEFINITIONS NO_2008_LHS_POLY_REALLOC)
-  list(APPEND Fortran_COMPILE_DEFINITIONS GNU_67564)
-  list(APPEND Fortran_COMPILE_DEFINITIONS GNU_PR61767)
-  # Eliminate spurious runtime check errors caused by GCC gug PR67505
-  set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} -fcheck=no-recursion")
-  # GFortran warning
-  if(NOT WIN32)
-    string(ASCII 27 esc)
-    set(BoldRed "${esc}[1;31m")
-    set(ResetColor "${esc}[m")
-  endif()
-  message(WARNING "${BoldRed}"
-      "GFortran ${CMAKE_Fortran_COMPILER_VERSION} has incomplete/flawed support of "
-      "finalization (PR37336), unlimited polymorphic variables (PR67564), and "
-      "deferred-length character variables (PR68241), which may result in the "
-      "code not executing properly; see https://gcc.gnu.org/bugzilla/query.cgi."
-      "${ResetColor}")
 endif()
 
 # Append preprocessor defines to the compiler flags

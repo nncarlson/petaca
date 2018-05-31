@@ -179,9 +179,6 @@ module json
 
   type, public :: json_object_iterator
     private
-#ifdef GNU_PR61767
-    integer, allocatable :: dummy
-#endif
     type(object_member), pointer :: member => null()
   contains
     procedure :: next => obj_iter_next
@@ -218,9 +215,6 @@ module json
 
   type, public :: json_array_iterator
     private
-#ifdef GNU_PR61767
-    integer, allocatable :: dummy
-#endif
     type(array_element), pointer :: element => null()
   contains
     procedure :: next => array_iter_next
