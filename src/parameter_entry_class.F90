@@ -358,7 +358,7 @@ contains
     type is (character(*))
       write(unit,'(3a)',advance='no') '"', uptr, '"'
     class default
-      write(unit,'(a)',advance='no') '???'
+      write(unit,'(a)',advance='no') "???"
     end select
   end subroutine write_scalar
 
