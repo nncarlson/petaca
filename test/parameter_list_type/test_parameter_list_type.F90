@@ -685,12 +685,12 @@ contains
     type(parameter_list), pointer :: sl
     if (p%name() /= '$') call write_fail ('test_name failed test 1')
     sl => p%sublist('fiz')
-    if (sl%name() /= '$->fiz') call write_fail ('test_name failed test 2')
+    if (sl%name() /= '$.fiz') call write_fail ('test_name failed test 2')
     call p%set_name('foo')
     if (p%name() /= 'foo') call write_fail ('test_name failed test 3')
     sl => p%sublist('bar')
     sl => sl%sublist('fubar')
-    if (sl%name() /= 'foo->bar->fubar') call write_fail ('test_name failed test 4')
+    if (sl%name() /= 'foo.bar.fubar') call write_fail ('test_name failed test 4')
     call sl%set_name ('biz')
     if (sl%name() /= 'biz') call write_fail ('test_name failed test 5')
   end subroutine

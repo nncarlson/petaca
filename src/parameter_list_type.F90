@@ -93,7 +93,7 @@
 !!
 !!  SET_NAME(NAME) sets the name of the parameter list to NAME.  A parameter
 !!    list created by SUBLIST is automatically assigned a default name.  It is
-!!    the name of the parent parameter list appended with '->' followed by the
+!!    the name of the parent parameter list appended with '.' followed by the
 !!    sublist parameter name.  Use this function to override the default name. 
 !!
 !! PARAMETER_LIST_ITERATOR TYPE BOUND PROCEDURES
@@ -534,7 +534,7 @@ contains
     call error_clear (stat, errmsg)
     pentry => find_entry(this%params, name)
     if (.not.associated(pentry)) then
-      call this%params%insert (name, parameter_list(this%name()//'->'//name))
+      call this%params%insert (name, parameter_list(this%name()//'.'//name))
       !! IMPORTANT: pentry must point to the one in the map which is a copy!
       pentry => find_entry(this%params, name)
       ASSERT(associated(pentry))
