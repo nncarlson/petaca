@@ -428,7 +428,6 @@ contains
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
     if (present(stat)) stat = 0
-    if (present(errmsg)) errmsg = ''
   end subroutine error_clear
 
   subroutine error (errmsg_, stat, errmsg)
