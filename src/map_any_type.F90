@@ -121,7 +121,7 @@ module map_any_type
   end type map_any
 
   type, public :: map_any_iterator
-    class(list_item), pointer, private :: item => null()
+    type(list_item), pointer, private :: item => null()
   contains
     procedure :: next => iter_next
     procedure :: at_end => iter_at_end
