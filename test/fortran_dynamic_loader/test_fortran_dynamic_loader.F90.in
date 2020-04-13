@@ -33,7 +33,7 @@ contains
 
     !! Load the C math library libm.so and calculate the cube root
     !! of 8.0 using the function cbrtf from the library.
-    call libm%open ('libm.so', RTLD_NOW)
+    call libm%open ('libm@CMAKE_SHARED_LIBRARY_SUFFIX@', RTLD_NOW)
     call libm%func ('cbrtf', funptr)  ! cube root function
     call c_f_procpointer (funptr, fptr)
     if (fptr(8.0) /= 2.0) then
@@ -49,7 +49,7 @@ contains
     type(c_funptr)  :: funptr
     type(shlib) :: mylib
 
-    call mylib%open('./libmylib.so', RTLD_NOW)
+    call mylib%open('./libmylib@CMAKE_SHARED_LIBRARY_SUFFIX@', RTLD_NOW)
     call mylib%func ('square', funptr)  ! square function
     call c_f_procpointer (funptr, fptr)
     if (fptr(3.0) /= 9.0) then
@@ -65,7 +65,7 @@ contains
     type(shlib) :: mylib
     integer, pointer :: n
     type(c_ptr) :: ptr
-    call mylib%open('./libmylib.so', RTLD_NOW)
+    call mylib%open('./libmylib@CMAKE_SHARED_LIBRARY_SUFFIX@', RTLD_NOW)
     call mylib%sym('FORTYTWO', ptr)
     call c_f_pointer(ptr, n)
     if (n /= 42) then

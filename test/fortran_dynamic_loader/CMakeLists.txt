@@ -1,4 +1,9 @@
-add_executable (test_fortran_dynamic_loader test_fortran_dynamic_loader.F90)
+configure_file(test_fortran_dynamic_loader.F90.in
+  test_fortran_dynamic_loader.F90
+  @ONLY)
+
+add_executable (test_fortran_dynamic_loader
+  ${CMAKE_CURRENT_BINARY_DIR}/test_fortran_dynamic_loader.F90)
 target_link_libraries(test_fortran_dynamic_loader petaca)
 add_test(fortran_dynamic_loader test_fortran_dynamic_loader)
 
