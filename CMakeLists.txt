@@ -75,6 +75,10 @@ elseif(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
   endif()
 elseif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
   list(APPEND Fortran_COMPILE_DEFINITIONS NO_2008_GENERIC_RESOLUTION)
+  if((CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL "10.1") AND
+     (CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "10.2"))
+    list(APPEND Fortran_COMPILE_DEFINITIONS GFORTRAN_10_1)
+  endif()
 endif()
 
 # Append preprocessor defines to the compiler flags

@@ -653,7 +653,11 @@ contains
         select type (uptr => this%mold)
         type is (integer)
           errmsg = 'expecting an integer value'
+#ifdef GFORTRAN_10_1
+        type is (double precision)
+#else
         type is (real(kind(1.0d0)))
+#endif
           errmsg = 'expecting a real value'
         type is (character(*))
           errmsg = 'expecting a string value'
@@ -757,7 +761,11 @@ contains
       call this%values%to_array (array)
     type is (logical)
       call this%values%to_array (array)
+#ifdef GFORTRAN_10_1
+    type is (double precision)
+#else
     type is (real(kind(1.0d0)))
+#endif
       call this%values%to_array (array)
     type is (character(*))
       call this%values%to_array (array)
@@ -963,7 +971,11 @@ contains
       select type (a)
       type is (integer)
         type_num = 1
+#ifdef GFORTRAN_10_1
+      type is (double precision)
+#else
       type is (real(kind(1.0d0)))
+#endif
         type_num = 2
       type is (logical)
         type_num = 3
