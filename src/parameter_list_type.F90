@@ -434,10 +434,18 @@ contains
     use,intrinsic :: iso_fortran_env, only: error_unit
     character(*), intent(in) :: errmsg_
     integer, intent(out), optional :: stat
+#ifdef GNU_PR93762
+    character(:), allocatable :: errmsg
+#else
     character(:), allocatable, intent(out), optional :: errmsg
+#endif
     if (present(stat)) then
       stat = 1
+#ifdef GNU_PR93762
+      errmsg = errmsg_
+#else
       if (present(errmsg)) errmsg = errmsg_
+#endif
     else
       write(error_unit,'(a)') 'ERROR: ' // errmsg_
       stop 1

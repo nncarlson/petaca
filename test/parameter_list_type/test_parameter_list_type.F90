@@ -51,6 +51,7 @@ contains
 
     type(parameter_list) :: p
     integer ::stat
+    character(:), allocatable :: errmsg
 
     !! A derived type
     type point; real x, y; end type
@@ -89,12 +90,12 @@ contains
     if (.not.p%is_matrix('bah')) call write_fail ('test_basic failed test 22')
 
     !! Replace the value of a parameter; different rank -- should fail
-    call p%set ('foo', [1,2], stat=stat)
+    call p%set ('foo', [1,2], stat=stat, errmsg=errmsg)
     if (stat == 0) call write_fail ('test_basic failed test 23')
     if (p%count() /= 4) call write_fail ('test_basic failed test 24')
 
     !! Replace the value of a parameter; same rank -- should succeed.
-    call p%set ('bar', [1,2], stat=stat)
+    call p%set ('bar', [1,2], stat=stat, errmsg=errmsg)
     if (stat /= 0) call write_fail ('test_basic failed test 25')
     if (p%count() /= 4) call write_fail ('test_basic failed test 26')
 
@@ -449,12 +450,13 @@ contains
     character(:), allocatable :: c, carray(:), cmatrix(:,:)
     type point; real x, y; end type
     integer :: stat
+    character(:), allocatable :: errmsg
     class(*), allocatable :: scalar, vector(:), matrix(:,:)
 
     call p%set ('foo', 13)
 
     !! Overwrite with different rank; should fail
-    call p%set ('foo', [1], stat=stat)
+    call p%set ('foo', [1], stat=stat, errmsg=errmsg)
     if (stat == 0) call write_fail ('test_overwrite failed test 1')
 
     !! Overwrite with different values/types.
@@ -476,7 +478,7 @@ contains
     call p%set ('bar', [13])
 
     !! Overwrite with different rank; should fail
-    call p%set ('bar', 1, stat=stat)
+    call p%set ('bar', 1, stat=stat, errmsg=errmsg)
     if (stat == 0) call write_fail ('test_overwrite failed test 6')
 
     !! Overwrite with different values/types.
@@ -498,7 +500,7 @@ contains
     call p%set ('biz', reshape([13],shape=[1,1]))
 
     !! Overwrite with different rank; should fail
-    call p%set ('biz', [1], stat=stat)
+    call p%set ('biz', [1], stat=stat, errmsg=errmsg)
     if (stat == 0) call write_fail ('test_overwrite failed test 11')
 
     !! Overwrite with different values/types.
@@ -528,6 +530,7 @@ contains
     type(parameter_list) :: p
     type(parameter_list), pointer :: sl, sla, slb
     integer :: stat
+    character(:), allocatable :: errmsg
 
     !! Create a sublist parameter and add a parameter to the sublist.
     sla => p%sublist('A')
@@ -540,7 +543,7 @@ contains
     if (.not.p%is_parameter('A')) call write_fail ('test_sublists failed test 4')
 
     !! Try to use sublist with an existing non-sublist parameter; should fail.
-    slb => sla%sublist('foo', stat)
+    slb => sla%sublist('foo', stat, errmsg=errmsg)
     if (stat == 0) call write_fail ('test_sublists failed test 5')
 
     !! Create a sublist parameter of the sublist.
