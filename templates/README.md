@@ -11,7 +11,7 @@ lacks capabilities for generic programming[^1].
 self-balancing binary search trees that combine the best properties of AVL
 and red-black trees.
 
-[^1] There are pre-processing options for implementing a form of generic
+[^1]: There are pre-processing options for implementing a form of generic
 programming. See for example, the
 [Fortran Standard Library](https://github.com/fortran-lang/stdlib)
 and its use of the [`fypp`](https://github.com/aradi/fypp) pre-processor,
