@@ -110,3 +110,5 @@ if(BUILD_HTML)
   find_package(Sphinx REQUIRED)
   add_subdirectory(doc/sphinx)
 endif()
+
+add_subdirectory(templates)
