@@ -26,11 +26,12 @@ endif()
 set(Petaca_INCLUDE_DIR ${Petaca_SOURCE_DIR}/include)
 
 # ---------------------------------------------------------------------------- #
-# Build Options 
+# Build Options
 # ---------------------------------------------------------------------------- #
 
 option(ENABLE_TESTS "Build test programs" ON)
 option(ENABLE_EXAMPLES "Build example programs" OFF)
+option(ENABLE_STD_MOD_PROC_NAME "Build with -assume std_mod_proc_name when using Intel" OFF)
 
 #-------------------------------------------------------------------------------
 # Compiler Definitions
@@ -40,12 +41,15 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+add_compile_options("$<$<COMPILE_LANG_AND_ID:Fortran,Intel>:-standard-semantics>"
+  "$<$<AND:$<NOT:$<BOOL:${ENABLE_STD_MOD_PROC_NAME}>>,$<COMPILE_LANG_AND_ID:Fortran,Intel>>:SHELL:-assume nostd_mod_proc_name>")
+
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "NAG")
   set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -w=uda -DNDEBUG")
   set(CMAKE_Fortran_FLAGS_DEBUG   "-g90")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
-  set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -DNDEBUG -assume realloc_lhs")
-  set(CMAKE_Fortran_FLAGS_DEBUG   "-g -C -assume realloc_lhs")
+  set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -DNDEBUG")
+  set(CMAKE_Fortran_FLAGS_DEBUG   "-g -C")
 elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -DNDEBUG -ffree-line-length-none")
   set(CMAKE_Fortran_FLAGS_DEBUG "-g -fbacktrace -ffree-line-length-none -fcheck=all -Wall -Wextra")
