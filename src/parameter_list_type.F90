@@ -529,11 +529,11 @@ contains
   !! parameter exists and is not a sublist.  An empty sublist parameter is
   !! created if necessary.
 
-  function sublist (this, name, stat, errmsg)
+  function sublist (this, name, stat, errmsg) result (slist)
 
     class(parameter_list), intent(inout) :: this
     character(*), intent(in) :: name
-    class(parameter_list), pointer :: sublist
+    class(parameter_list), pointer :: slist
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
 
@@ -547,8 +547,8 @@ contains
       pentry => find_entry(this%params, name)
       ASSERT(associated(pentry))
     end if
-    sublist => cast_to_parameter_list(pentry)
-    if (.not.associated(sublist)) then
+    slist => cast_to_parameter_list(pentry)
+    if (.not.associated(slist)) then
       call error ('parameter is not a sublist: "' // name // '"', stat, errmsg)
     end if
 
@@ -1447,15 +1447,15 @@ contains
   end function iter_name
 
   !! Returns a CLASS(PARAMETER_ENTRY) pointer to the current parameter value.
-  function iter_entry (this)
+  function iter_entry (this) result (pentry)
     class(parameter_list_iterator), intent(in) :: this
-    class(parameter_entry), pointer :: iter_entry
+    class(parameter_entry), pointer :: pentry
 #ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
     class(*), pointer :: uptr
     uptr => this%mapit%value()
-    iter_entry => cast_to_parameter_entry(uptr)
+    pentry => cast_to_parameter_entry(uptr)
 #else
-    iter_entry => cast_to_parameter_entry(this%mapit%value())
+    pentry => cast_to_parameter_entry(this%mapit%value())
 #endif
   end function iter_entry
 
