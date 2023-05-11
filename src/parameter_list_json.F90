@@ -906,15 +906,16 @@ contains
     queue_size = this%n
   end function queue_size
 
-  subroutine parameter_list_to_json (plist, unit)
+  subroutine parameter_list_to_json (plist, unit, real_fmt)
     type(parameter_list), intent(in) :: plist
     integer, intent(in) :: unit
+    character(*), intent(in), optional :: real_fmt
     write(unit,'(a)') '{'
-    call parameter_list_to_json_aux (plist, '  ', unit)
+    call parameter_list_to_json_aux (plist, '  ', unit, real_fmt)
     write(unit,'(/,a)') '}'
   end subroutine parameter_list_to_json
 
-  recursive subroutine parameter_list_to_json_aux (plist, indent, unit)
+  recursive subroutine parameter_list_to_json_aux (plist, indent, unit, real_fmt)
 
     use map_any_type
     use parameter_entry_class
@@ -922,6 +923,7 @@ contains
     type(parameter_list), intent(in) :: plist
     character(*), intent(in) :: indent
     integer, intent(in) :: unit
+    character(*), intent(in), optional :: real_fmt
 
     type(parameter_list_iterator) :: piter
     logical :: first_param
@@ -938,17 +940,17 @@ contains
       select type (pentry => piter%entry())
       type is (parameter_list)
         write(unit,'(a)') ': {'
-        call parameter_list_to_json_aux (pentry, indent//'  ', unit)
+        call parameter_list_to_json_aux (pentry, indent//'  ', unit, real_fmt)
         write(unit,'(/,a)',advance='no') indent // '}'
       type is (any_scalar)
         write(unit,'(a)',advance='no') ': '
-        call pentry%write (unit)
+        call pentry%write (unit, real_fmt)
       type is (any_vector)
         write(unit,'(a)',advance='no') ': '
-        call pentry%write (unit)
+        call pentry%write (unit, real_fmt)
       type is (any_matrix)
         write(unit,'(a)',advance='no') ': '
-        call pentry%write (unit)
+        call pentry%write (unit, real_fmt)
       end select
       call piter%next
     end do

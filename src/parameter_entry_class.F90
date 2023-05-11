@@ -334,21 +334,25 @@ contains
     end select
   end subroutine
 
-  subroutine write_scalar (this, unit)
+  subroutine write_scalar (this, unit, real_fmt)
     class(any_scalar), intent(in) :: this
     integer, intent(in) :: unit
-    character(len=31) :: string
+    character(*), intent(in), optional :: real_fmt
+    character(:), allocatable :: rfmt
+    if (present(real_fmt)) then
+      rfmt = '(' // real_fmt // ')'
+    else
+      rfmt = '(g0)'
+    end if
     select type (uptr => this%value)
     type is (integer(int32))
       write(unit,'(i0)',advance='no') uptr
     type is (integer(int64))
       write(unit,'(i0)',advance='no') uptr
     type is (real(real32))
-      write(string,fmt=*) uptr
-      write(unit,'(a)',advance='no') trim(adjustl(string))
+      write(unit,rfmt,advance='no') uptr
     type is (real(real64))
-      write(string,fmt=*) uptr
-      write(unit,'(a)',advance='no') trim(adjustl(string))
+      write(unit,rfmt,advance='no') uptr
     type is (logical)
       if (uptr) then
         write(unit,'(a)',advance='no') 'true'
@@ -476,11 +480,17 @@ contains
     end select
   end subroutine
 
-  subroutine write_vector (this, unit)
+  subroutine write_vector (this, unit, real_fmt)
     class(any_vector), intent(in) :: this
     integer, intent(in) :: unit
+    character(*), intent(in), optional :: real_fmt
     integer :: n
-    character(len=31) :: string
+    character(:), allocatable :: rfmt
+    if (present(real_fmt)) then
+      rfmt = '(' // real_fmt // ')'
+    else
+      rfmt = '(g0)'
+    end if
     select type (val => this%value)
     type is (integer(int32))
       write(unit,'("[")',advance='no')
@@ -500,16 +510,14 @@ contains
       write(unit,'("[")',advance='no')
       do n = 1, size(val)
         if (n > 1) write(unit,'(", ")',advance='no')
-        write(string,fmt=*) val(n)
-        write(unit,'(a)',advance='no') trim(adjustl(string))
+        write(unit,rfmt,advance='no') val(n)
       end do
       write(unit,'("]")',advance='no')
     type is (real(real64))
       write(unit,'("[")',advance='no')
       do n = 1, size(val)
         if (n > 1) write(unit,'(", ")',advance='no')
-        write(string,fmt=*) val(n)
-        write(unit,'(a)',advance='no') trim(adjustl(string))
+        write(unit,rfmt,advance='no') val(n)
       end do
       write(unit,'("]")',advance='no')
     type is (logical)
@@ -666,16 +674,22 @@ contains
     end select
   end subroutine
 
-  subroutine write_matrix (this, unit)
+  subroutine write_matrix (this, unit, real_fmt)
     class(any_matrix), intent(in) :: this
     integer, intent(in) :: unit
+    character(*), intent(in), optional :: real_fmt
     integer :: n, m
-    character(len=31) :: string
+    character(:), allocatable :: rfmt
+    if (present(real_fmt)) then
+      rfmt = '(' // real_fmt // ')'
+    else
+      rfmt = '(g0)'
+    end if
     select type (val => this%value)
     type is (integer(int32))
-      write(unit,'("[")',advance='no')
+      write(unit,'(/,4x,"[")',advance='no')
       do n = 1, size(val,2)
-        if (n > 1) write(unit,'(", ")',advance='no')
+        if (n > 1) write(unit,'(/,4x,", ")',advance='no')
         write(unit,'("[")',advance='no')
         do m = 1, size(val,1)
           if (m > 1) write(unit,'(", ")',advance='no')
@@ -685,9 +699,9 @@ contains
       end do
       write(unit,'("]")',advance='no')
     type is (integer(int64))
-      write(unit,'("[")',advance='no')
+      write(unit,'(/,4x,"[")',advance='no')
       do n = 1, size(val,2)
-        if (n > 1) write(unit,'(", ")',advance='no')
+        if (n > 1) write(unit,'(/,4x,", ")',advance='no')
         write(unit,'("[")',advance='no')
         do m = 1, size(val,1)
           if (m > 1) write(unit,'(", ")',advance='no')
@@ -697,40 +711,38 @@ contains
       end do
       write(unit,'("]")',advance='no')
     type is (real(real32))
-      write(unit,'("[")',advance='no')
+      write(unit,'(/,4x,"[")',advance='no')
       do n = 1, size(val,2)
-        if (n > 1) write(unit,'(", ")',advance='no')
+        if (n > 1) write(unit,'(/,4x,", ")',advance='no')
         write(unit,'("[")',advance='no')
         do m = 1, size(val,1)
           if (m > 1) write(unit,'(", ")',advance='no')
-          write(string,fmt=*) val(m,n)
-          write(unit,'(a)',advance='no') trim(adjustl(string))
+          write(unit,rfmt,advance='no') val(m,n)
         end do
         write(unit,'("]")',advance='no')
       end do
       write(unit,'("]")',advance='no')
     type is (real(real64))
-      write(unit,'("[")',advance='no')
+      write(unit,'(/,4x,"[")',advance='no')
       do n = 1, size(val,2)
-        if (n > 1) write(unit,'(", ")',advance='no')
+        if (n > 1) write(unit,'(/,4x,",")',advance='no')
         write(unit,'("[")',advance='no')
         do m = 1, size(val,1)
           if (m > 1) write(unit,'(", ")',advance='no')
-          write(string,fmt=*) val(m,n)
-          write(unit,'(a)',advance='no') trim(adjustl(string))
+          write(unit,rfmt,advance='no') val(m,n)
         end do
         write(unit,'("]")',advance='no')
       end do
       write(unit,'("]")',advance='no')
     type is (logical)
-      write(unit,'("[")',advance='no')
+      write(unit,'(/,4x,"[")',advance='no')
       do n = 1, size(val,2)
-        if (n > 1) write(unit,'(", ")',advance='no')
+        if (n > 1) write(unit,'(/,4x,", ")',advance='no')
         write(unit,'("[")',advance='no')
         do m = 1, size(val,1)
           if (m > 1) write(unit,'(", ")',advance='no')
           if (val(m,n)) then
-            write(unit,'("true")',advance='no')
+            write(unit,'(" true")',advance='no')
           else
             write(unit,'("false")',advance='no')
           end if
@@ -739,9 +751,9 @@ contains
       end do
       write(unit,'("]")',advance='no')
     type is (character(*))
-      write(unit,'("[")',advance='no')
+      write(unit,'(/,4x,"[")',advance='no')
       do n = 1, size(val,2)
-        if (n > 1) write(unit,'(", ")',advance='no')
+        if (n > 1) write(unit,'(/,4x,", ")',advance='no')
         write(unit,'("[")',advance='no')
         do m = 1, size(val,1)
           if (m > 1) write(unit,'(", ")',advance='no')
@@ -751,9 +763,9 @@ contains
       end do
       write(unit,'("]")',advance='no')
     class default
-      write(unit,'("[")',advance='no')
+      write(unit,'(/,4x,"[")',advance='no')
       do n = 1, size(val,2)
-        if (n > 1) write(unit,'(", ")',advance='no')
+        if (n > 1) write(unit,'(/,4x,", ")',advance='no')
         write(unit,'("[")',advance='no')
         do m = 1, size(val,1)
           if (m > 1) write(unit,'(", ")',advance='no')
