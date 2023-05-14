@@ -32,6 +32,7 @@ set(Petaca_INCLUDE_DIR ${Petaca_SOURCE_DIR}/include)
 option(ENABLE_TESTS "Build test programs" ON)
 option(ENABLE_EXAMPLES "Build example programs" OFF)
 option(ENABLE_STD_MOD_PROC_NAME "Build with -assume std_mod_proc_name when using Intel" OFF)
+option(BUILD_SHARED_LIBS "Build shared object library" ON)
 
 #-------------------------------------------------------------------------------
 # Compiler Definitions
