@@ -15,12 +15,13 @@ boundary variables (one per image) whose LU factorization is computed in serial.
 
 ## Status
 This is a work-in-progress.
-* It currently works with the NAG 7.1 compiler;
-* It is not working with either the Intel ifort or gfortran/opencoarray
-  compilers; the linear solver generates grossly incorrect results.
+* It currently works with NAG 7.1, gfortran 12.1 with opencoarray 2.1, and
+  Intel oneAPI classic ifort and the new LLVM-based ifx.
+* As found with other coarray programs. The NAG and gfortran compiled test runs
+  the fastest (~0.01 sec) while with both ifort and ifx it is horribly slow
+  (~7 sec).
 * Except for extremely large systems (> 1M), increasing the number of
   images actually increases the runtime rather than decreasing it.
-
 
 ## Compiling and Testing
 
@@ -32,9 +33,12 @@ $ cmake ..
 $ make
 $ ctest
 ```
-The build system understands the NAG, Intel ifort, and gfortran/opencoarrays
-compilers. You may need to set your `FC` environment variable to the path to
-your compiler. For gfortran you must set `FC=caf` (provided by opencoarrays).
+The build system understands the NAG, Intel oneAPI classic ifort and LLVM-based
+ifx, and gfortran/opencoarrays compilers. You may need to set your `FC`
+environment variable to the path to your compiler. For gfortran you must set
+`FC=caf` (provided by opencoarrays).
+
+The test problem `test/main.f90` also serves as a usage example.
 
 ## Licence
 This project is distributed under the terms of the MIT license.

@@ -123,6 +123,7 @@ contains
         if (this_image() < num_images()-1) this%dhat%u = -this%u(n)*this%co_tmp2[this_image()+1]
       end if
       call this%dhat%factor
+      sync all
     end associate
   end subroutine
 

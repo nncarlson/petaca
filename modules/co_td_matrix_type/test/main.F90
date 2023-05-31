@@ -63,7 +63,7 @@ program main
   if (this_image() == 1) call system_clock(t2, rate)
 
   error = maxval(abs(x-y))
-  call co_max(error, 1)
+  call co_max(error)
   if (this_image() == 1) &
       write(*,'(2(a,g0),a)') 'error=', error, '; cpu=', real(t2-t1)/real(rate), ' sec'
 

@@ -10,15 +10,15 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
 endif()
 
 # Coarray compiler options
-add_compile_options($<$<Fortran_COMPILER_ID:NAG,Intel,IntelLLVM>:-coarray>)
-add_link_options($<$<Fortran_COMPILER_ID:NAG,Intel>:-coarray>)
+add_compile_options($<$<COMPILE_LANG_AND_ID:Fortran,NAG,Intel,IntelLLVM>:-coarray>)
+add_link_options($<$<COMPILE_LANG_AND_ID:Fortran,NAG,Intel,IntelLLVM>:-coarray>)
 
 # Disable assertions in release builds
 add_compile_definitions($<$<CONFIG:Release,RelWithDebInfo>:NDEBUG>)
 
 if(NOT CMAKE_BUILD_TYPE)
   message(STATUS "Setting build type to 'Release' as none was specified.")
-  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build.")
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
 endif()
 
 include(CTest)
