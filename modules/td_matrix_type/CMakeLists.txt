@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20.2)
 
-project(co_td_matrix Fortran)
+project(td_matrix Fortran)
 
 # Set missing CMake defaults for the NAG Fortran compiler
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)

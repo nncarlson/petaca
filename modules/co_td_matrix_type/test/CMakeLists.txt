@@ -17,12 +17,4 @@ macro(add_parallel_test test exe nproc)
   set_tests_properties(${test} PROPERTIES PROCESSORS ${nproc})
 endmacro()
 
-macro(add_serial_test test exe)
-  add_executable(${exe} ${exe}.F90)
-  target_link_libraries(${exe} common2)
-  add_test(${test} ./${exe})
-endmacro()
-
-
 add_parallel_test(co_td_matrix co_td_matrix_test 4)
-add_serial_test(td_matrix td_matrix_test)
