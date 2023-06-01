@@ -10,8 +10,8 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
 endif()
 
 # Coarray compiler options
-add_compile_options($<$<COMPILE_LANG_AND_ID:Fortran,NAG,Intel,IntelLLVM>:-coarray>)
-add_link_options($<$<COMPILE_LANG_AND_ID:Fortran,NAG,Intel,IntelLLVM>:-coarray>)
+#add_compile_options($<$<COMPILE_LANG_AND_ID:Fortran,NAG,Intel,IntelLLVM>:-coarray>)
+#add_link_options($<$<COMPILE_LANG_AND_ID:Fortran,NAG,Intel,IntelLLVM>:-coarray>)
 
 # Disable assertions in release builds
 add_compile_definitions($<$<CONFIG:Release,RelWithDebInfo>:NDEBUG>)
