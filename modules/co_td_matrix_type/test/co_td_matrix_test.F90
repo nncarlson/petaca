@@ -44,7 +44,7 @@ contains
 
     integer, parameter :: ntotal = 40
     real(r8), allocatable :: x(:), b(:)
-    type(co_td_matrix), save :: a
+    type(co_td_matrix) :: a
 
     integer  :: n
     real(r8) :: error
@@ -78,7 +78,7 @@ contains
 
     integer, parameter :: ntotal = 40
     real(r8), allocatable :: x(:), b(:)
-    type(co_td_matrix), save :: a
+    type(co_td_matrix) :: a
 
     integer  :: n
     real(r8) :: error
@@ -114,11 +114,12 @@ contains
   subroutine conv_diff_fill(a, s, t)
     type(co_td_matrix), intent(inout) :: a
     real(r8), intent(in) :: s, t
-    a%d = 2.0_r8 + s
-    a%l = -1.0_r8 - t
-    a%u = -1.0_r8 + t
-    !if (this_image() == 1) a%l = 0.0_r8
-    !if (this_image() == num_images()) a%u = 0.0_r8
+    real(r8) :: rn
+    call random_number(rn)
+    rn = (2*rn - 1)/10
+    a%d =  (1+rn)*2.0_r8 + s
+    a%l = -(1+rn)*(1.0_r8 + t)
+    a%u = -(1+rn)*(1.0_r8 - t)
   end subroutine
 
   subroutine report(name, error, tol)

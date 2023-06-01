@@ -41,8 +41,7 @@ module co_td_matrix_type
   type, private :: schur_matrix
     integer :: n
     logical :: periodic = .false.
-    real(r8) :: l, d
-    real(r8), allocatable :: u[:], w[:]
+    real(r8) :: l, d, u, w
   contains
     procedure :: init => init_schur
     procedure :: factor => factor_schur
@@ -57,8 +56,6 @@ module co_td_matrix_type
     ! LU decomposition fill-in and Schur complement
     real(r8), allocatable :: p(:), q(:)
     type(schur_matrix) :: dhat
-    ! Persistent communication buffers
-    real(r8), allocatable :: co_tmp1[:], co_tmp2[:]
   contains
     procedure :: init
     procedure :: factor
@@ -70,7 +67,7 @@ contains
 
   subroutine init(this, n, periodic)
 
-    class(co_td_matrix), intent(inout) :: this
+    class(co_td_matrix), intent(out) :: this
     integer, intent(in) :: n
     logical, intent(in), optional :: periodic
 
@@ -89,8 +86,6 @@ contains
         error stop 'co_td_matrix%init: periodic matrix size must be >= 3'
 
     allocate(this%l(n), this%d(n), this%u(n))
-    if (.not.allocated(this%co_tmp1)) allocate(this%co_tmp1[*])
-    if (.not.allocated(this%co_tmp2)) allocate(this%co_tmp2[*])
 
     m = num_images() - merge(0, 1, this%periodic)
     if (this%periodic .and. num_images() > 2) then
@@ -98,17 +93,6 @@ contains
     else if (num_images() > 1) then
       call this%dhat%init(m, periodic=.false.)
     end if
-
-  contains
-
-    subroutine finalize
-      this%periodic = .false.
-      if (allocated(this%l)) deallocate(this%l)
-      if (allocated(this%d)) deallocate(this%d)
-      if (allocated(this%u)) deallocate(this%u)
-      if (allocated(this%p)) deallocate(this%p)
-      if (allocated(this%q)) deallocate(this%q)
-    end subroutine
 
   end subroutine
 
@@ -128,29 +112,31 @@ contains
   subroutine factor_non_periodic(this)
     class(co_td_matrix), intent(inout) :: this
     integer :: m
+    real(r8), allocatable :: p1[:], q1[:]
     m = merge(this%n-1, this%n, this_image() < num_images())
-    associate (n => this%n) !, p1 => this%co_tmp1, q1 => this%co_tmp2)
+    associate (n => this%n)
       call serial_factor(this, 1, m)
       if (num_images() == 1) return
+      allocate(p1[*], q1[*])
       if (this_image() < num_images()) then
         allocate(this%q(m))
         this%q = 0.0_r8
         this%q(m) = this%u(m)
         call serial_solve(this, 1, m, this%q)  ! only backward substitution needed
-        this%co_tmp2 = this%q(1) ! q1 = this%q(1)
+        q1 = this%q(1)
       end if
       if (this_image() > 1) then
         allocate(this%p(m))
         this%p = 0.0_r8
         this%p(1) = this%l(1)
         call serial_solve(this, 1, m, this%p)
-        this%co_tmp1 = this%p(1) ! p1 = this%p(1)
+        p1 = this%p(1)
       end if
       sync all
       if (this_image() < num_images()) then
-        this%dhat%d = this%d(n) - this%l(n)*this%q(m) - this%u(n)*this%co_tmp1[this_image()+1]
+        this%dhat%d = this%d(n) - this%l(n)*this%q(m) - this%u(n)*p1[this_image()+1]
         if (this_image() > 1) this%dhat%l = -this%l(n)*this%p(m)
-        if (this_image() < num_images()-1) this%dhat%u = -this%u(n)*this%co_tmp2[this_image()+1]
+        if (this_image() < num_images()-1) this%dhat%u = -this%u(n)*q1[this_image()+1]
       end if
       call this%dhat%factor
       sync all
@@ -160,33 +146,35 @@ contains
   subroutine factor_periodic(this)
     class(co_td_matrix), intent(inout) :: this
     integer :: m, next
+    real(r8), allocatable :: p1[:], q1[:]
     next = 1 + modulo(this_image(), num_images())
     m = this%n-1
-    associate (n => this%n) !, p1 => this%co_tmp1, q1 => this%co_tmp2)
+    associate (n => this%n)
       call serial_factor(this, 1, m)
+      allocate(p1[*], q1[*])
       allocate(this%q(m))
       this%q = 0.0_r8
       this%q(m) = this%u(m)
       call serial_solve(this, 1, m, this%q)  ! only backward substitution needed
-      this%co_tmp2 = this%q(1) ! q1 = this%q(1)
+      q1 = this%q(1)
       allocate(this%p(m))
       this%p = 0.0_r8
       this%p(1) = this%l(1)
       call serial_solve(this, 1, m, this%p)
-      this%co_tmp1 = this%p(1) ! p1 = this%p(1)
+      p1 = this%p(1)
       sync all
       if (num_images() > 2) then
         this%dhat%l = -this%l(n)*this%p(m)
-        this%dhat%d = this%d(n) - this%l(n)*this%q(m) - this%u(n)*this%co_tmp1[next]
-        this%dhat%u = -this%u(n)*this%co_tmp2[next]
+        this%dhat%d = this%d(n) - this%l(n)*this%q(m) - this%u(n)*p1[next]
+        this%dhat%u = -this%u(n)*q1[next]
       else
         select case (this_image())
         case (1)
-          this%dhat%d = this%d(n) - this%l(n)*this%q(m) - this%u(n)*this%co_tmp1[2]
-          this%dhat%u =           - this%l(n)*this%p(m) - this%u(n)*this%co_tmp2[2]
+          this%dhat%d = this%d(n) - this%l(n)*this%q(m) - this%u(n)*p1[2]
+          this%dhat%u =           - this%l(n)*this%p(m) - this%u(n)*q1[2]
         case (2)
-          this%dhat%l =           - this%l(n)*this%p(m) - this%u(n)*this%co_tmp2[1]
-          this%dhat%d = this%d(n) - this%l(n)*this%q(m) - this%u(n)*this%co_tmp1[1]
+          this%dhat%l =           - this%l(n)*this%p(m) - this%u(n)*q1[1]
+          this%dhat%d = this%d(n) - this%l(n)*this%q(m) - this%u(n)*p1[1]
         end select
       end if
       call this%dhat%factor
@@ -208,37 +196,30 @@ contains
     end if
   end subroutine
 
-  subroutine solve_non_periodic(this, x)
+  subroutine solve_non_periodic(this, b)
     class(co_td_matrix), intent(inout) :: this
-    real(r8), intent(inout) :: x(:)
+    real(r8), intent(inout) :: b(:)
     integer :: m
+    real(r8), allocatable :: b1[:], bn[:]
     m = merge(this%n-1, this%n, this_image() < num_images())
-    associate (n => this%n) !, x1 => this%co_tmp1, xn => this%co_tmp2)
-      call serial_solve(this, 1, m, x)
+    associate (n => this%n)
+      call serial_solve(this, 1, m, b)
       if (num_images() == 1) return
-      if (this_image() > 1) this%co_tmp1 = x(1) ! x1 = x(1)
+      allocate(b1[*], bn[*])
+      if (this_image() > 1) b1 = b(1)
       sync all
       if (this_image() < num_images()) then
-        x(n) = x(n) - this%l(n)*x(n-1) - this%u(n)*this%co_tmp1[this_image()+1]
-        this%co_tmp2 = x(n) ! xn = x(n)
+        b(n) = b(n) - this%l(n)*b(n-1) - this%u(n)*b1[this_image()+1]
+        bn = b(n)
       end if
-      call this%dhat%solve(this%co_tmp2)
-      if (this_image() < num_images()) x(n) = this%co_tmp2 ! x(n) = xn
+      call this%dhat%solve(bn)
+      if (this_image() < num_images()) b(n) = bn
       sync all
       if (this_image() > 1) then
-#ifdef NAGFOR
-        block
-          integer :: j
-          do j = 1, m
-            x(j) = x(j) - this%p(j) * this%co_tmp2[this_image()-1]
-          end do
-        end block
-#else
-        x(1:m) = x(1:m) - this%p * this%co_tmp2[this_image()-1]
-#endif
+        b(1:m) = b(1:m) - this%p * bn[this_image()-1]
       end if
       if (this_image() < num_images()) then
-        x(1:n-1) = x(1:n-1) - this%q*x(n)
+        b(1:n-1) = b(1:n-1) - this%q*b(n)
       end if
       sync all
     end associate
@@ -248,28 +229,21 @@ contains
     class(co_td_matrix), intent(inout) :: this
     real(r8), intent(inout) :: b(:)
     integer :: m, next, prev
+    real(r8), allocatable :: b1[:], bn[:]
     next = 1 + modulo(this_image(), num_images())
     prev = 1 + modulo(this_image()-2, num_images())
     m = this%n - 1
-    associate (n => this%n) !, b1 => this%co_tmp1, bn => this%co_tmp2)
+    associate (n => this%n)
       call serial_solve(this, 1, m, b)
-      this%co_tmp1 = b(1) ! b1 = b(1)
+      allocate(b1[*], bn[*])
+      b1 = b(1)
       sync all
-      b(n) = b(n) - this%l(n)*b(m) - this%u(n)*this%co_tmp1[next]
-      this%co_tmp2 = b(n) ! bn = b(n)
-      call this%dhat%solve(this%co_tmp2)
-      b(n) = this%co_tmp2 ! b(n) = bn
+      b(n) = b(n) - this%l(n)*b(m) - this%u(n)*b1[next]
+      bn = b(n)
+      call this%dhat%solve(bn)
+      b(n) = bn
       sync all
-#ifdef NAGFOR
-      block
-        integer :: j
-        do j = 1, m
-          b(j) = b(j) - this%p(j)*this%co_tmp2[prev] - this%q(j)*b(n)
-        end do
-      end block
-#else
-      b(1:m) = b(1:m) - this%p*this%co_tmp2[prev] - this%q*b(n)
-#endif
+      b(1:m) = b(1:m) - this%p*bn[prev] - this%q*b(n)
     end associate
   end subroutine
 
@@ -283,28 +257,28 @@ contains
     real(r8), intent(in) :: x(:)
     real(r8), intent(out) :: y(:)
     integer :: j
-    !associate (xleft => this%co_tmp1, xright => this%co_tmp2)
-      this%co_tmp1 = x(1) !xleft = x(1)
-      this%co_tmp2 = x(this%n) !xright = x(this%n)
-      sync all
-      if (this_image() > 1) then
-        y(1) = this%l(1)*this%co_tmp2[this_image()-1] + this%d(1)*x(1) + this%u(1)*x(2)
-      else if (this%periodic) then
-        y(1) = this%l(1)*this%co_tmp2[num_images()] + this%d(1)*x(1) + this%u(1)*x(2)
-      else
-        y(1) = this%d(1)*x(1) + this%u(1)*x(2)
-      end if
-      do j = 2, this%n-1
-        y(j) = this%l(j)*x(j-1) + this%d(j)*x(j) + this%u(j)*x(j+1)
-      end do
-      if (this_image() < num_images()) then
-        y(j) = this%l(j)*x(j-1) + this%d(j)*x(j) + this%u(j)*this%co_tmp1[this_image()+1]
-      else if (this%periodic) then
-        y(j) = this%l(j)*x(j-1) + this%d(j)*x(j) + this%u(j)*this%co_tmp1[1]
-      else
-        y(j) = this%l(j)*x(j-1) + this%d(j)*x(j)
-      end if
-    !end associate
+    real(r8), allocatable :: xleft[:], xright[:]
+    allocate(xleft[*], xright[*])
+    xleft = x(1)
+    xright = x(this%n)
+    sync all
+    if (this_image() > 1) then
+      y(1) = this%l(1)*xright[this_image()-1] + this%d(1)*x(1) + this%u(1)*x(2)
+    else if (this%periodic) then
+      y(1) = this%l(1)*xright[num_images()] + this%d(1)*x(1) + this%u(1)*x(2)
+    else
+      y(1) = this%d(1)*x(1) + this%u(1)*x(2)
+    end if
+    do j = 2, this%n-1
+      y(j) = this%l(j)*x(j-1) + this%d(j)*x(j) + this%u(j)*x(j+1)
+    end do
+    if (this_image() < num_images()) then
+      y(j) = this%l(j)*x(j-1) + this%d(j)*x(j) + this%u(j)*xleft[this_image()+1]
+    else if (this%periodic) then
+      y(j) = this%l(j)*x(j-1) + this%d(j)*x(j) + this%u(j)*xleft[1]
+    else
+      y(j) = this%l(j)*x(j-1) + this%d(j)*x(j)
+    end if
     sync all
   end subroutine
 
@@ -379,25 +353,11 @@ contains
   !! then scatter the results.
 
   subroutine init_schur(this, n, periodic)
-    class(schur_matrix), intent(inout) :: this  ! INOUT due to F18 C846
+    class(schur_matrix), intent(out) :: this
     integer, intent(in) :: n ! matrix order, <= num_images()
     logical, intent(in), optional :: periodic
-    call finalize ! to sidestep C846
     this%n = n
-    allocate(this%u[*])
     if (present(periodic)) this%periodic = periodic
-    if (this%periodic) allocate(this%w[*])
-  contains
-    subroutine finalize
-      if (allocated(this%u)) deallocate(this%u)
-      if (allocated(this%w)) deallocate(this%w)
-      call set_undefined(this%l)
-      call set_undefined(this%d)
-      this%periodic = .false.
-    end subroutine
-    subroutine set_undefined(x)
-      real(r8), intent(out) :: x
-    end subroutine
   end subroutine
 
   subroutine factor_schur(this)
@@ -412,72 +372,78 @@ contains
   subroutine factor_schur_submatrix(this, n)
     class(schur_matrix), intent(inout) :: this
     integer, intent(in) :: n
+    real(r8), allocatable :: u[:]
+    allocate(u[*])
     if (this_image() > n) return ! this image is idle
+    u = this%u
     if (this_image() > 1) then
       sync images (this_image()-1) ! hold until released
-      this%d = this%d - this%l*this%u[this_image()-1]
+      this%d = this%d - this%l*u[this_image()-1]
     end if
     if (this_image() < n) then
-      this%u = this%u/this%d
+      u = u/this%d
       sync images (this_image()+1) ! release
     end if
+    this%u = u
   end subroutine
 
   subroutine factor_schur_periodic(this)
     class(schur_matrix), intent(inout) :: this
+    real(r8), allocatable :: w[:]
     call factor_schur_submatrix(this, this%n-1)
-    sync all
+    allocate(w[*])
     if (this_image() == 1) then
-      this%w = this%l
+      w = this%l
     else if (this_image() == this%n-1) then
-      this%w = this%u
+      w = this%u
     else
-      this%w = 0.0_r8
+      w = 0.0_r8
     end if
     sync all
-    call solve_schur_submatrix(this, this%n-1, this%w)
+    call solve_schur_submatrix(this, this%n-1, w)
     sync all
-    if (this_image() == this%n) this%d = this%d - this%u*this%w[1] - this%l*this%w[this%n-1]
+    if (this_image() == this%n) this%d = this%d - this%u*w[1] - this%l*w[this%n-1]
+    this%w = w
   end subroutine
 
-  subroutine solve_schur(this, x)
+  subroutine solve_schur(this, b)
     class(schur_matrix), intent(in) :: this
-    real(r8), intent(inout) :: x[*]
+    real(r8), intent(inout) :: b[*]
     if (this_image() > this%n) return ! this image is idle
     if (this%periodic) then
-      call solve_schur_periodic(this, x)
+      call solve_schur_periodic(this, b)
     else
-      call solve_schur_submatrix(this, this%n, x)
+      call solve_schur_submatrix(this, this%n, b)
     end if
   end subroutine
 
-  subroutine solve_schur_submatrix(this, n, x)
+  subroutine solve_schur_submatrix(this, n, b)
     class(schur_matrix), intent(in) :: this
     integer, intent(in) :: n
-    real(r8), intent(inout) :: x[*]
+    real(r8), intent(inout) :: b[*]
     if (this_image() > n) return ! this image is idle
     if (this_image() > 1) then
       sync images (this_image()-1)  ! hold until released
-      x = (x - this%l*x[this_image()-1])/this%d
+      b = (b - this%l*b[this_image()-1])/this%d
     else
-      x = x/this%d
+      b = b/this%d
     end if
     if (this_image() < n) sync images (this_image()+1) ! release
     if (this_image() < n) then
       sync images (this_image()+1)  ! hold until released
-      x = x - this%u * x[this_image()+1]
+      b = b - this%u * b[this_image()+1]
     end if
     if (this_image() > 1) sync images (this_image()-1)  ! release
   end subroutine
 
-  subroutine solve_schur_periodic(this, x)
+  subroutine solve_schur_periodic(this, b)
     class(schur_matrix), intent(in) :: this
-    real(r8), intent(inout) :: x[*]
-    call solve_schur_submatrix(this, this%n-1, x)
+    real(r8), intent(inout) :: b[*]
+    call solve_schur_submatrix(this, this%n-1, b)
     sync all
-    if (this_image() == this%n) x = (x - this%u*x[1] - this%l*x[this%n-1])/this%d
+    if (this_image() == this%n) b = (b - this%u*b[1] - this%l*b[this%n-1])/this%d
     sync all
-    if (this_image() < this%n) x = x - this%w*x[this%n]
+    if (this_image() < this%n) b = b - this%w*b[this%n]
   end subroutine
 
 end module
