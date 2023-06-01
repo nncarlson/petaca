@@ -1,5 +1,5 @@
 !!
-!! Unit Test for the CO_TD_MATRIX_TYPE Module
+!! Unit Tests for the TD_MATRIX_TYPE Module
 !!
 !! Copyright (c) 2023  Neil N. Carlson
 !!
@@ -23,64 +23,66 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program main
+program td_matrix_test
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64, int64
-  use co_td_matrix_type
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use td_matrix_type
   implicit none
 
-  integer, parameter :: ntotal = 100000
-  real(r8), allocatable :: x(:), y(:)
-  type(co_td_matrix) :: a
+  integer :: stat = 0
 
-  integer  :: n
-  real(r8) :: error
-  integer(int64) :: t1, t2, rate
+  call test_non_periodic
+  call test_periodic
 
-  if (this_image() == 1) write(*,'(a,i0,a)') 'Using ', num_images(), ' images'
-
-  !! Partition the NTOTAL equations into nearly equal blocks
-  n = ntotal/num_images()
-  if (this_image() <= ntotal - n*num_images()) n = n + 1
-
-  !! Initialize the tridiagonal matrix
-  call a%init(n)
-  call conv_diff_fill(a, 0.5_r8, 0.1_r8)
-
-  !! Initialize the target solution
-  allocate(x(n))
-  call random_number(x)
-
-  !! Compute the corresponding RHS
-  allocate(y(n))
-  call a%matvec(x, y)
-
-  !! Solve the tridiagonal linear system; should recover X
-  sync all
-  if (this_image() == 1) call system_clock(t1)
-  call a%factor
-  call a%solve(y)
-  if (this_image() == 1) call system_clock(t2, rate)
-
-  error = maxval(abs(x-y))
-  call co_max(error)
-  if (this_image() == 1) &
-      write(*,'(2(a,g0),a)') 'error=', error, '; cpu=', real(t2-t1)/real(rate), ' sec'
-
-  sync all
-  if (error > 1e-15_r8) error stop
+  if (stat /= 0) stop 1
 
 contains
+
+  subroutine test_non_periodic
+    type(td_matrix) :: a
+    integer, parameter :: N = 20
+    real(r8) :: x(N), b(N)
+    call a%init(N)
+    call conv_diff_fill(a, 0.5_r8, 0.1_r8)
+    call random_number(x)
+    call a%matvec(x, b)
+    call a%factor
+    call a%solve(b)
+    call report('test_non_periodic', maxval(abs(x-b)), 1.0e-15_r8)
+  end subroutine
+
+  subroutine test_periodic
+    type(td_matrix) :: a
+    integer, parameter :: N = 20
+    real(r8) :: x(N), b(N)
+    call a%init(N, periodic=.true.)
+    call conv_diff_fill(a, 0.5_r8, 0.1_r8)
+    call random_number(x)
+    call a%matvec(x, b)
+    call a%factor
+    call a%solve(b)
+    call report('test_periodic', maxval(abs(x-b)), 1.0e-15_r8)
+  end subroutine
 
   !! Fill the matrix with values proportional to a finite difference
   !! approximation to a 1D convection-diffusion operator.
 
   subroutine conv_diff_fill(a, s, t)
-    type(co_td_matrix), intent(inout) :: a
+    type(td_matrix), intent(inout) :: a
     real(r8), intent(in) :: s, t
     a%d = 2.0_r8 + s
     a%l = -1.0_r8 - t
     a%u = -1.0_r8 + t
+  end subroutine
+
+  subroutine report(name, error, tol)
+    use,intrinsic :: iso_fortran_env, only: output_unit
+    character(*), intent(in) :: name
+    real(r8), intent(in) :: error, tol
+    character(6) :: pf
+    if (error > tol) stat = stat + 1
+    pf = merge('PASS: ', 'FAIL: ', error <= tol)
+    write(output_unit,'(3a,2(g0,a))') pf, name, ', error=', error, ' (tol=', tol, ')'
   end subroutine
 
 end program

@@ -17,4 +17,4 @@ macro(add_parallel_test test exe nproc)
   set_tests_properties(${test} PROPERTIES PROCESSORS ${nproc})
 endmacro()
 
-add_parallel_test(co_td_matrix main 4)
+add_parallel_test(co_td_matrix co_td_matrix_test 4)
