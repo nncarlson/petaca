@@ -1,5 +1,5 @@
 !!
-!! Unit Tests for the BTD_MATRIX_TYPE Module
+!! Unit Tests for the CO_BTD_MATRIX_TYPE Module
 !!
 !! Copyright (c) 2023  Neil N. Carlson
 !!
@@ -23,13 +23,15 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program btd_matrix_test
+program co_btd_matrix_test
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use btd_matrix_type
+  use co_btd_matrix_type
   implicit none
 
   integer :: stat = 0
+
+  if (this_image() == 1) write(*,'(a,i0,a)') 'Using ', num_images(), ' images'
 
   call test_non_periodic
   call test_periodic
@@ -39,36 +41,78 @@ program btd_matrix_test
 contains
 
   subroutine test_non_periodic
-    type(btd_matrix) :: a
-    integer, parameter :: NB = 4, N = 20
-    real(r8) :: x(NB,N), b(NB,N)
-    call a%init(NB, N)
+
+    integer, parameter :: NB = 4, NTOTAL = 40
+    real(r8), allocatable :: x(:,:), b(:,:)
+    type(co_btd_matrix) :: a
+
+    integer  :: n, i, j
+    real(r8) :: error
+
+    !! Partition the NTOTAL equations into nearly equal blocks
+    n = ntotal/num_images()
+    if (this_image() <= ntotal - n*num_images()) n = n + 1
+
+    !! Initialize the tridiagonal matrix
+    call a%init(NB, n)
     call matrix_fill(a)
+    !call matrix_simple(a)
+    
+    !! Initialize the target solution
+    allocate(x(NB,n))
     call random_number(x)
+
+    !! Compute the corresponding RHS
+    allocate(b(NB,n))
     call a%matvec(x, b)
+
+    !! Solve the tridiagonal linear system; should recover X
     call a%factor
     call a%solve(b)
-    call report('test_non_periodic', maxval(abs(x-b)), 1.0e-15_r8)
+    error = maxval(abs(x-b))
+    call co_max(error)
+    call report('test_non_periodic', error, 1.0e-15_r8)
+
   end subroutine
 
   subroutine test_periodic
-    type(btd_matrix) :: a
-    integer, parameter :: NB = 4, N = 20
-    real(r8) :: x(NB,N), b(NB,N)
-    call a%init(NB, N, periodic=.true.)
+
+    integer, parameter :: NB = 4, NTOTAL = 40
+    real(r8), allocatable :: x(:,:), b(:,:)
+    type(co_btd_matrix) :: a
+
+    integer  :: n
+    real(r8) :: error
+
+    !! Partition the NTOTAL equations into nearly equal blocks
+    n = ntotal/num_images()
+    if (this_image() <= ntotal - n*num_images()) n = n + 1
+
+    !! Initialize the tridiagonal matrix
+    call a%init(NB, n, periodic=.true.)
     call matrix_fill(a)
+    
+    !! Initialize the target solution
+    allocate(x(NB,n))
     call random_number(x)
+
+    !! Compute the corresponding RHS
+    allocate(b(NB,n))
     call a%matvec(x, b)
+    !! Solve the tridiagonal linear system; should recover X
     call a%factor
     call a%solve(b)
-    call report('test_periodic', maxval(abs(x-b)), 1.0e-15_r8)
+    error = maxval(abs(x-b))
+    call co_max(error)
+    call report('test_periodic', error, 1.0e-15_r8)
+
   end subroutine
 
   !! Fill with a random-ish M-matrix: negative off-diagonal elements,
   !! positive diagonal elements, and strictly diagonally dominant.
 
   subroutine matrix_fill(a)
-    type(btd_matrix), intent(inout) :: a
+    type(co_btd_matrix), intent(inout) :: a
     integer :: i, j
     call random_number(a%l)
     call random_number(a%d)
@@ -77,8 +121,23 @@ contains
     a%d = -a%d
     a%u = -a%u
     do j = 1, a%n
-      do i = 1, a%m
-        a%d(i,i,j) = 3*a%m
+      do i = 1, a%nb
+        a%d(i,i,j) = 3*a%nb
+      end do
+    end do
+  end subroutine
+
+  subroutine matrix_simple(a)
+    type(co_btd_matrix), intent(inout) :: a
+    integer :: i, j
+    a%l = 0
+    a%d = 0
+    a%u = 0
+    do j = 1, a%n
+      do i = 1, a%nb
+        a%l(i,i,j) = -1.0_r8
+        a%d(i,i,j) =  3.0_r8
+        a%u(i,i,j) = -1.0_r8
       end do
     end do
   end subroutine
@@ -90,7 +149,9 @@ contains
     character(6) :: pf
     if (error > tol) stat = stat + 1
     pf = merge('PASS: ', 'FAIL: ', error <= tol)
-    write(output_unit,'(3a,2(g0,a))') pf, name, ', error=', error, ' (tol=', tol, ')'
+    if (this_image() == 1) &
+        write(output_unit,'(3a,2(g0,a))') pf, name, ', error=', error, ' (tol=', tol, ')'
+    sync all
   end subroutine
 
 end program

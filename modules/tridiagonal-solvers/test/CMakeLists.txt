@@ -1,6 +1,12 @@
+macro(add_serial_test test exe)
+  add_executable(${exe} ${exe}.F90)
+  target_link_libraries(${exe} serial-lib)
+  add_test(${test} ./${exe})
+endmacro()
+
 macro(add_parallel_test test exe nproc)
   add_executable(${exe} ${exe}.F90)
-  target_link_libraries(${exe} common)
+  target_link_libraries(${exe} parallel-lib)
   if (CMAKE_Fortran_COMPILER_ID MATCHES GNU)
     add_test(${test} cafrun -n ${nproc} ./${exe})
   else()
@@ -17,4 +23,8 @@ macro(add_parallel_test test exe nproc)
   set_tests_properties(${test} PROPERTIES PROCESSORS ${nproc})
 endmacro()
 
+add_serial_test(td_matrix td_matrix_test)
+add_serial_test(btd_matrix btd_matrix_test)
+
+add_parallel_test(co_td_matrix co_td_matrix_test 4)
 add_parallel_test(co_btd_matrix co_btd_matrix_test 4)

@@ -1,8 +1,12 @@
 !!
 !! CO_TD_MATRIX_TYPE
 !!
-!! A parallel data structure for tridiagonal matrices that is implemented
-!! using coarrays. Includes linear solver and matrix-vector product methods.
+!! A parallel data structure for tridiagonal matrices, with methods for linear
+!! equations and matrix-vector products, that is implemented using coarrays.
+!! Supports periodic tridiagonal matrices as well. Linear equation solution
+!! uses direct LU factorization without pivoting and is thus only suitable for
+!! classes of matrices not requiring pivoting, such as diagonally-dominant
+!! matrices.
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
@@ -31,6 +35,7 @@
 module co_td_matrix_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use td_matrix_type
   implicit none
   private
 
@@ -48,13 +53,9 @@ module co_td_matrix_type
     procedure :: solve => solve_schur
   end type
 
-  type, public :: co_td_matrix
-    private
-    integer, public :: n
-    logical :: periodic = .false.
-    real(r8), allocatable, public :: l(:), d(:), u(:)
-    ! LU decomposition fill-in and Schur complement
-    real(r8), allocatable :: p(:), q(:)
+  type, extends(td_matrix), public :: co_td_matrix
+    ! Additional LU factorization fill-in and Schur complement
+    real(r8), allocatable :: p(:)
     type(schur_matrix) :: dhat
   contains
     procedure :: init
@@ -73,17 +74,14 @@ contains
 
     integer :: m
 
-    !! Require at least 2 matrix rows per image
-    m = n; call co_min(m)
+    m = n; call co_min(m) ! require at least 2 rows per image
     if (m < 2) error stop 'co_td_matrix%init: image matrix size is < 2'
 
     this%n = n
     if (present(periodic)) this%periodic = periodic
 
-    !! Total size of a periodic matrix must be at least 3
-    m = n; call co_sum(m)
-    if (this%periodic .and. m < 3) &
-        error stop 'co_td_matrix%init: periodic matrix size must be >= 3'
+    m = n; call co_sum(m) ! global matrix size
+    if (this%periodic .and. m < 3) error stop 'co_td_matrix%init: periodic matrix size < 3'
 
     allocate(this%l(n), this%d(n), this%u(n))
 
@@ -98,12 +96,10 @@ contains
 
   subroutine factor(this)
     class(co_td_matrix), intent(inout) :: this
-    if (this%periodic) then
-      if (num_images() == 1) then
-        call serial_factor_periodic(this)
-      else
-        call factor_periodic(this)
-      end if
+    if (num_images() == 1) then
+      call this%td_matrix%factor ! serial method
+    else if (this%periodic) then
+      call factor_periodic(this)
     else
       call factor_non_periodic(this)
     end if
@@ -115,21 +111,21 @@ contains
     real(r8), allocatable :: p1[:], q1[:]
     m = merge(this%n-1, this%n, this_image() < num_images())
     associate (n => this%n)
-      call serial_factor(this, 1, m)
+      call this%factor_submatrix(1, m) ! inherited serial method
       if (num_images() == 1) return
       allocate(p1[*], q1[*])
       if (this_image() < num_images()) then
         allocate(this%q(m))
         this%q = 0.0_r8
         this%q(m) = this%u(m)
-        call serial_solve(this, 1, m, this%q)  ! only backward substitution needed
+        call this%solve_submatrix(1, m, this%q)  ! only backward substitution needed
         q1 = this%q(1)
       end if
       if (this_image() > 1) then
         allocate(this%p(m))
         this%p = 0.0_r8
         this%p(1) = this%l(1)
-        call serial_solve(this, 1, m, this%p)
+        call this%solve_submatrix(1, m, this%p)
         p1 = this%p(1)
       end if
       sync all
@@ -150,17 +146,17 @@ contains
     next = 1 + modulo(this_image(), num_images())
     m = this%n-1
     associate (n => this%n)
-      call serial_factor(this, 1, m)
+      call this%factor_submatrix(1, m) ! inherited serial method
       allocate(p1[*], q1[*])
       allocate(this%q(m))
       this%q = 0.0_r8
       this%q(m) = this%u(m)
-      call serial_solve(this, 1, m, this%q)  ! only backward substitution needed
+      call this%solve_submatrix(1, m, this%q)  ! only backward substitution needed
       q1 = this%q(1)
       allocate(this%p(m))
       this%p = 0.0_r8
       this%p(1) = this%l(1)
-      call serial_solve(this, 1, m, this%p)
+      call this%solve_submatrix(1, m, this%p)
       p1 = this%p(1)
       sync all
       if (num_images() > 2) then
@@ -183,27 +179,25 @@ contains
   end subroutine
 
   subroutine solve(this, b)
-    class(co_td_matrix), intent(inout) :: this
+    class(co_td_matrix), intent(in) :: this
     real(r8), intent(inout) :: b(:)
-    if (this%periodic) then
-      if (num_images() == 1) then
-        call serial_solve_periodic(this, b)
-      else
-        call solve_periodic(this, b)
-      end if
+    if (num_images() == 1) then
+      call this%td_matrix%solve(b)
+    else if (this%periodic) then
+      call solve_periodic(this, b)
     else
       call solve_non_periodic(this, b)
     end if
   end subroutine
 
   subroutine solve_non_periodic(this, b)
-    class(co_td_matrix), intent(inout) :: this
+    class(co_td_matrix), intent(in) :: this
     real(r8), intent(inout) :: b(:)
     integer :: m
     real(r8), allocatable :: b1[:], bn[:]
     m = merge(this%n-1, this%n, this_image() < num_images())
     associate (n => this%n)
-      call serial_solve(this, 1, m, b)
+      call this%solve_submatrix(1, m, b)
       if (num_images() == 1) return
       allocate(b1[*], bn[*])
       if (this_image() > 1) b1 = b(1)
@@ -226,7 +220,7 @@ contains
   end subroutine
 
   subroutine solve_periodic(this, b)
-    class(co_td_matrix), intent(inout) :: this
+    class(co_td_matrix), intent(in) :: this
     real(r8), intent(inout) :: b(:)
     integer :: m, next, prev
     real(r8), allocatable :: b1[:], bn[:]
@@ -234,7 +228,7 @@ contains
     prev = 1 + modulo(this_image()-2, num_images())
     m = this%n - 1
     associate (n => this%n)
-      call serial_solve(this, 1, m, b)
+      call this%solve_submatrix(1, m, b)
       allocate(b1[*], bn[*])
       b1 = b(1)
       sync all
@@ -253,7 +247,7 @@ contains
   !! with the factorization of the matrix computed by FACTOR.
 
   subroutine matvec(this, x, y)
-    class(co_td_matrix), intent(inout) :: this  ! intent(in) for data
+    class(co_td_matrix), intent(in) :: this  ! intent(in) for data
     real(r8), intent(in) :: x(:)
     real(r8), intent(out) :: y(:)
     integer :: j
@@ -262,83 +256,22 @@ contains
     xleft = x(1)
     xright = x(this%n)
     sync all
+    y(1) = this%d(1)*x(1) + this%u(1)*x(2)
     if (this_image() > 1) then
-      y(1) = this%l(1)*xright[this_image()-1] + this%d(1)*x(1) + this%u(1)*x(2)
+      y(1) = y(1) + this%l(1)*xright[this_image()-1]
     else if (this%periodic) then
-      y(1) = this%l(1)*xright[num_images()] + this%d(1)*x(1) + this%u(1)*x(2)
-    else
-      y(1) = this%d(1)*x(1) + this%u(1)*x(2)
+      y(1) = y(1) + this%l(1)*xright[num_images()]
     end if
     do j = 2, this%n-1
       y(j) = this%l(j)*x(j-1) + this%d(j)*x(j) + this%u(j)*x(j+1)
     end do
+    y(j) = this%l(j)*x(j-1) + this%d(j)*x(j)
     if (this_image() < num_images()) then
-      y(j) = this%l(j)*x(j-1) + this%d(j)*x(j) + this%u(j)*xleft[this_image()+1]
+      y(j) = y(j) + this%u(j)*xleft[this_image()+1]
     else if (this%periodic) then
-      y(j) = this%l(j)*x(j-1) + this%d(j)*x(j) + this%u(j)*xleft[1]
-    else
-      y(j) = this%l(j)*x(j-1) + this%d(j)*x(j)
+      y(j) = y(j) + this%u(j)*xleft[1]
     end if
     sync all
-  end subroutine
-
-  !! This auxiliary subroutine computes the usual LU factorization of the
-  !! local submatrix composed of rows/columns j1 through j2. The elements
-  !! of the local submatrix are overwritten with the elements of L and unit
-  !! upper triangular U.
-
-  pure subroutine serial_factor(this, j1, j2)
-    class(co_td_matrix), intent(inout) :: this
-    integer, intent(in) :: j1, j2
-    integer :: j
-    do j = j1+1, j2
-      this%u(j-1) = this%u(j-1)/this%d(j-1)
-      this%d(j) = this%d(j) - this%l(j)*this%u(j-1)
-    end do
-  end subroutine
-
-  pure subroutine serial_factor_periodic(this)
-    class(co_td_matrix), intent(inout) :: this
-    associate (n => this%n)
-      call serial_factor(this, 1, n-1)
-      allocate(this%q(n-1))
-      this%q(1) = this%l(1)
-      this%q(2:n-2) = 0.0_r8
-      this%q(n-1) = this%u(n-1)
-      call serial_solve(this, 1, n-1, this%q)
-      this%d(n) = this%d(n) - this%u(n)*this%q(1) - this%l(n)*this%q(n-1)
-    end associate
-  end subroutine
-
-  !! This auxiliary subroutine solves the linear system Ax = b where A is
-  !! the submatrix composed of rows/columns j1 through j2. The submatrix
-  !! must store the LU factorization computed by SERIAL_FACTOR. The RHS b
-  !! is the subvector of the passed B composed of elements j1 through j2,
-  !! and the computed solution overwrites those elements. Other elements
-  !! of B are unmodified.
-
-  pure subroutine serial_solve(this, j1, j2, b)
-    class(co_td_matrix), intent(in) :: this
-    integer, intent(in) :: j1, j2
-    real(r8), intent(inout) :: b(:)
-    integer :: j
-    b(j1) = b(j1)/this%d(j1)
-    do j = j1+1, j2
-      b(j) = (b(j) - this%l(j)*b(j-1))/this%d(j)
-    end do
-    do j = j2-1, j1, -1
-      b(j) = b(j) - this%u(j)*b(j+1)
-    end do
-  end subroutine
-
-  pure subroutine serial_solve_periodic(this, b)
-    class(co_td_matrix), intent(in) :: this
-    real(r8), intent(inout) :: b(:)
-    associate (n => this%n)
-      call serial_solve(this, 1, n-1, b)
-      b(n) = (b(n) - this%u(n)*b(1) - this%l(n)*b(n-1))/this%d(n)
-      b(1:n-1) = b(1:n-1) - b(n)*this%q
-    end associate
   end subroutine
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
