@@ -354,7 +354,6 @@ contains
     y(:,j) = 0.0_r8
     call ypax(y(:,j), this%l(:,:,j), x(:,j-1))
     call ypax(y(:,j), this%d(:,:,j), x(:,j))
-    call ypax(y(:,j), this%u(:,:,j), x(:,j+1))
     if (this_image() < num_images()) then
       call ypax(y(:,j), this%u(:,:,j), xleft(:)[this_image()+1])
     else if (this%periodic) then
