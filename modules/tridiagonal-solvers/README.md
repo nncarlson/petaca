@@ -59,8 +59,6 @@ The test problems in the `test` directory serve as usage examples.
 
 ## Status
 
-* All tests are working with the above mentioned compilers with one exception:
-  the parallel block tridiagonal test currently fails with NAG due to a
-  coarray-bug in the compiler (due to be fixed very shortly).
+* All tests are working with the above mentioned compilers.
 * The perfomance of the parallel versions is currently quite disappointing and
   is being investigated.

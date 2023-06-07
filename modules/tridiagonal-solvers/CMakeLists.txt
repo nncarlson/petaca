@@ -15,8 +15,11 @@ add_compile_definitions($<$<CONFIG:Release,RelWithDebInfo>:NDEBUG>)
 add_compile_options($<$<COMPILE_LANG_AND_ID:Fortran,Intel,IntelLLVM>:-fpe0>)
 add_compile_options($<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-ffpe-trap=invalid,zero,overflow>)
 
-add_compile_definitions($<$<COMPILE_LANG_AND_ID:Fortran,NAG>:NAG_BUG20230603b>)
-add_compile_definitions($<$<COMPILE_LANG_AND_ID:Fortran,Intel,IntelLLVM>:INTEL_BUG20230604>)
+add_compile_definitions(
+  $<$<COMPILE_LANG_AND_ID:Fortran,NAG>:NAG_BUG20230603b>
+  $<$<COMPILE_LANG_AND_ID:Fortran,NAG>:NAG_BUG20230603c>
+  $<$<COMPILE_LANG_AND_ID:Fortran,Intel,IntelLLVM>:INTEL_BUG20230604>
+)
 
 if(NOT CMAKE_BUILD_TYPE)
   message(STATUS "Setting build type to 'Release' as none was specified.")

@@ -114,7 +114,7 @@ contains
     class(co_btd_matrix), intent(inout) :: this
     integer :: m
     real(r8), allocatable :: p1(:,:)[:], q1(:,:)[:]
-#if defined(NAG_BUG20230603b) || defined(INTEL_BUG20230604)
+#ifdef INTEL_BUG20230604
     real(r8) :: tmp(this%nb,this%nb)
 #endif
     m = merge(this%n-1, this%n, this_image() < num_images())
@@ -141,16 +141,18 @@ contains
         this%dhat%d(:,:) = this%d(:,:,n)
         call cmab(this%dhat%d, this%l(:,:,n), this%q(:,:,m))
 #ifdef NAG_BUG20230603b
-        tmp = p1(:,:)[this_image()+1]
-        call cmab(this%dhat%d, this%u(:,:,n), tmp)
+        call cmab(this%dhat%d, this%u(:,:,n), p1(1:,1:)[this_image()+1])
 #else
         call cmab(this%dhat%d, this%u(:,:,n), p1(:,:)[this_image()+1])
 #endif
         if (this_image() > 1) &
             this%dhat%l(:,:) = -matmul(this%l(:,:,n), this%p(:,:,m))
-#if defined(NAG_BUG20230603b) || defined(INTEL_BUG20230604)
+#ifdef INTEL_BUG20230604
         tmp = q1(:,:)[this_image()+1]
         if (this_image() < num_images()-1) this%dhat%u(:,:) = -matmul(this%u(:,:,n), tmp)
+#elif NAG_BUG20230603b
+        if (this_image() < num_images()-1) &
+            this%dhat%u(:,:) = -matmul(this%u(:,:,n), q1(1:,1:)[this_image()+1])
 #else
         if (this_image() < num_images()-1) &
             this%dhat%u(:,:) = -matmul(this%u(:,:,n), q1(:,:)[this_image()+1])
@@ -166,7 +168,7 @@ contains
     class(co_btd_matrix), intent(inout) :: this
     integer :: m, next
     real(r8), allocatable :: p1(:,:)[:], q1(:,:)[:]
-#if defined(NAG_BUG20230603b) || defined(INTEL_BUG20230604)
+#ifdef INTEL_BUG20230604
     real(r8) :: tmp(this%nb,this%nb)
 #endif
     next = 1 + modulo(this_image(), num_images())
@@ -190,14 +192,15 @@ contains
         this%dhat%d = this%d(:,:,n)
         call cmab(this%dhat%d, this%l(:,:,n), this%q(:,:,m))
 #ifdef NAG_BUG20230603b
-        tmp = p1(:,:)[next]
-        call cmab(this%dhat%d, this%u(:,:,n), tmp)
+        call cmab(this%dhat%d, this%u(:,:,n), p1(1:,1:)[next])
 #else
         call cmab(this%dhat%d, this%u(:,:,n), p1(:,:)[next])
 #endif
-#if defined(NAG_BUG20230603b) || defined(INTEL_BUG20230604)
+#ifdef INTEL_BUG20230604
         tmp = q1(:,:)[next]
         this%dhat%u = - matmul(this%u(:,:,n), tmp)
+#elif NAG_BUG20230603b
+        this%dhat%u = - matmul(this%u(:,:,n), q1(1:,1:)[next])
 #else
         this%dhat%u = - matmul(this%u(:,:,n), q1(:,:)[next])
 #endif
@@ -207,31 +210,27 @@ contains
           this%dhat%d = this%d(:,:,n)
           call cmab(this%dhat%d, this%l(:,:,n), this%q(:,:,m))
 #ifdef NAG_BUG20230603b
-          tmp = p1(:,:)[2]
-          call cmab(this%dhat%d, this%u(:,:,n), tmp)
+          call cmab(this%dhat%d, this%u(:,:,n), p1(1:,1:)[2])
 #else
           call cmab(this%dhat%d, this%u(:,:,n), p1(:,:)[2])
 #endif
           this%dhat%u = - matmul(this%l(:,:,n), this%p(:,:,m))
 #ifdef NAG_BUG20230603b
-          tmp = q1(:,:)[2]
-          call cmab(this%dhat%u, this%u(:,:,n), tmp)
+          call cmab(this%dhat%u, this%u(:,:,n), q1(1:,1:)[2])
 #else
           call cmab(this%dhat%u, this%u(:,:,n), q1(:,:)[2])
 #endif
         case (2)
           this%dhat%l = - matmul(this%l(:,:,n), this%p(:,:,m))
 #ifdef NAG_BUG20230603b
-          tmp = q1(:,:)[1]
-          call cmab(this%dhat%l, this%u(:,:,n), tmp)
+          call cmab(this%dhat%l, this%u(:,:,n), q1(1:,1:)[1])
 #else
           call cmab(this%dhat%l, this%u(:,:,n), q1(:,:)[1])
 #endif
           this%dhat%d = this%d(:,:,n)
           call cmab(this%dhat%d, this%l(:,:,n), this%q(:,:,m))
 #ifdef NAG_BUG20230603b
-          tmp = p1(:,:)[1]
-          call cmab(this%dhat%d, this%u(:,:,n), tmp)
+          call cmab(this%dhat%d, this%u(:,:,n), p1(1:,1:)[1])
 #else
           call cmab(this%dhat%d, this%u(:,:,n), p1(:,:)[1])
 #endif
@@ -397,9 +396,6 @@ contains
     class(schur_matrix), intent(inout) :: this
     integer, intent(in) :: n
     real(r8), allocatable :: u(:,:)[:]
-#ifdef NAG_BUG20230603b
-    real(r8) :: tmp(this%nb,this%nb)
-#endif
     allocate(u(this%nb,this%nb)[*])
     if (this_image() > n) return ! this image is idle
     u = this%u
@@ -407,8 +403,7 @@ contains
       sync images (this_image()-1) ! hold until released
       !this%d = this%d - this%l*u[this_image()-1]
 #ifdef NAG_BUG20230603b
-      tmp = u(:,:)[this_image()-1]
-      call cmab(this%d, this%l, tmp)
+      call cmab(this%d, this%l, u(1:,1:)[this_image()-1])
 #else
       call cmab(this%d, this%l, u(:,:)[this_image()-1])
 #endif
@@ -425,9 +420,6 @@ contains
   subroutine factor_schur_periodic(this)
     class(schur_matrix), intent(inout) :: this
     real(r8), allocatable :: w(:,:)[:]
-#ifdef NAG_BUG20230603b
-    real(r8) :: tmp(this%nb,this%nb)
-#endif
     call factor_schur_submatrix(this, this%n-1)
     allocate(w(this%nb,this%nb)[*])
     if (this_image() == 1) then
@@ -443,10 +435,8 @@ contains
     !if (this_image() == this%n) this%d = this%d - this%u*w[1] - this%l*w[this%n-1]
     if (this_image() == this%n) then
 #ifdef NAG_BUG20230603b
-      tmp = w(:,:)[1]
-      call cmab(this%d, this%u, tmp)
-      tmp = w(:,:)[this%n-1]
-      call cmab(this%d, this%l, tmp)
+      call cmab(this%d, this%u, w(1:,1:)[1])
+      call cmab(this%d, this%l, w(1:,1:)[this%n-1])
 #else
       call cmab(this%d, this%u, w(:,:)[1])
       call cmab(this%d, this%l, w(:,:)[this%n-1])
@@ -491,15 +481,11 @@ contains
     class(schur_matrix), intent(in) :: this
     integer, intent(in) :: n
     real(r8), intent(inout) :: b(:,:)[*]
-#ifdef NAG_BUG20230603b
-    real(r8) :: tmp(this%nb,this%nb)
-#endif
     if (this_image() > n) return ! this image is idle
     if (this_image() > 1) then
       sync images (this_image()-1)  ! hold until released
-#ifdef NAG_BUG20230603b
-      tmp = b(:,:)[this_image()-1]
-      call cmab(b, this%l, tmp)
+#ifdef NAG_BUG20230603c
+      call cmab(b, this%l, b(1:,1:)[this_image()-1])
 #else
       call cmab(b, this%l, b(:,:)[this_image()-1])
 #endif
@@ -510,9 +496,8 @@ contains
     if (this_image() < n) sync images (this_image()+1) ! release
     if (this_image() < n) then
       sync images (this_image()+1)  ! hold until released
-#ifdef NAG_BUG20230603b
-      tmp = b(:,:)[this_image()+1]
-      call cmab(b, this%u, tmp)
+#ifdef NAG_BUG20230603c
+      call cmab(b, this%u, b(1:,1:)[this_image()+1])
 #else
       call cmab(b, this%u, b(:,:)[this_image()+1])
 #endif
