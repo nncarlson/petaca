@@ -31,14 +31,28 @@ program btd_matrix_test
 
   integer :: stat = 0
 
-  call test_non_periodic
-  call test_periodic
+  call test_non_periodic_2x2
+  call test_non_periodic_gen
+  call test_periodic_3x3
+  call test_periodic_gen
 
   if (stat /= 0) stop 1
 
 contains
 
-  subroutine test_non_periodic
+  subroutine test_non_periodic_2x2
+    type(btd_matrix) :: a
+    real(r8) :: x(2,2), b(2,2)
+    call a%init(nb=2, n=2)
+    call matrix_fill(a)
+    call random_number(x)
+    call a%matvec(x, b)
+    call a%factor
+    call a%solve(b)
+    call report('test_non_periodic_2x2', maxval(abs(x-b)), 1.0e-15_r8)
+  end subroutine
+
+  subroutine test_non_periodic_gen
     type(btd_matrix) :: a
     integer, parameter :: NB = 4, N = 20
     real(r8) :: x(NB,N), b(NB,N)
@@ -48,10 +62,22 @@ contains
     call a%matvec(x, b)
     call a%factor
     call a%solve(b)
-    call report('test_non_periodic', maxval(abs(x-b)), 1.0e-15_r8)
+    call report('test_non_periodic_gen', maxval(abs(x-b)), 1.0e-15_r8)
   end subroutine
 
-  subroutine test_periodic
+  subroutine test_periodic_3x3
+    type(btd_matrix) :: a
+    real(r8) :: x(2,3), b(2,3)
+    call a%init(nb=2, n=3, periodic=.true.)
+    call matrix_fill(a)
+    call random_number(x)
+    call a%matvec(x, b)
+    call a%factor
+    call a%solve(b)
+    call report('test_periodic_3x3', maxval(abs(x-b)), 1.0e-15_r8)
+  end subroutine
+
+  subroutine test_periodic_gen
     type(btd_matrix) :: a
     integer, parameter :: NB = 4, N = 20
     real(r8) :: x(NB,N), b(NB,N)
@@ -61,7 +87,7 @@ contains
     call a%matvec(x, b)
     call a%factor
     call a%solve(b)
-    call report('test_periodic', maxval(abs(x-b)), 1.0e-15_r8)
+    call report('test_periodic_gen', maxval(abs(x-b)), 1.0e-15_r8)
   end subroutine
 
   !! Fill with a random-ish M-matrix: negative off-diagonal elements,

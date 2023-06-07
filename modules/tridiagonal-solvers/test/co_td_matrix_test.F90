@@ -29,20 +29,26 @@ program co_td_matrix_test
   use co_td_matrix_type
   implicit none
 
-  integer :: stat = 0
+  integer :: stat = 0, ntotal
+  character(16) :: arg
 
-  if (this_image() == 1) write(*,'(a,i0,a)') 'Using ', num_images(), ' images'
+  call get_command_argument(1, arg)
+  read(arg,*) ntotal
 
-  call non_periodic_test
-  call periodic_test
+  if (this_image() == 1) then
+    write(*,'(a,i0,a)') 'Using ', num_images(), ' images'
+    write(*,'(a,i0)') 'total size ', ntotal
+  end if
+
+  call test_non_periodic
+  call test_periodic
 
   if (stat /= 0) error stop
 
 contains
 
-  subroutine non_periodic_test
+  subroutine test_non_periodic
 
-    integer, parameter :: ntotal = 40
     real(r8), allocatable :: x(:), b(:)
     type(co_td_matrix) :: a
 
@@ -72,11 +78,10 @@ contains
     call co_max(error)
     call report('test_non_periodic', error, 1e-15_r8)
 
-  end subroutine non_periodic_test
+  end subroutine test_non_periodic
 
-  subroutine periodic_test
+  subroutine test_periodic
 
-    integer, parameter :: ntotal = 40
     real(r8), allocatable :: x(:), b(:)
     type(co_td_matrix) :: a
 
@@ -106,7 +111,7 @@ contains
     call co_max(error)
     call report('test_periodic', error, 1e-15_r8)
 
-  end subroutine periodic_test
+  end subroutine test_periodic
 
   !! Fill the matrix with values proportional to a finite difference
   !! approximation to a 1D convection-diffusion operator.

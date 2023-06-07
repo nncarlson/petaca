@@ -31,14 +31,28 @@ program td_matrix_test
 
   integer :: stat = 0
 
-  call test_non_periodic
-  call test_periodic
+  call test_non_periodic_2x2
+  call test_non_periodic_gen
+  call test_periodic_3x3
+  call test_periodic_gen
 
   if (stat /= 0) stop 1
 
 contains
 
-  subroutine test_non_periodic
+  subroutine test_non_periodic_2x2
+    type(td_matrix) :: a
+    real(r8) :: x(2), b(2)
+    call a%init(2)
+    call conv_diff_fill(a, 0.5_r8, 0.1_r8)
+    call random_number(x)
+    call a%matvec(x, b)
+    call a%factor
+    call a%solve(b)
+    call report('test_non_periodic_2x2', maxval(abs(x-b)), 1.0e-15_r8)
+  end subroutine
+
+  subroutine test_non_periodic_gen
     type(td_matrix) :: a
     integer, parameter :: N = 20
     real(r8) :: x(N), b(N)
@@ -48,10 +62,22 @@ contains
     call a%matvec(x, b)
     call a%factor
     call a%solve(b)
-    call report('test_non_periodic', maxval(abs(x-b)), 1.0e-15_r8)
+    call report('test_non_periodic_gen', maxval(abs(x-b)), 1.0e-15_r8)
   end subroutine
 
-  subroutine test_periodic
+  subroutine test_periodic_3x3
+    type(td_matrix) :: a
+    real(r8) :: x(3), b(3)
+    call a%init(3, periodic=.true.)
+    call conv_diff_fill(a, 0.5_r8, 0.1_r8)
+    call random_number(x)
+    call a%matvec(x, b)
+    call a%factor
+    call a%solve(b)
+    call report('test_periodic_3x3', maxval(abs(x-b)), 1.0e-15_r8)
+  end subroutine
+
+  subroutine test_periodic_gen
     type(td_matrix) :: a
     integer, parameter :: N = 20
     real(r8) :: x(N), b(N)
@@ -61,7 +87,7 @@ contains
     call a%matvec(x, b)
     call a%factor
     call a%solve(b)
-    call report('test_periodic', maxval(abs(x-b)), 1.0e-15_r8)
+    call report('test_periodic_gen', maxval(abs(x-b)), 1.0e-15_r8)
   end subroutine
 
   !! Fill the matrix with values proportional to a finite difference
@@ -70,9 +96,12 @@ contains
   subroutine conv_diff_fill(a, s, t)
     type(td_matrix), intent(inout) :: a
     real(r8), intent(in) :: s, t
-    a%d = 2.0_r8 + s
-    a%l = -1.0_r8 - t
-    a%u = -1.0_r8 + t
+    real(r8) :: rn
+    call random_number(rn)
+    rn = (2*rn - 1)/10
+    a%d =  (1+rn)*2.0_r8 + s
+    a%l = -(1+rn)*(1.0_r8 + t)
+    a%u = -(1+rn)*(1.0_r8 - t)
   end subroutine
 
   subroutine report(name, error, tol)

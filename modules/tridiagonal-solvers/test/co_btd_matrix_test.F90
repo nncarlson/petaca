@@ -29,24 +29,33 @@ program co_btd_matrix_test
   use co_btd_matrix_type
   implicit none
 
-  integer :: stat = 0
+  integer :: stat = 0, nb, ntotal
+  character(16) :: arg
 
-  if (this_image() == 1) write(*,'(a,i0,a)') 'Using ', num_images(), ' images'
+  call get_command_argument(1, arg)
+  read(arg,*) nb
+
+  call get_command_argument(2, arg)
+  read(arg,*) ntotal
+
+  if (this_image() == 1) then
+    write(*,'(a,i0,a)') 'Using ', num_images(), ' images'
+    write(*,'(2(a,i0))') 'block size ', nb, '; total size ', ntotal
+  end if
 
   call test_non_periodic
   call test_periodic
 
-  if (stat /= 0) stop 1
+  if (stat /= 0) error stop
 
 contains
 
   subroutine test_non_periodic
 
-    integer, parameter :: NB = 4, NTOTAL = 40
     real(r8), allocatable :: x(:,:), b(:,:)
     type(co_btd_matrix) :: a
 
-    integer  :: n, i, j
+    integer :: n
     real(r8) :: error
 
     !! Partition the NTOTAL equations into nearly equal blocks
@@ -54,16 +63,16 @@ contains
     if (this_image() <= ntotal - n*num_images()) n = n + 1
 
     !! Initialize the tridiagonal matrix
-    call a%init(NB, n)
+    call a%init(nb, n)
     call matrix_fill(a)
     !call matrix_simple(a)
     
     !! Initialize the target solution
-    allocate(x(NB,n))
+    allocate(x(nb,n))
     call random_number(x)
 
     !! Compute the corresponding RHS
-    allocate(b(NB,n))
+    allocate(b(nb,n))
     call a%matvec(x, b)
 
     !! Solve the tridiagonal linear system; should recover X
@@ -77,11 +86,10 @@ contains
 
   subroutine test_periodic
 
-    integer, parameter :: NB = 4, NTOTAL = 40
     real(r8), allocatable :: x(:,:), b(:,:)
     type(co_btd_matrix) :: a
 
-    integer  :: n
+    integer :: n
     real(r8) :: error
 
     !! Partition the NTOTAL equations into nearly equal blocks
@@ -89,15 +97,15 @@ contains
     if (this_image() <= ntotal - n*num_images()) n = n + 1
 
     !! Initialize the tridiagonal matrix
-    call a%init(NB, n, periodic=.true.)
+    call a%init(nb, n, periodic=.true.)
     call matrix_fill(a)
     
     !! Initialize the target solution
-    allocate(x(NB,n))
+    allocate(x(nb,n))
     call random_number(x)
 
     !! Compute the corresponding RHS
-    allocate(b(NB,n))
+    allocate(b(nb,n))
     call a%matvec(x, b)
     !! Solve the tridiagonal linear system; should recover X
     call a%factor

@@ -4,6 +4,9 @@ target_include_directories(serial-lib PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
 )
 
+# Required for use by coarray code
+target_compile_options(serial-lib PRIVATE $<$<COMPILE_LANG_AND_ID:Fortran,NAG>:-thread_safe>)
+
 add_library(parallel-lib co_td_matrix_type.F90 co_btd_matrix_type.F90)
 target_link_libraries(parallel-lib PUBLIC serial-lib)
 target_compile_options(parallel-lib PUBLIC $<$<COMPILE_LANG_AND_ID:Fortran,NAG,Intel,IntelLLVM>:-coarray>)
