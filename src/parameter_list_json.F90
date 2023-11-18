@@ -170,6 +170,23 @@ module parameter_list_json
     procedure :: to_array => array_to_array
   end type array_data
 
+  type :: array_stack
+    type(stack_element), pointer :: top => null()
+  contains
+    procedure :: push => array_stack_push
+    procedure :: pop  => array_stack_pop
+    procedure :: peek => array_stack_peek
+    final :: array_stack_delete
+  end type
+
+  type :: stack_element
+    type(array_data), allocatable :: array
+    type(stack_element), pointer :: next => null()
+  contains
+    final :: stack_element_delete
+  end type
+
+
   !! Parsing state labels.
   integer, parameter :: STATE_INIT = 0 ! starting state
   integer, parameter :: STATE_NAME = 1 ! expecting a parameter name
@@ -182,7 +199,7 @@ module parameter_list_json
     integer :: state
     type(parameter_list_stack) :: pstack
     character(:), allocatable :: name
-    type(array_data), allocatable :: array
+    type(array_stack) :: astack
     character(:), allocatable :: errmsg
   contains
     procedure :: init
@@ -414,6 +431,7 @@ contains
     class(plist_builder) :: this
     integer(fyajl_integer_kind), intent(in) :: value
     type(parameter_list), pointer :: plist
+    type(array_data), allocatable :: array
     !TODO: check for overflow from mismatched integer types.
     select case (this%state)
     case (STATE_PVAL)
@@ -422,8 +440,9 @@ contains
       this%state = STATE_NAME ! expecting the next parameter name or map end
       status = FYAJL_CONTINUE_PARSING
     case (STATE_AVAL)
-      ASSERT(allocated(this%array))
-      call this%array%push_scalar(int(value), status, this%errmsg)
+      call this%astack%pop(array) ! get current array context
+      call array%push_scalar(int(value), status, this%errmsg)
+      call this%astack%push(array)
       this%state = STATE_AVAL ! expecting the next array value or array end
     case default
       call unexpected_event(this, this%errmsg)
@@ -435,6 +454,7 @@ contains
     class(plist_builder) :: this
     real(fyajl_real_kind), intent(in) :: value
     type(parameter_list), pointer :: plist
+    type(array_data), allocatable :: array
     !TODO: check for overflow from mismatched real types.
     select case (this%state)
     case (STATE_PVAL)
@@ -443,8 +463,9 @@ contains
       this%state = STATE_NAME ! expecting the next parameter name or map end
       status = FYAJL_CONTINUE_PARSING
     case (STATE_AVAL)
-      ASSERT(allocated(this%array))
-      call this%array%push_scalar(real(value,kind(1.0d0)), status, this%errmsg)
+      call this%astack%pop(array) ! get current array context
+      call array%push_scalar(real(value,kind(1.0d0)), status, this%errmsg)
+      call this%astack%push(array)
       this%state = STATE_AVAL ! expecting the next array value or array end
     case default
       call unexpected_event(this, this%errmsg)
@@ -456,6 +477,7 @@ contains
     class(plist_builder) :: this
     logical, intent(in) :: value
     type(parameter_list), pointer :: plist
+    type(array_data), allocatable :: array
     select case (this%state)
     case (STATE_PVAL)
       plist => this%pstack%peek() ! get current parameter list context
@@ -463,8 +485,9 @@ contains
       this%state = STATE_NAME ! expecting the next parameter name or map end
       status = FYAJL_CONTINUE_PARSING
     case (STATE_AVAL)
-      ASSERT(allocated(this%array))
-      call this%array%push_scalar(value, status, this%errmsg)
+      call this%astack%pop(array) ! get current array context
+      call array%push_scalar (value, status, this%errmsg)
+      call this%astack%push(array)
       this%state = STATE_AVAL ! expecting the next array value or array end
     case default
       call unexpected_event(this, this%errmsg)
@@ -476,6 +499,7 @@ contains
     class(plist_builder) :: this
     character(*), intent(in) :: value
     type(parameter_list), pointer :: plist
+    type(array_data), allocatable :: array
     select case (this%state)
     case (STATE_PVAL)
       plist => this%pstack%peek() ! get current parameter list context
@@ -483,8 +507,9 @@ contains
       this%state = STATE_NAME ! expecting the next parameter name or map end
       status = FYAJL_CONTINUE_PARSING
     case (STATE_AVAL)
-      ASSERT(allocated(this%array))
-      call this%array%push_scalar(value, status, this%errmsg)
+      call this%astack%pop(array) ! get current array context
+      call array%push_scalar (value, status, this%errmsg)
+      call this%astack%push(array)
       this%state = STATE_AVAL ! expecting the next array value or array end
     case default
       call unexpected_event(this, this%errmsg)
@@ -494,16 +519,18 @@ contains
 
   integer function start_array(this) result(status)
     class(plist_builder) :: this
+    type(array_data), allocatable :: array
     select case (this%state)
     case (STATE_PVAL)
-      ASSERT(.not.allocated(this%array))
-      allocate(this%array)
-      call this%array%push_array(status, this%errmsg)
+      allocate(array)
+      call array%push_array(status, this%errmsg)
       INSIST(status == FYAJL_CONTINUE_PARSING)
+      call this%astack%push(array)
       this%state = STATE_AVAL ! looking for an array value
     case (STATE_AVAL)
-      ASSERT(allocated(this%array))
-      call this%array%push_array(status, this%errmsg)
+      associate (array => this%astack%peek())
+        call array%push_array(status, this%errmsg)
+      end associate
       this%state = STATE_AVAL ! looking for an array value
     case default
       call unexpected_event(this, this%errmsg)
@@ -516,26 +543,27 @@ contains
     type(parameter_list), pointer :: plist
     class(*), allocatable, target :: flat_array(:)
     class(*), pointer :: array2(:,:)
+    type(array_data), allocatable :: array
     select case (this%state)
     case (STATE_AVAL)
-      INSIST(allocated(this%array))
-      call this%array%pop_array(status, this%errmsg)
+      call this%astack%pop(array)
+      call array%pop_array(status, this%errmsg)
       if (status == FYAJL_TERMINATE_PARSING) return
-      if (this%array%complete) then
+      if (array%complete) then
         plist => this%pstack%peek() ! current parameter list
-        call this%array%to_array(flat_array)
-        select case (size(this%array%shape))
+        call array%to_array(flat_array)
+        select case (size(array%shape))
         case (1)
           call plist%set(this%name, flat_array) ! create the parameter
         case (2)
-          array2(1:this%array%shape(1),1:this%array%shape(2)) => flat_array
-          call plist%set(this%name, array2) ! create the parameter
+          array2(1:array%shape(1),1:array%shape(2)) => flat_array
+          call plist%set (this%name, array2) ! create the parameter
         case default
           this%errmsg = 'arrays of rank greater than 2 are not supported'
           status = FYAJL_TERMINATE_PARSING
           return
         end select
-        deallocate(this%array)
+        deallocate(array)
         this%state = STATE_NAME ! expecting the next parameter name or map end
         status = FYAJL_CONTINUE_PARSING
       else
@@ -881,6 +909,111 @@ contains
     class(value_queue), intent(in) :: this
     queue_size = this%n
   end function
+
+!!!! ARRAY_STRUCT TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !! Final subroutine for ARRAY_STRUCT objects
+  subroutine array_stack_delete(this)
+    type(array_stack), intent(inout) :: this
+    if (associated(this%top)) deallocate(this%top)
+  end subroutine
+
+  !! Final subroutine for STACK_ELEMENT objects.  This recursively follows
+  !! the NEXT pointer.  When deallocating a linked list, only the root needs
+  !! to be explicitly deallocated.  When the desire is to deallocate a single
+  !! ARRAY_ELEMENT object, first nullify the NEXT pointer to prevent the
+  !! recursive finalization from deallocating more than it should.
+  recursive subroutine stack_element_delete(this)
+    type(stack_element), intent(inout) :: this
+    if (associated(this%next)) deallocate(this%next)
+  end subroutine
+
+  !! Push the array onto the top of the stack.
+  subroutine array_stack_push(this, array)
+    class(array_stack), intent(inout) :: this
+    type(array_data), allocatable, intent(inout) :: array
+    type(stack_element), pointer :: top
+    allocate(top)
+    call move_alloc(array, top%array)
+    top%next => this%top
+    this%top => top
+  end subroutine
+
+  !! Pop the array off the top of the stack.
+  subroutine array_stack_pop(this, array)
+    class(array_stack), intent(inout) :: this
+    type(array_data), allocatable, intent(out) :: array
+    type(stack_element), pointer :: top
+    if (associated(this%top)) then
+      top => this%top
+      call move_alloc(top%array, array)
+      this%top => top%next
+      top%next => null()
+      deallocate(top)
+    end if
+  end subroutine
+
+  !! Return a pointer to the array on the top of the stack.
+  function array_stack_peek(this) result(array)
+    class(array_stack), intent(in) :: this
+    type(array_data), pointer :: array
+    if (associated(this%top)) then
+      array => this%top%array
+    else
+      array => null()
+    end if
+  end function
+
+  subroutine parameter_list_to_json (plist, unit, real_fmt)
+    type(parameter_list), intent(in) :: plist
+    integer, intent(in) :: unit
+    character(*), intent(in), optional :: real_fmt
+    write(unit,'(a)') '{'
+    call parameter_list_to_json_aux (plist, '  ', unit, real_fmt)
+    write(unit,'(/,a)') '}'
+  end subroutine parameter_list_to_json
+
+  recursive subroutine parameter_list_to_json_aux (plist, indent, unit, real_fmt)
+
+    use map_any_type
+    use parameter_entry_class
+
+    type(parameter_list), intent(in) :: plist
+    character(*), intent(in) :: indent
+    integer, intent(in) :: unit
+    character(*), intent(in), optional :: real_fmt
+
+    type(parameter_list_iterator) :: piter
+    logical :: first_param
+
+    piter = parameter_list_iterator(plist)
+    first_param = .true.
+    do while (.not.piter%at_end())
+      if (first_param) then
+        first_param = .false.
+      else
+        write(unit,'(a)') ','
+      end if
+      write(unit,'(a)',advance='no') indent // '"' // piter%name() // '"'
+      select type (pentry => piter%entry())
+      type is (parameter_list)
+        write(unit,'(a)') ': {'
+        call parameter_list_to_json_aux (pentry, indent//'  ', unit, real_fmt)
+        write(unit,'(/,a)',advance='no') indent // '}'
+      type is (any_scalar)
+        write(unit,'(a)',advance='no') ': '
+        call pentry%write (unit, real_fmt)
+      type is (any_vector)
+        write(unit,'(a)',advance='no') ': '
+        call pentry%write (unit, real_fmt)
+      type is (any_matrix)
+        write(unit,'(a)',advance='no') ': '
+        call pentry%write (unit, real_fmt)
+      end select
+      call piter%next
+    end do
+
+  end subroutine parameter_list_to_json_aux
 
   !! The behavior of the intrinsic SAME_TYPE_AS function is processor-dependent
   !! when applied to CLASS(*) variables with intrinsic dynamic type, making it
