@@ -10,7 +10,11 @@ program shlib_type_test
       real, value :: x
     end function
   end interface
+#ifdef INTELLLVM_BUG20231122
+  procedure(f), pointer :: fptr => null()
+#else
   procedure(f), pointer :: fptr
+#endif
 
   integer :: status = 0
 

@@ -58,7 +58,10 @@ endif()
 
 # Fortran preprocessor defines
 set(Fortran_COMPILE_DEFINITIONS)
-if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+if(CMAKE_Fortran_COMPILER_ID STREQUAL IntelLLVM)
+  list(APPEND Fortran_COMPILE_DEFINITIONS INTELLLVM_BUG20231122)
+  list(APPEND Fortran_COMPILE_DEFINITIONS NO_2008_GENERIC_RESOLUTION)
+elseif(CMAKE_Fortran_COMPILER_ID STREQUAL Intel)
   if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "16.0.2")
     message(FATAL_ERROR "Intel Fortran 16.0.2 or later is required; "
         "your version is ${CMAKE_Fortran_COMPILER_VERSION}")
