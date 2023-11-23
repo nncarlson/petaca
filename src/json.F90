@@ -622,11 +622,7 @@ contains
   integer function null_value (this) result (status)
     class(json_builder) :: this
     class(json_value), allocatable :: val
-#ifdef NO_2008_LHS_POLY_REALLOC
-    allocate(val, source=json_null())
-#else
     val = json_null()
-#endif
     status = store_value(this, val)
   end function null_value
 
@@ -634,11 +630,7 @@ contains
     class(json_builder) :: this
     integer(fyajl_integer_kind), intent(in) :: value
     class(json_value), allocatable :: val
-#ifdef NO_2008_LHS_POLY_REALLOC
-    allocate(val, source=json_integer(value))
-#else
     val = json_integer(value)
-#endif
     status = store_value(this, val)
   end function integer_value
 
@@ -646,11 +638,7 @@ contains
     class(json_builder) :: this
     real(fyajl_real_kind), intent(in) :: value
     class(json_value), allocatable :: val
-#ifdef NO_2008_LHS_POLY_REALLOC
-    allocate(val, source=json_real(value))
-#else
     val = json_real(value)
-#endif
     status = store_value(this, val)
   end function double_value
 
@@ -658,11 +646,7 @@ contains
     class(json_builder) :: this
     logical, intent(in) :: value
     class(json_value), allocatable :: val
-#ifdef NO_2008_LHS_POLY_REALLOC
-    allocate(val, source=json_boolean(value))
-#else
     val = json_boolean(value)
-#endif
     status = store_value(this, val)
   end function logical_value
 
@@ -670,11 +654,7 @@ contains
     class(json_builder) :: this
     character(*), intent(in) :: value
     class(json_value), allocatable :: val
-#ifdef NO_2008_LHS_POLY_REALLOC
-    allocate(val, source=json_string(value))
-#else
     val = json_string(value)
-#endif
     status = store_value(this, val)
   end function string_value
 

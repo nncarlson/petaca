@@ -40,9 +40,6 @@ module valid_hash_function
 contains
 
   logical function valid_hash_aux (h)
-#ifdef NO_2008_EXECUTE_COMMAND_LINE
-    use ifport, only: system
-#endif
     class(secure_hash), intent(inout) :: h
     integer :: unit, comstat
     character(:), allocatable :: command
@@ -57,11 +54,7 @@ contains
     type is (sha1_hash)
       command = 'sha1sum --quiet -c file.sum'
     end select
-#ifdef NO_2008_EXECUTE_COMMAND_LINE
-    comstat = system(command)
-#else
     call execute_command_line (command, exitstat=comstat)
-#endif
     valid_hash_aux = (comstat == 0)
   end function valid_hash_aux
 

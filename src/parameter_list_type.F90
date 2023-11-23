@@ -344,13 +344,7 @@ contains
     class(map_any), intent(in) :: map
     character(*), intent(in) :: name
     class(parameter_entry), pointer :: pentry
-#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
-    class(*), pointer :: uptr
-    uptr => map%value(name)
-    pentry => cast_to_parameter_entry(uptr)
-#else
     pentry => cast_to_parameter_entry(map%value(name))
-#endif
   end function find_entry
 
   !! Returns a CLASS(ANY_SCALAR) pointer to the named parameter value.
@@ -359,13 +353,7 @@ contains
     class(map_any), intent(in) :: map
     character(*), intent(in) :: name
     class(any_scalar), pointer :: entry
-#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
-    class(parameter_entry), pointer :: pentry
-    pentry => find_entry(map, name)
-    entry => cast_to_any_scalar(pentry)
-#else
     entry => cast_to_any_scalar(find_entry(map, name))
-#endif
   end function find_any_scalar_entry
 
   !! Returns a CLASS(ANY_VECTOR) pointer to the named parameter value.
@@ -374,13 +362,7 @@ contains
     class(map_any), intent(in) :: map
     character(*), intent(in) :: name
     class(any_vector), pointer :: entry
-#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
-    class(parameter_entry), pointer :: pentry
-    pentry => find_entry(map, name)
-    entry => cast_to_any_vector(pentry)
-#else
     entry => cast_to_any_vector(find_entry(map, name))
-#endif
   end function find_any_vector_entry
 
   !! Returns a CLASS(ANY_MATRIX) pointer to the named parameter value.
@@ -389,13 +371,7 @@ contains
     class(map_any), intent(in) :: map
     character(*), intent(in) :: name
     class(any_matrix), pointer :: entry
-#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
-    class(parameter_entry), pointer :: pentry
-    pentry => find_entry(map, name)
-    entry => cast_to_any_matrix(pentry)
-#else
     entry => cast_to_any_matrix(find_entry(map, name))
-#endif
   end function find_any_matrix_entry
 
   !! Returns a CLASS(PARAMETER_LIST) pointer to the named parameter sublist.
@@ -461,26 +437,14 @@ contains
   logical function is_parameter (this, name)
     class(parameter_list), intent(in) :: this
     character(*), intent(in) :: name
-#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
-    class(parameter_entry), pointer :: pentry
-    pentry => find_entry(this%params, name)
-    is_parameter = associated(pentry)
-#else
     is_parameter = associated(find_entry(this%params, name))
-#endif
   end function is_parameter
 
   !! Returns true if the named parameter exists and is a sublist.
   logical function is_sublist (this, name)
     class(parameter_list), intent(in) :: this
     character(*), intent(in) :: name
-#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
-    class(parameter_entry), pointer :: pentry
-    pentry => find_entry(this%params, name)
-    is_sublist = associated(cast_to_parameter_list(pentry))
-#else
     is_sublist = associated(cast_to_parameter_list(find_entry(this%params, name)))
-#endif
   end function is_sublist
 
   !! Returns true if the named parameter exists and is a scalar.
@@ -697,22 +661,14 @@ contains
       select type (pentry)
       type is (any_vector)
         vector => pentry%value_ptr()
-#ifdef NO_2008_SOURCED_ALLOC_ARRAY
-        allocate(value(lbound(vector,1):ubound(vector,1)),source=vector)
-#else
         allocate(value,source=vector)
-#endif
       class default
         call error ('not a vector parameter: "' // name // '"', stat, errmsg)
       end select
     else
       if (present(default)) then
         call set_vector (this, name, default)
-#ifdef NO_2008_SOURCED_ALLOC_ARRAY
-        allocate(value(lbound(default,1):ubound(default,1)),source=default)
-#else
         allocate(value,source=default)
-#endif
       else
         call error ('no such parameter: "' // name // '"', stat, errmsg)
       end if
@@ -745,24 +701,14 @@ contains
       select type (pentry)
       type is (any_matrix)
         matrix => pentry%value_ptr()
-#ifdef NO_2008_SOURCED_ALLOC_ARRAY
-        allocate(value(lbound(matrix,1):ubound(matrix,1), &
-                       lbound(matrix,2):ubound(matrix,2)),source=matrix)
-#else
         allocate(value,source=matrix)
-#endif
       class default
         call error ('not a matrix parameter: "' // name // '"', stat, errmsg)
       end select
     else
       if (present(default)) then
         call set_matrix (this, name, default)
-#ifdef NO_2008_SOURCED_ALLOC_ARRAY
-        allocate(value(lbound(default,1):ubound(default,1), &
-                       lbound(default,1):ubound(default,2)),source=default)
-#else
         allocate(value,source=default)
-#endif
       else
         call error ('no such parameter: "' // name // '"', stat, errmsg)
       end if
@@ -1435,13 +1381,7 @@ contains
   function iter_entry (this) result (pentry)
     class(parameter_list_iterator), intent(in) :: this
     class(parameter_entry), pointer :: pentry
-#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
-    class(*), pointer :: uptr
-    uptr => this%mapit%value()
-    pentry => cast_to_parameter_entry(uptr)
-#else
     pentry => cast_to_parameter_entry(this%mapit%value())
-#endif
   end function iter_entry
 
   !! Returns true if the current parameter is a sublist.
@@ -1453,37 +1393,19 @@ contains
   !! Returns true if the current parameter has a scalar value.
   logical function iter_is_scalar (this) result (is_scalar)
     class(parameter_list_iterator), intent(in) :: this
-#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
-    class(parameter_entry), pointer :: pentry
-    pentry => iter_entry(this)
-    is_scalar = associated(cast_to_any_scalar(pentry))
-#else
     is_scalar = associated(cast_to_any_scalar(iter_entry(this)))
-#endif
   end function iter_is_scalar
 
   !! Returns true if the current parameter has a vector value.
   logical function iter_is_vector (this) result (is_vector)
     class(parameter_list_iterator), intent(in) :: this
-#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
-    class(parameter_entry), pointer :: pentry
-    pentry => iter_entry(this)
-    is_vector = associated(cast_to_any_vector(pentry))
-#else
     is_vector = associated(cast_to_any_vector(iter_entry(this)))
-#endif
   end function iter_is_vector
 
   !! Returns true if the current parameter has a matrix value.
   logical function iter_is_matrix (this) result (is_matrix)
     class(parameter_list_iterator), intent(in) :: this
-#ifdef NO_2008_PTR_FUN_RESULT_IS_VAR
-    class(parameter_entry), pointer :: pentry
-    pentry => iter_entry(this)
-    is_matrix = associated(cast_to_any_matrix(pentry))
-#else
     is_matrix = associated(cast_to_any_matrix(iter_entry(this)))
-#endif
   end function iter_is_matrix
 
   !! If the current parameter has a scalar value, return a CLASS(*)

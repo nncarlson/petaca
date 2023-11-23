@@ -7,7 +7,7 @@
 # ---------------------------------------------------------------------------- #
 # Set policy and CMake version requirements
 # ---------------------------------------------------------------------------- #
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.20.2)
 
 # ---------------------------------------------------------------------------- #
 # Project definitions
@@ -64,14 +64,8 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL IntelLLVM)
 elseif(CMAKE_Fortran_COMPILER_ID STREQUAL Intel)
   list(APPEND Fortran_COMPILE_DEFINITIONS INTEL_BUG20231123)
 elseif(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
-  include(NAGFortranCompilerVersion) # set CMAKE_Fortran_COMPILER_VERSION
-  if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "6.0.0")
-    message(FATAL_ERROR "NAG Fortran 6.0 or later is required; "
-        "your version is ${CMAKE_Fortran_COMPILER_VERSION}")
-  endif()
 elseif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
   list(APPEND Fortran_COMPILE_DEFINITIONS GNU_PR93762)
-  list(APPEND Fortran_COMPILE_DEFINITIONS NO_2008_GENERIC_RESOLUTION)
   if((CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL "10.1") AND
      (CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "10.2"))
     list(APPEND Fortran_COMPILE_DEFINITIONS GFORTRAN_10_1)
