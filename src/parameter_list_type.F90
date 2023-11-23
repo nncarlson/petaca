@@ -217,12 +217,6 @@ module parameter_list_type
     procedure, private :: get_matrix_string
   end type
 
-#ifdef INTEL_BUG20140921
-  interface parameter_list
-    procedure parameter_list_intel
-  end interface
-#endif
-
   type, public :: parameter_list_iterator
     private
     type(map_any_iterator) :: mapit
@@ -248,15 +242,6 @@ module parameter_list_type
   end interface
 
 contains
-
-#ifdef INTEL_BUG20140921
-  !! Has the same effect that the default constructor should but does not.
-  function parameter_list_intel (name) result (plist)
-    character(*), intent(in), optional :: name
-    type(parameter_list) :: plist
-    if (present(name)) plist%name_ = name
-  end function parameter_list_intel
-#endif
 
   !!
   !! AUXILLARY CLASS-CASTING FUNCTIONS

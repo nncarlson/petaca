@@ -875,18 +875,10 @@ contains
   subroutine queue_to_array_string (this, array)
     class(value_queue) :: this
     character(*), intent(out) :: array(:)
-#if defined(INTEL_BUG20180115)
-    class(*), pointer :: uptr
-#endif
     integer :: n
     ASSERT(size(array) == this%size())
     do n = 1, size(array)
-#if defined(INTEL_BUG20180115)
-      uptr => this%peek()
-      select type (uptr)
-#else
       select type (uptr => this%peek())
-#endif
       type is (character(*))
         array(n) = uptr
       class default
