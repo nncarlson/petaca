@@ -277,6 +277,7 @@ contains
     integer(int16), intent(in), target :: data(*) ! See Note 1
     integer, intent(in) :: len
     integer(int8), pointer :: ptr(:)
+    if (len == 0) return
     call c_f_pointer (c_loc(data), ptr, shape=[2*len]) ! See Note 2
     call this%process_bytes (ptr, size(ptr))
   end subroutine update_int16
@@ -312,6 +313,7 @@ contains
     integer(int32), intent(in), target :: data(*) ! See Note 1
     integer, intent(in) :: len
     integer(int8), pointer :: ptr(:)
+    if (len == 0) return
     call c_f_pointer (c_loc(data), ptr, shape=[4*len]) ! See Note 2
     call this%process_bytes (ptr, size(ptr))
   end subroutine update_int32
@@ -347,6 +349,7 @@ contains
     integer(int64), intent(in), target :: data(*) ! See Note 1
     integer, intent(in) :: len
     integer(int8), pointer :: ptr(:)
+    if (len == 0) return
     call c_f_pointer (c_loc(data), ptr, shape=[8*len]) ! See Note 2
     call this%process_bytes (ptr, size(ptr))
   end subroutine update_int64
@@ -382,6 +385,7 @@ contains
     logical(log8), intent(in), target :: data(*) ! See Note 1
     integer, intent(in) :: len
     integer(int8), pointer :: ptr(:)
+    if (len == 0) return
     call c_f_pointer (c_loc(data), ptr, shape=[len]) ! See Note 2
     call this%process_bytes (ptr, size(ptr))
   end subroutine update_log8
@@ -417,6 +421,7 @@ contains
     logical(log16), intent(in), target :: data(*) ! See Note 1
     integer, intent(in) :: len
     integer(int8), pointer :: ptr(:)
+    if (len == 0) return
     call c_f_pointer (c_loc(data(1)), ptr, shape=[2*len]) ! See Notes 2, 4
     call this%process_bytes (ptr, size(ptr))
   end subroutine update_log16
@@ -452,6 +457,7 @@ contains
     logical(log32), intent(in), target :: data(*) ! See Note 1
     integer, intent(in) :: len
     integer(int8), pointer :: ptr(:)
+    if (len == 0) return
     call c_f_pointer (c_loc(data(1)), ptr, shape=[4*len]) ! See Notes 2, 4
     call this%process_bytes (ptr, size(ptr))
   end subroutine update_log32
@@ -487,6 +493,7 @@ contains
     logical(log64), intent(in), target :: data(*) ! See Note 1
     integer, intent(in) :: len
     integer(int8), pointer :: ptr(:)
+    if (len == 0) return
     call c_f_pointer (c_loc(data(1)), ptr, shape=[8*len]) ! See Notes 2, 4
     call this%process_bytes (ptr, size(ptr))
   end subroutine update_log64
@@ -522,6 +529,7 @@ contains
     real(real32), intent(in), target :: data(*) ! See Note 1
     integer, intent(in) :: len
     integer(int8), pointer :: ptr(:)
+    if (len == 0) return
     call c_f_pointer (c_loc(data), ptr, shape=[4*len]) ! See Note 2
     call this%process_bytes (ptr, size(ptr))
   end subroutine update_real32
@@ -557,6 +565,7 @@ contains
     real(real64), intent(in), target :: data(*) ! See Note 1
     integer, intent(in) :: len
     integer(int8), pointer :: ptr(:)
+    if (len == 0) return
     call c_f_pointer (c_loc(data), ptr, shape=[8*len]) ! See Note 2
     call this%process_bytes (ptr, size(ptr))
   end subroutine update_real64
@@ -592,6 +601,7 @@ contains
     real(real128), intent(in), target :: data(*) ! See Note 1
     integer, intent(in) :: len
     integer(int8), pointer :: ptr(:)
+    if (len == 0) return
     call c_f_pointer (c_loc(data(1)), ptr, shape=[16*len]) ! See Notes 2, 4
     call this%process_bytes (ptr, size(ptr))
   end subroutine update_real128
@@ -627,6 +637,7 @@ contains
     character, intent(in), target :: data(*) ! See Note 1
     integer, intent(in) :: len
     integer(int8), pointer :: ptr(:)
+    if (len == 0) return
     call c_f_pointer (c_loc(data), ptr, shape=[len]) ! See Notes 2, 3
     call this%process_bytes (ptr, size(ptr))
   end subroutine

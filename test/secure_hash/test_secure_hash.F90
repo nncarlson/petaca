@@ -307,6 +307,7 @@ program test_secure_hash
   call test_md5_log16
   call test_md5_log32
   call test_md5_log64
+  call test_md5_zero_size
 
   call test_sha1_blocking
   call test_sha1_int8
@@ -321,6 +322,7 @@ program test_secure_hash
   call test_sha1_log16
   call test_sha1_log32
   call test_sha1_log64
+  call test_sha1_zero_size
 
   call test_noncontiguous
 
@@ -553,6 +555,33 @@ contains
     call test ('md5_test_log64: rank-3 array', valid_hash(a3, 'md5'))
   end subroutine test_md5_log64
 
+  subroutine test_md5_zero_size
+    integer(int8)  :: i8(0)
+    integer(int16) :: i16(0)
+    integer(int32) :: i32(0)
+    integer(int64) :: i64(0)
+    real(real32)   :: r32(0)
+    real(real64)   :: r64(0)
+    real(real128)  :: r128(0)
+    logical(int8)  :: b8(0)
+    logical(int16) :: b16(0)
+    logical(int32) :: b32(0)
+    logical(int64) :: b64(0)
+    character :: c(0)
+    call test('md5_test_zero_size: integer-8 array', valid_hash(i8, 'md5'))
+    call test('md5_test_zero_size: integer-16 array', valid_hash(i16, 'md5'))
+    call test('md5_test_zero_size: integer-32 array', valid_hash(i32, 'md5'))
+    call test('md5_test_zero_size: integer-64 array', valid_hash(i64, 'md5'))
+    call test('md5_test_zero_size: real-32 array', valid_hash(r32, 'md5'))
+    call test('md5_test_zero_size: real-64 array', valid_hash(r64, 'md5'))
+    call test('md5_test_zero_size: real-128 array', valid_hash(r128, 'md5'))
+    call test('md5_test_zero_size: logical-8 array', valid_hash(b8, 'md5'))
+    call test('md5_test_zero_size: logical-16 array', valid_hash(b16, 'md5'))
+    call test('md5_test_zero_size: logical-32 array', valid_hash(b32, 'md5'))
+    call test('md5_test_zero_size: logical-64 array', valid_hash(b64, 'md5'))
+    call test('md5_test_zero_size: character array', valid_hash(c, 'md5'))
+  end subroutine test_md5_zero_size
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!! SHA1_HASH TESTS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -744,6 +773,33 @@ contains
     call test ('sha1_test_log64: rank-2 array', valid_hash(a2, 'sha1'))
     call test ('sha1_test_log64: rank-3 array', valid_hash(a3, 'sha1'))
   end subroutine test_sha1_log64
+
+  subroutine test_sha1_zero_size
+    integer(int8)  :: i8(0)
+    integer(int16) :: i16(0)
+    integer(int32) :: i32(0)
+    integer(int64) :: i64(0)
+    real(real32)   :: r32(0)
+    real(real64)   :: r64(0)
+    real(real128)  :: r128(0)
+    logical(int8)  :: b8(0)
+    logical(int16) :: b16(0)
+    logical(int32) :: b32(0)
+    logical(int64) :: b64(0)
+    character :: c(0)
+    call test('sha1_test_zero_size: integer-8 array', valid_hash(i8, 'sha1'))
+    call test('sha1_test_zero_size: integer-16 array', valid_hash(i16, 'sha1'))
+    call test('sha1_test_zero_size: integer-32 array', valid_hash(i32, 'sha1'))
+    call test('sha1_test_zero_size: integer-64 array', valid_hash(i64, 'sha1'))
+    call test('sha1_test_zero_size: real-32 array', valid_hash(r32, 'sha1'))
+    call test('sha1_test_zero_size: real-64 array', valid_hash(r64, 'sha1'))
+    call test('sha1_test_zero_size: real-128 array', valid_hash(r128, 'sha1'))
+    call test('sha1_test_zero_size: logical-8 array', valid_hash(b8, 'sha1'))
+    call test('sha1_test_zero_size: logical-16 array', valid_hash(b16, 'sha1'))
+    call test('sha1_test_zero_size: logical-32 array', valid_hash(b32, 'sha1'))
+    call test('sha1_test_zero_size: logical-64 array', valid_hash(b64, 'sha1'))
+    call test('sha1_test_zero_size: character array', valid_hash(c, 'sha1'))
+  end subroutine test_sha1_zero_size
 
 
   subroutine test (string, expr)

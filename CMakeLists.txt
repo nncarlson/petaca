@@ -25,7 +25,7 @@ endif()
 
 # Set missing CMake defaults for the NAG Fortran compiler
 if(CMAKE_Fortran_COMPILER_ID STREQUAL NAG)
-  set(CMAKE_Fortran_FLAGS_DEBUG "-u -O0 -g -C=all -nan")
+  set(CMAKE_Fortran_FLAGS_DEBUG "-u -O0 -g -C -nan")
   set(CMAKE_Fortran_FLAGS_RELEASE "-u -O3")
   set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "${CMAKE_Fortran_FLAGS_RELEASE} -g")
 endif()
