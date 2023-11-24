@@ -1,119 +1,63 @@
-# ############################################################################ #
-#                                                                              #
-# Petaca (CMake)                                                               #
-#                                                                              #
-# ############################################################################ #
+cmake_minimum_required(VERSION 3.20.2)
 
-# ---------------------------------------------------------------------------- #
-# Set policy and CMake version requirements
-# ---------------------------------------------------------------------------- #
-cmake_minimum_required(VERSION 3.3)
-
-# ---------------------------------------------------------------------------- #
-# Project definitions
-# ---------------------------------------------------------------------------- #
 project(Petaca Fortran C)
 
 set(CMAKE_MODULE_PATH "${Petaca_SOURCE_DIR}/cmake/")
 
-# The parameter list stuff requires the yajl library.
-# If necessary set YAJL_ROOT to the yajl installation root.
+# If necessary, set YAJL_ROOT to the yajl installation root
 find_package(YAJL REQUIRED)
 if(YAJL_VERSION VERSION_LESS "2.0.1")
   message(FATAL_ERROR "libyajl 2.0.1 or later is required")
 endif()
 
-set(Petaca_INCLUDE_DIR ${Petaca_SOURCE_DIR}/include)
-
-# ---------------------------------------------------------------------------- #
-# Build Options
-# ---------------------------------------------------------------------------- #
-
-option(ENABLE_TESTS "Build test programs" ON)
-option(ENABLE_EXAMPLES "Build example programs" OFF)
-option(ENABLE_STD_MOD_PROC_NAME "Build with -assume std_mod_proc_name when using Intel" OFF)
+# CMake build options
+option(BUILD_EXAMPLES "Build example programs" OFF)
+option(BUILD_HTML "Build HTML documentation (requires Sphinx)" OFF)
 option(BUILD_SHARED_LIBS "Build shared object library" ON)
+option(ENABLE_STD_MOD_PROC_NAME "Build with -assume std_mod_proc_name when using Intel" OFF)
 
-#-------------------------------------------------------------------------------
-# Compiler Definitions
-#-------------------------------------------------------------------------------
+include(CTest) # defines option BUILD_TESTING (on)
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
+  message(STATUS "Setting build type to 'Release' as none was specified")
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build" FORCE)
 endif()
 
-add_compile_options("$<$<COMPILE_LANG_AND_ID:Fortran,Intel>:-standard-semantics>"
-  "$<$<AND:$<NOT:$<BOOL:${ENABLE_STD_MOD_PROC_NAME}>>,$<COMPILE_LANG_AND_ID:Fortran,Intel>>:SHELL:-assume nostd_mod_proc_name>")
-
-if(CMAKE_Fortran_COMPILER_ID STREQUAL "NAG")
-  set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -w=uda -DNDEBUG")
-  set(CMAKE_Fortran_FLAGS_DEBUG   "-g90")
-elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
-  set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -DNDEBUG")
-  set(CMAKE_Fortran_FLAGS_DEBUG   "-g -C")
-elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-  set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -DNDEBUG -ffree-line-length-none")
-  set(CMAKE_Fortran_FLAGS_DEBUG "-g -fbacktrace -ffree-line-length-none -fcheck=all -Wall -Wextra")
+# Set missing CMake defaults for the NAG Fortran compiler
+if(CMAKE_Fortran_COMPILER_ID STREQUAL NAG)
+  set(CMAKE_Fortran_FLAGS_DEBUG "-u -O0 -g -C=all -nan")
+  set(CMAKE_Fortran_FLAGS_RELEASE "-u -O3")
+  set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "${CMAKE_Fortran_FLAGS_RELEASE} -g")
 endif()
 
-# Fortran preprocessor defines
-set(Fortran_COMPILE_DEFINITIONS)
-if(CMAKE_Fortran_COMPILER_ID STREQUAL IntelLLVM)
-  list(APPEND Fortran_COMPILE_DEFINITIONS INTELLLVM_BUG20231122)
-  list(APPEND Fortran_COMPILE_DEFINITIONS NO_2008_GENERIC_RESOLUTION)
-elseif(CMAKE_Fortran_COMPILER_ID STREQUAL Intel)
-  if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "16.0.2")
-    message(FATAL_ERROR "Intel Fortran 16.0.2 or later is required; "
-        "your version is ${CMAKE_Fortran_COMPILER_VERSION}")
-  elseif(CMAKE_Fortran_COMPILER_VERSION MATCHES "18.0.0.*")
-    message(FATAL_ERROR "Intel Fortran version 18.0.0 is blacklisted; update to 18.0.1 or later")
-  endif()
-  list(APPEND Fortran_COMPILE_DEFINITIONS INTEL_BUG20180115)
-  list(APPEND Fortran_COMPILE_DEFINITIONS INTEL_BUG20140921)
-  list(APPEND Fortran_COMPILE_DEFINITIONS NO_2008_GENERIC_RESOLUTION)
-  list(APPEND Fortran_COMPILE_DEFINITIONS NO_2008_LHS_POLY_REALLOC)
-  if(CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER "18.0.1")
-    list(APPEND Fortran_COMPILE_DEFINITIONS INTEL_BUG20171115)
-  endif()
-elseif(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
-  include(NAGFortranCompilerVersion) # set CMAKE_Fortran_COMPILER_VERSION
-  if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "6.0.0")
-    message(FATAL_ERROR "NAG Fortran 6.0 or later is required; "
-        "your version is ${CMAKE_Fortran_COMPILER_VERSION}")
-  endif()
-elseif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
-  list(APPEND Fortran_COMPILE_DEFINITIONS GNU_PR93762)
-  list(APPEND Fortran_COMPILE_DEFINITIONS NO_2008_GENERIC_RESOLUTION)
-  if((CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL "10.1") AND
-     (CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "10.2"))
-    list(APPEND Fortran_COMPILE_DEFINITIONS GFORTRAN_10_1)
-  endif()
-endif()
+set(Petaca_INCLUDE_DIR ${Petaca_SOURCE_DIR}/include)
 
-# Append preprocessor defines to the compiler flags
-foreach(def ${Fortran_COMPILE_DEFINITIONS})
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -D${def}")
-endforeach()
-message(STATUS "The Fortran compiler identification is "
-    "${CMAKE_Fortran_COMPILER_ID} ${CMAKE_Fortran_COMPILER_VERSION}")
-message(STATUS "CMAKE_Fortran_FLAGS=${CMAKE_Fortran_FLAGS}")
+# Disable assertions in release builds
+add_compile_definitions($<$<CONFIG:Release,RelWithDebInfo>:NDEBUG>)
 
-#-------------------------------------------------------------------------------
-# Installation Definitions
-#-------------------------------------------------------------------------------
+# Compiler bug workarounds
+add_compile_definitions(
+  $<$<COMPILE_LANG_AND_ID:Fortran,Intel>:INTEL_BUG20231123>
+  $<$<COMPILE_LANG_AND_ID:Fortran,IntelLLVM>:INTEL_BUG20231122>
+  $<$<COMPILE_LANG_AND_ID:Fortran,IntelLLVM>:INTEL_BUG20231123>
+  $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:GNU_PR93762>
+)
+
+# Required compiler options
+add_compile_options($<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-ffree-line-length-none>)
+add_compile_options("$<$<COMPILE_LANG_AND_ID:Fortran,Intel,IntelLLVM>:-standard-semantics>"
+  "$<$<AND:$<NOT:$<BOOL:${ENABLE_STD_MOD_PROC_NAME}>>,$<COMPILE_LANG_AND_ID:Fortran,Intel,IntelLLVM>>:SHELL:-assume nostd_mod_proc_name>")
 
 add_subdirectory(src)
 
-if(ENABLE_TESTS)
-  enable_testing()
+if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
-if(ENABLE_EXAMPLES)
+if(BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
-option(BUILD_HTML "Build HTML documentation (requires Sphinx)" OFF)
 if(BUILD_HTML)
   find_package(Sphinx REQUIRED)
   add_subdirectory(doc/sphinx)

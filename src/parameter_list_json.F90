@@ -653,11 +653,7 @@ contains
         select type (uptr => this%mold)
         type is (integer)
           errmsg = 'expecting an integer value'
-#ifdef GFORTRAN_10_1
-        type is (double precision)
-#else
         type is (real(kind(1.0d0)))
-#endif
           errmsg = 'expecting a real value'
         type is (character(*))
           errmsg = 'expecting a string value'
@@ -761,11 +757,7 @@ contains
       call this%values%to_array (array)
     type is (logical)
       call this%values%to_array (array)
-#ifdef GFORTRAN_10_1
-    type is (double precision)
-#else
     type is (real(kind(1.0d0)))
-#endif
       call this%values%to_array (array)
     type is (character(*))
       call this%values%to_array (array)
@@ -875,18 +867,10 @@ contains
   subroutine queue_to_array_string (this, array)
     class(value_queue) :: this
     character(*), intent(out) :: array(:)
-#if defined(INTEL_BUG20180115)
-    class(*), pointer :: uptr
-#endif
     integer :: n
     ASSERT(size(array) == this%size())
     do n = 1, size(array)
-#if defined(INTEL_BUG20180115)
-      uptr => this%peek()
-      select type (uptr)
-#else
       select type (uptr => this%peek())
-#endif
       type is (character(*))
         array(n) = uptr
       class default
@@ -973,11 +957,7 @@ contains
       select type (a)
       type is (integer)
         type_num = 1
-#ifdef GFORTRAN_10_1
-      type is (double precision)
-#else
       type is (real(kind(1.0d0)))
-#endif
         type_num = 2
       type is (logical)
         type_num = 3
