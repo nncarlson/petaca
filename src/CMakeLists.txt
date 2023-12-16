@@ -5,7 +5,6 @@ set(SRC
     yajl_fort.F90
     yajl_ext.c
     json.F90
-    parameter_entry_class.F90
     parameter_list_type.F90
     parameter_list_json.F90
     state_history_type.F90
@@ -20,6 +19,11 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
   set_property (SOURCE secure_hash/md5_hash_type.F90
                        secure_hash/sha1_hash_type.F90
                 PROPERTY COMPILE_FLAGS -fno-range-check)
+endif()
+
+if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+  set_property(SOURCE parameter_list_json.F90
+               PROPERTY COMPILE_FLAGS "-assume old_e0g0_format")
 endif()
 
 add_library(petaca ${SRC})

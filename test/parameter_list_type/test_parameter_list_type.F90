@@ -35,7 +35,8 @@ program test_parameter_list_type
   call test_overwrite
   call test_sublists
   call test_iterator
-  call test_name
+  call test_path
+  call test_assignment
 
   if (stat /= 0) stop 1
 
@@ -57,54 +58,54 @@ contains
     type point; real x, y; end type
 
     !! Check that the initial list is empty.
-    if (p%count() /= 0) call write_fail ('test_basic failed test 1')
+    if (p%count() /= 0) call write_fail('test_basic failed test 1')
 
     !! Define parameters of various types and ranks,
     !! checking the parameter count each time.
-    call p%set ('foo', 1)
-    if (p%count() /= 1) call write_fail ('test_basic failed test 2')
-    call p%set ('bar', [1.0,3.14])
-    if (p%count() /= 2) call write_fail ('test_basic failed test 3')
-    call p%set ('wat', ['biz','bat'])
-    if (p%count() /= 3) call write_fail ('test_basic failed test 4')
-    call p%set ('bah', reshape([1,2,3,4],shape=[2,2]))
-    if (p%count() /= 4) call write_fail ('test_basic failed test 5')
+    call p%set('foo', 1)
+    if (p%count() /= 1) call write_fail('test_basic failed test 2')
+    call p%set('bar', [1.0,3.14])
+    if (p%count() /= 2) call write_fail('test_basic failed test 3')
+    call p%set('wat', ['biz','bat'])
+    if (p%count() /= 3) call write_fail('test_basic failed test 4')
+    call p%set('bah', reshape([1,2,3,4],shape=[2,2]))
+    if (p%count() /= 4) call write_fail('test_basic failed test 5')
 
     !! Check that they are recognized as parameters, and of the correct type.
-    if (.not.p%is_parameter('foo')) call write_fail ('test_basic failed test 6')
-    if (p%is_sublist('foo')) call write_fail ('test_basic failed test 7')
-    if (.not.p%is_scalar('foo')) call write_fail ('test_basic failed test 8')
-    if (p%is_vector('foo')) call write_fail ('test_basic failed test 9')
-    if (p%is_matrix('foo')) call write_fail ('test_basic failed test 10')
-    if (.not.p%is_parameter('bar')) call write_fail ('test_basic failed test 1')
-    if (p%is_sublist('bar')) call write_fail ('test_basic failed test 12')
-    if (p%is_scalar('bar')) call write_fail ('test_basic failed test 13')
-    if (.not.p%is_vector('bar')) call write_fail ('test_basic failed test 14')
-    if (p%is_matrix('bar')) call write_fail ('test_basic failed test 15')
-    if (.not.p%is_parameter('wat')) call write_fail ('test_basic failed test 16')
-    if (p%is_sublist('wat')) call write_fail ('test_basic failed test 17')
-    if (.not.p%is_parameter('bah')) call write_fail ('test_basic failed test 18')
-    if (p%is_sublist('bah')) call write_fail ('test_basic failed test 19')
-    if (p%is_scalar('bah')) call write_fail ('test_basic failed test 20')
-    if (p%is_vector('bah')) call write_fail ('test_basic failed test 21')
-    if (.not.p%is_matrix('bah')) call write_fail ('test_basic failed test 22')
+    if (.not.p%is_parameter('foo')) call write_fail('test_basic failed test 6')
+    if (p%is_sublist('foo')) call write_fail('test_basic failed test 7')
+    if (.not.p%is_scalar('foo')) call write_fail('test_basic failed test 8')
+    if (p%is_vector('foo')) call write_fail('test_basic failed test 9')
+    if (p%is_matrix('foo')) call write_fail('test_basic failed test 10')
+    if (.not.p%is_parameter('bar')) call write_fail('test_basic failed test 1')
+    if (p%is_sublist('bar')) call write_fail('test_basic failed test 12')
+    if (p%is_scalar('bar')) call write_fail('test_basic failed test 13')
+    if (.not.p%is_vector('bar')) call write_fail('test_basic failed test 14')
+    if (p%is_matrix('bar')) call write_fail('test_basic failed test 15')
+    if (.not.p%is_parameter('wat')) call write_fail('test_basic failed test 16')
+    if (p%is_sublist('wat')) call write_fail('test_basic failed test 17')
+    if (.not.p%is_parameter('bah')) call write_fail('test_basic failed test 18')
+    if (p%is_sublist('bah')) call write_fail('test_basic failed test 19')
+    if (p%is_scalar('bah')) call write_fail('test_basic failed test 20')
+    if (p%is_vector('bah')) call write_fail('test_basic failed test 21')
+    if (.not.p%is_matrix('bah')) call write_fail('test_basic failed test 22')
 
     !! Replace the value of a parameter; different rank -- should fail
-    call p%set ('foo', [1,2], stat=stat, errmsg=errmsg)
-    if (stat == 0) call write_fail ('test_basic failed test 23')
-    if (p%count() /= 4) call write_fail ('test_basic failed test 24')
+    call p%set('foo', [1,2], stat=stat, errmsg=errmsg)
+    if (stat == 0) call write_fail('test_basic failed test 23')
+    if (p%count() /= 4) call write_fail('test_basic failed test 24')
 
     !! Replace the value of a parameter; same rank -- should succeed.
-    call p%set ('bar', [1,2], stat=stat, errmsg=errmsg)
-    if (stat /= 0) call write_fail ('test_basic failed test 25')
-    if (p%count() /= 4) call write_fail ('test_basic failed test 26')
+    call p%set('bar', [1,2], stat=stat, errmsg=errmsg)
+    if (stat /= 0) call write_fail('test_basic failed test 25')
+    if (p%count() /= 4) call write_fail('test_basic failed test 26')
 
     !! Verify that a non-existant parameter does not exist.
-    if (p%is_parameter('dummy')) call write_fail ('test_basic failed test 27')
-    if (p%is_sublist('dummy')) call write_fail ('test_basic failed test 28')
-    if (p%is_scalar('dummy')) call write_fail ('test_basic failed test 29')
-    if (p%is_vector('dummy')) call write_fail ('test_basic failed test 30')
-    if (p%is_matrix('dummy')) call write_fail ('test_basic failed test 31')
+    if (p%is_parameter('dummy')) call write_fail('test_basic failed test 27')
+    if (p%is_sublist('dummy')) call write_fail('test_basic failed test 28')
+    if (p%is_scalar('dummy')) call write_fail('test_basic failed test 29')
+    if (p%is_vector('dummy')) call write_fail('test_basic failed test 30')
+    if (p%is_matrix('dummy')) call write_fail('test_basic failed test 31')
 
   end subroutine
 
@@ -133,162 +134,162 @@ contains
     character(:), allocatable :: c, carray(:), cdefault, carraydefault(:)
     character(:), allocatable :: cmatrix(:,:), cmatrixdefault(:,:)
 
-    call p%set ('i32', 1_int32)
-    call p%set ('i64', 2_int64)
-    call p%set ('i32array', [3_int32,4_int32])
-    call p%set ('i64array', [5_int64,6_int64])
+    call p%set('i32', 1_int32)
+    call p%set('i64', 2_int64)
+    call p%set('i32array', [3_int32,4_int32])
+    call p%set('i64array', [5_int64,6_int64])
     i32matrixref = reshape([integer(int32) :: 3, 4, 5, 6, 7, 8], shape=[2,3])
-    call p%set ('i32matrix', i32matrixref)
+    call p%set('i32matrix', i32matrixref)
     i64matrixref = reshape([integer(int64) :: 3, 4, 5, 6, 7, 8], shape=[2,3])
-    call p%set ('i64matrix', i64matrixref)
-    call p%set ('r32', 1.0_real32)
-    call p%set ('r64', 2.0_real64)
-    call p%set ('r32array', [3.0_real32,4.0_real32])
-    call p%set ('r64array', [5.0_real64,6.0_real64])
+    call p%set('i64matrix', i64matrixref)
+    call p%set('r32', 1.0_real32)
+    call p%set('r64', 2.0_real64)
+    call p%set('r32array', [3.0_real32,4.0_real32])
+    call p%set('r64array', [5.0_real64,6.0_real64])
     r32matrixref = reshape([real(real32) :: 3, 4, 5, 6, 7, 8], shape=[3,2])
-    call p%set ('r32matrix', r32matrixref)
+    call p%set('r32matrix', r32matrixref)
     r64matrixref = reshape([real(real64) :: 3, 4, 5, 6, 7, 8], shape=[3,2])
-    call p%set ('r64matrix', r64matrixref)
+    call p%set('r64matrix', r64matrixref)
 
-    call p%get ('i32', i32)
-    call p%get ('i64', i64)
-    call p%get ('i32array', i32array)
-    call p%get ('i64array', i64array)
-    call p%get ('i32matrix', i32matrix)
-    call p%get ('i64matrix', i64matrix)
-    call p%get ('r32', r32)
-    call p%get ('r64', r64)
-    call p%get ('r32array', r32array)
-    call p%get ('r64array', r64array)
-    call p%get ('r32matrix', r32matrix)
-    call p%get ('r64matrix', r64matrix)
+    call p%get('i32', i32)
+    call p%get('i64', i64)
+    call p%get('i32array', i32array)
+    call p%get('i64array', i64array)
+    call p%get('i32matrix', i32matrix)
+    call p%get('i64matrix', i64matrix)
+    call p%get('r32', r32)
+    call p%get('r64', r64)
+    call p%get('r32array', r32array)
+    call p%get('r64array', r64array)
+    call p%get('r32matrix', r32matrix)
+    call p%get('r64matrix', r64matrix)
 
-    if (i32 /= 1) call write_fail ('test_get failed test 1')
-    if (i64 /= 2) call write_fail ('test_get failed test 2')
-    if (any(i32array /= [3_int32,4_int32])) call write_fail ('test_get failed test 3')
-    if (any(i64array /= [5_int64,6_int64])) call write_fail ('test_get failed test 4')
-    if (any(i32matrix /= i32matrixref)) call write_fail ('test_get failed test 3m')
-    if (any(i64matrix /= i64matrixref)) call write_fail ('test_get failed test 4m')
-    if (r32 /= 1.0) call write_fail ('test_get failed test 5')
-    if (r64 /= 2.0) call write_fail ('test_get failed test 6')
-    if (any(r32array /= [3.0_real32,4.0_real32])) call write_fail ('test_get failed test 7')
-    if (any(r64array /= [5.0_real64,6.0_real64])) call write_fail ('test_get failed test 8')
-    if (any(r32matrix /= r32matrixref)) call write_fail ('test_get failed test 7m')
-    if (any(r64matrix /= r64matrixref)) call write_fail ('test_get failed test 8m')
+    if (i32 /= 1) call write_fail('test_get failed test 1')
+    if (i64 /= 2) call write_fail('test_get failed test 2')
+    if (any(i32array /= [3_int32,4_int32])) call write_fail('test_get failed test 3')
+    if (any(i64array /= [5_int64,6_int64])) call write_fail('test_get failed test 4')
+    if (any(i32matrix /= i32matrixref)) call write_fail('test_get failed test 3m')
+    if (any(i64matrix /= i64matrixref)) call write_fail('test_get failed test 4m')
+    if (r32 /= 1.0) call write_fail('test_get failed test 5')
+    if (r64 /= 2.0) call write_fail('test_get failed test 6')
+    if (any(r32array /= [3.0_real32,4.0_real32])) call write_fail('test_get failed test 7')
+    if (any(r64array /= [5.0_real64,6.0_real64])) call write_fail('test_get failed test 8')
+    if (any(r32matrix /= r32matrixref)) call write_fail('test_get failed test 7m')
+    if (any(r64matrix /= r64matrixref)) call write_fail('test_get failed test 8m')
 
-    call p%set ('l', .true.)
-    call p%set ('larray', [.true.,.false.])
-    call p%set ('lmatrix', reshape([.true.,.false.],shape=[1,2]))
-    call p%set ('c', 'bizbat')
-    call p%set ('carray', ['foo','bar'])
-    call p%set ('cmatrix', reshape(['foo','bar'],shape=[2,1]))
+    call p%set('l', .true.)
+    call p%set('larray', [.true.,.false.])
+    call p%set('lmatrix', reshape([.true.,.false.],shape=[1,2]))
+    call p%set('c', 'bizbat')
+    call p%set('carray', ['foo','bar'])
+    call p%set('cmatrix', reshape(['foo','bar'],shape=[2,1]))
 
-    call p%get ('l', l)
-    call p%get ('larray', larray)
-    call p%get ('lmatrix', lmatrix)
-    call p%get ('c', c)
-    call p%get ('carray', carray)
-    call p%get ('cmatrix', cmatrix)
+    call p%get('l', l)
+    call p%get('larray', larray)
+    call p%get('lmatrix', lmatrix)
+    call p%get('c', c)
+    call p%get('carray', carray)
+    call p%get('cmatrix', cmatrix)
 
-    if (.not.l) call write_fail ('test_get failed test 9')
-    if (any(larray .neqv. [.true.,.false.])) call write_fail ('test_get failed test 10')
-    if (any(lmatrix(1,:) .neqv. [.true.,.false.])) call write_fail ('test_get failed test 10m')
-    if (c /= 'bizbat') call write_fail ('test_get failed test 11')
-    if (len(c) /= 6) call write_fail ('test_get failed test 12')
-    if (any(carray /= ['foo','bar'])) call write_fail ('test_get failed test 13')
-    if (len(carray) /= 3) call write_fail ('test_get failed test 14')
-    if (any(cmatrix(:,1) /= ['foo','bar'])) call write_fail ('test_get failed test 13m')
-    if (len(cmatrix) /= 3) call write_fail ('test_get failed test 14m')
+    if (.not.l) call write_fail('test_get failed test 9')
+    if (any(larray .neqv. [.true.,.false.])) call write_fail('test_get failed test 10')
+    if (any(lmatrix(1,:) .neqv. [.true.,.false.])) call write_fail('test_get failed test 10m')
+    if (c /= 'bizbat') call write_fail('test_get failed test 11')
+    if (len(c) /= 6) call write_fail('test_get failed test 12')
+    if (any(carray /= ['foo','bar'])) call write_fail('test_get failed test 13')
+    if (len(carray) /= 3) call write_fail('test_get failed test 14')
+    if (any(cmatrix(:,1) /= ['foo','bar'])) call write_fail('test_get failed test 13m')
+    if (len(cmatrix) /= 3) call write_fail('test_get failed test 14m')
 
     !! Verify that the default argument is ignored for these existing parameters.
 
-    call p%get ('i32', i32, default=0_int32)
-    call p%get ('i64', i64, default=0_int64)
-    call p%get ('i32array', i32array, default=[0_int32])
-    call p%get ('i64array', i64array, default=[0_int64])
-    call p%get ('i32matrix', i32matrix, default=reshape([0_int32],shape=[1,1]))
-    call p%get ('i64matrix', i64matrix, default=reshape([0_int64],shape=[1,1]))
-    call p%get ('r32', r32, default=0.0_real32)
-    call p%get ('r64', r64, default=0.0_real64)
-    call p%get ('r32array', r32array, default=[0.0_real32])
-    call p%get ('r64array', r64array, default=[0.0_real64])
-    call p%get ('r32matrix', r32matrix, default=reshape([0.0_real32],shape=[1,1]))
-    call p%get ('r64matrix', r64matrix, default=reshape([0.0_real64],shape=[1,1]))
+    call p%get('i32', i32, default=0_int32)
+    call p%get('i64', i64, default=0_int64)
+    call p%get('i32array', i32array, default=[0_int32])
+    call p%get('i64array', i64array, default=[0_int64])
+    call p%get('i32matrix', i32matrix, default=reshape([0_int32],shape=[1,1]))
+    call p%get('i64matrix', i64matrix, default=reshape([0_int64],shape=[1,1]))
+    call p%get('r32', r32, default=0.0_real32)
+    call p%get('r64', r64, default=0.0_real64)
+    call p%get('r32array', r32array, default=[0.0_real32])
+    call p%get('r64array', r64array, default=[0.0_real64])
+    call p%get('r32matrix', r32matrix, default=reshape([0.0_real32],shape=[1,1]))
+    call p%get('r64matrix', r64matrix, default=reshape([0.0_real64],shape=[1,1]))
 
-    if (i32 /= 1) call write_fail ('test_get failed test 1')
-    if (i64 /= 2) call write_fail ('test_get failed test 2')
-    if (any(i32array /= [3_int32,4_int32])) call write_fail ('test_get failed test 15')
-    if (any(i64array /= [5_int64,6_int64])) call write_fail ('test_get failed test 16')
-    if (any(i32matrix /= i32matrixref)) call write_fail ('test_get failed test 15m')
-    if (any(i64matrix /= i64matrixref)) call write_fail ('test_get failed test 16m')
-    if (r32 /= 1.0) call write_fail ('test_get failed test 17')
-    if (r64 /= 2.0) call write_fail ('test_get failed test 18')
-    if (any(r32array /= [3.0_real32,4.0_real32])) call write_fail ('test_get failed test 19')
-    if (any(r64array /= [5.0_real64,6.0_real64])) call write_fail ('test_get failed test 20')
-    if (any(r32matrix /= r32matrixref)) call write_fail ('test_get failed test 19m')
-    if (any(r64matrix /= r64matrixref)) call write_fail ('test_get failed test 20m')
+    if (i32 /= 1) call write_fail('test_get failed test 1')
+    if (i64 /= 2) call write_fail('test_get failed test 2')
+    if (any(i32array /= [3_int32,4_int32])) call write_fail('test_get failed test 15')
+    if (any(i64array /= [5_int64,6_int64])) call write_fail('test_get failed test 16')
+    if (any(i32matrix /= i32matrixref)) call write_fail('test_get failed test 15m')
+    if (any(i64matrix /= i64matrixref)) call write_fail('test_get failed test 16m')
+    if (r32 /= 1.0) call write_fail('test_get failed test 17')
+    if (r64 /= 2.0) call write_fail('test_get failed test 18')
+    if (any(r32array /= [3.0_real32,4.0_real32])) call write_fail('test_get failed test 19')
+    if (any(r64array /= [5.0_real64,6.0_real64])) call write_fail('test_get failed test 20')
+    if (any(r32matrix /= r32matrixref)) call write_fail('test_get failed test 19m')
+    if (any(r64matrix /= r64matrixref)) call write_fail('test_get failed test 20m')
 
-    call p%get ('l', l, default=.false.)
-    call p%get ('larray', larray, default=[.false.])
-    call p%get ('lmatrix', lmatrix, default=reshape([.false.],shape=[1,1]))
-    call p%get ('c', c, default='yellow')
-    call p%get ('carray', carray, default=['fubar'])
-    call p%get ('cmatrix', cmatrix, default=reshape(['fubar'],shape=[1,1]))
+    call p%get('l', l, default=.false.)
+    call p%get('larray', larray, default=[.false.])
+    call p%get('lmatrix', lmatrix, default=reshape([.false.],shape=[1,1]))
+    call p%get('c', c, default='yellow')
+    call p%get('carray', carray, default=['fubar'])
+    call p%get('cmatrix', cmatrix, default=reshape(['fubar'],shape=[1,1]))
 
-    if (.not.l) call write_fail ('test_get failed test 21')
-    if (any(larray .neqv. [.true.,.false.])) call write_fail ('test_get failed test 22')
-    if (any(lmatrix(1,:) .neqv. [.true.,.false.])) call write_fail ('test_get failed test 22m')
-    if (c /= 'bizbat') call write_fail ('test_get failed test 23')
-    if (len(c) /= 6) call write_fail ('test_get failed test 24')
-    if (any(carray /= ['foo','bar'])) call write_fail ('test_get failed test 25')
-    if (len(carray) /= 3) call write_fail ('test_get failed test 26')
-    if (any(cmatrix(:,1) /= ['foo','bar'])) call write_fail ('test_get failed test 25m')
-    if (len(cmatrix) /= 3) call write_fail ('test_get failed test 25m')
+    if (.not.l) call write_fail('test_get failed test 21')
+    if (any(larray .neqv. [.true.,.false.])) call write_fail('test_get failed test 22')
+    if (any(lmatrix(1,:) .neqv. [.true.,.false.])) call write_fail('test_get failed test 22m')
+    if (c /= 'bizbat') call write_fail('test_get failed test 23')
+    if (len(c) /= 6) call write_fail('test_get failed test 24')
+    if (any(carray /= ['foo','bar'])) call write_fail('test_get failed test 25')
+    if (len(carray) /= 3) call write_fail('test_get failed test 26')
+    if (any(cmatrix(:,1) /= ['foo','bar'])) call write_fail('test_get failed test 25m')
+    if (len(cmatrix) /= 3) call write_fail('test_get failed test 25m')
 
     !! Verify that the default argument is used for these new parameters.
 
-    call p%get ('i32default', i32default, default=10_int32)
-    call p%get ('i64default', i64default, default=20_int64)
-    call p%get ('i32arraydefault', i32arraydefault, default=[30_int32])
-    call p%get ('i64arraydefault', i64arraydefault, default=[40_int64])
-    call p%get ('i32matrixdefault', i32matrixdefault, default=reshape([30_int32],shape=[1,1]))
-    call p%get ('i64matrixdefault', i64matrixdefault, default=reshape([40_int64],shape=[1,1]))
-    call p%get ('r32default', r32default, default=10.0_real32)
-    call p%get ('r64default', r64default, default=20.0_real64)
-    call p%get ('r32arraydefault', r32arraydefault, default=[30.0_real32])
-    call p%get ('r64arraydefault', r64arraydefault, default=[40.0_real64])
-    call p%get ('r32matrixdefault', r32matrixdefault, default=reshape([30.0_real32],shape=[1,1]))
-    call p%get ('r64matrixdefault', r64matrixdefault, default=reshape([40.0_real64],shape=[1,1]))
+    call p%get('i32default', i32default, default=10_int32)
+    call p%get('i64default', i64default, default=20_int64)
+    call p%get('i32arraydefault', i32arraydefault, default=[30_int32])
+    call p%get('i64arraydefault', i64arraydefault, default=[40_int64])
+    call p%get('i32matrixdefault', i32matrixdefault, default=reshape([30_int32],shape=[1,1]))
+    call p%get('i64matrixdefault', i64matrixdefault, default=reshape([40_int64],shape=[1,1]))
+    call p%get('r32default', r32default, default=10.0_real32)
+    call p%get('r64default', r64default, default=20.0_real64)
+    call p%get('r32arraydefault', r32arraydefault, default=[30.0_real32])
+    call p%get('r64arraydefault', r64arraydefault, default=[40.0_real64])
+    call p%get('r32matrixdefault', r32matrixdefault, default=reshape([30.0_real32],shape=[1,1]))
+    call p%get('r64matrixdefault', r64matrixdefault, default=reshape([40.0_real64],shape=[1,1]))
 
-    if (i32default /= 10) call write_fail ('test_get failed test 27')
-    if (i64default /= 20) call write_fail ('test_get failed test 28')
-    if (any(i32arraydefault /= [30_int32])) call write_fail ('test_get failed test 29')
-    if (any(i64arraydefault /= [40_int64])) call write_fail ('test_get failed test 30')
-    if (i32matrixdefault(1,1) /= 30_int32) call write_fail ('test_get failed test 29m')
-    if (i64matrixdefault(1,1) /= 40_int64) call write_fail ('test_get failed test 30m')
-    if (r32default /= 10.0) call write_fail ('test_get failed test 31')
-    if (r64default /= 20.0) call write_fail ('test_get failed test 32')
-    if (any(r32arraydefault /= [30.0])) call write_fail ('test_get failed test 33')
-    if (any(r64arraydefault /= [40.0])) call write_fail ('test_get failed test 34')
-    if (r32matrixdefault(1,1) /= 30.0) call write_fail ('test_get failed test 33m')
-    if (r64matrixdefault(1,1) /= 40.0) call write_fail ('test_get failed test 34m')
+    if (i32default /= 10) call write_fail('test_get failed test 27')
+    if (i64default /= 20) call write_fail('test_get failed test 28')
+    if (any(i32arraydefault /= [30_int32])) call write_fail('test_get failed test 29')
+    if (any(i64arraydefault /= [40_int64])) call write_fail('test_get failed test 30')
+    if (i32matrixdefault(1,1) /= 30_int32) call write_fail('test_get failed test 29m')
+    if (i64matrixdefault(1,1) /= 40_int64) call write_fail('test_get failed test 30m')
+    if (r32default /= 10.0) call write_fail('test_get failed test 31')
+    if (r64default /= 20.0) call write_fail('test_get failed test 32')
+    if (any(r32arraydefault /= [30.0])) call write_fail('test_get failed test 33')
+    if (any(r64arraydefault /= [40.0])) call write_fail('test_get failed test 34')
+    if (r32matrixdefault(1,1) /= 30.0) call write_fail('test_get failed test 33m')
+    if (r64matrixdefault(1,1) /= 40.0) call write_fail('test_get failed test 34m')
 
-    call p%get ('ldefault', ldefault, default=.false.)
-    call p%get ('larraydefault', larraydefault, default=[.true.])
-    call p%get ('lmatrixdefault', lmatrixdefault, default=reshape([.true.],shape=[1,1]))
-    call p%get ('cdefault', cdefault, default='yellow')
-    call p%get ('carraydefault', carraydefault, default=['fubar'])
-    call p%get ('cmatrixdefault', cmatrixdefault, default=reshape(['fubar'],shape=[1,1]))
+    call p%get('ldefault', ldefault, default=.false.)
+    call p%get('larraydefault', larraydefault, default=[.true.])
+    call p%get('lmatrixdefault', lmatrixdefault, default=reshape([.true.],shape=[1,1]))
+    call p%get('cdefault', cdefault, default='yellow')
+    call p%get('carraydefault', carraydefault, default=['fubar'])
+    call p%get('cmatrixdefault', cmatrixdefault, default=reshape(['fubar'],shape=[1,1]))
 
-    if (ldefault) call write_fail ('test_get failed test 35')
-    if (any(larraydefault .neqv. [.true.])) call write_fail ('test_get failed test 36')
-    if (lmatrixdefault(1,1) .neqv. .true.) call write_fail ('test_get failed test 36m')
-    if (cdefault /= 'yellow') call write_fail ('test_get failed test 37')
-    if (len(c) /= 6) call write_fail ('test_get failed test 38')
-    if (any(carraydefault /= ['fubar'])) call write_fail ('test_get failed test 39')
-    if (len(carraydefault) /= 5) call write_fail ('test_get failed test 40')
-    if (cmatrixdefault(1,1) /= 'fubar') call write_fail ('test_get failed test 39m')
-    if (len(cmatrixdefault) /= 5) call write_fail ('test_get failed test 40m')
+    if (ldefault) call write_fail('test_get failed test 35')
+    if (any(larraydefault .neqv. [.true.])) call write_fail('test_get failed test 36')
+    if (lmatrixdefault(1,1) .neqv. .true.) call write_fail('test_get failed test 36m')
+    if (cdefault /= 'yellow') call write_fail('test_get failed test 37')
+    if (len(c) /= 6) call write_fail('test_get failed test 38')
+    if (any(carraydefault /= ['fubar'])) call write_fail('test_get failed test 39')
+    if (len(carraydefault) /= 5) call write_fail('test_get failed test 40')
+    if (cmatrixdefault(1,1) /= 'fubar') call write_fail('test_get failed test 39m')
+    if (len(cmatrixdefault) /= 5) call write_fail('test_get failed test 40m')
 
   end subroutine
 
@@ -305,135 +306,135 @@ contains
 
     !! Define parameters using the provided default value.
 
-    call p%get_any ('a', scalar, default=1)
+    call p%get_any('a', scalar, default=1)
     select type (scalar)
     type is (integer)
-      if (scalar /= 1) call write_fail ('test_get_any failed test 1')
+      if (scalar /= 1) call write_fail('test_get_any failed test 1')
     class default
-      call write_fail ('test_get_any failed test 2')
+      call write_fail('test_get_any failed test 2')
     end select
 
-    call p%get_any ('b', vector, default=[1.0,2.0])
+    call p%get_any('b', vector, default=[1.0,2.0])
     select type (vector)
     type is (real)
-      if (any(vector /= [1,2])) call write_fail ('test_get_any failed test 3')
+      if (any(vector /= [1,2])) call write_fail('test_get_any failed test 3')
     class default
-      call write_fail ('test_get_any failed test 4')
+      call write_fail('test_get_any failed test 4')
     end select
 
-    call p%get_any ('bm', matrix, default=reshape([1.0,2.0],shape=[2,1]))
+    call p%get_any('bm', matrix, default=reshape([1.0,2.0],shape=[2,1]))
     select type (matrix)
     type is (real)
-      if (any(matrix(:,1) /= [1,2])) call write_fail ('test_get_any failed test 3m')
+      if (any(matrix(:,1) /= [1,2])) call write_fail('test_get_any failed test 3m')
     class default
-      call write_fail ('test_get_any failed test 4m')
+      call write_fail('test_get_any failed test 4m')
     end select
 
-    call p%get_any ('c', scalar, default=point(1.0,2.0))
+    call p%get_any('c', scalar, default=point(1.0,2.0))
     select type (scalar)
     type is (point)
-      if (scalar%x /= 1 .or. scalar%y /= 2) call write_fail ('test_get_any failed test 5')
+      if (scalar%x /= 1 .or. scalar%y /= 2) call write_fail('test_get_any failed test 5')
     class default
-      call write_fail ('test_get_any failed test 6')
+      call write_fail('test_get_any failed test 6')
     end select
 
-    call p%get_any ('d', vector, default=['foo','bar'])
+    call p%get_any('d', vector, default=['foo','bar'])
     select type (vector)
     type is (character(*))
-      if (any(vector /= ['foo','bar'])) call write_fail ('test_get_any failed test 7')
+      if (any(vector /= ['foo','bar'])) call write_fail('test_get_any failed test 7')
     class default
-      call write_fail ('test_get_any failed test 8')
+      call write_fail('test_get_any failed test 8')
     end select
 
-    call p%get_any ('dm', matrix, default=reshape(['foo','bar'],shape=[1,2]))
+    call p%get_any('dm', matrix, default=reshape(['foo','bar'],shape=[1,2]))
     select type (matrix)
     type is (character(*))
-      if (any(matrix(1,:) /= ['foo','bar'])) call write_fail ('test_get_any failed test 7m')
+      if (any(matrix(1,:) /= ['foo','bar'])) call write_fail('test_get_any failed test 7m')
     class default
-      call write_fail ('test_get_any failed test 8m')
+      call write_fail('test_get_any failed test 8m')
     end select
 
-    !call p%set ('e', [point(1.0,2.0)])
-    call p%get_any ('e', vector, default=[point(1.0,2.0)])
+    !call p%set('e', [point(1.0,2.0)])
+    call p%get_any('e', vector, default=[point(1.0,2.0)])
     select type (vector)
     type is (point)
-      if (vector(1)%x /= 1.0 .or. vector(1)%y /= 2.0) call write_fail ('test_get_any failed test 9')
+      if (vector(1)%x /= 1.0 .or. vector(1)%y /= 2.0) call write_fail('test_get_any failed test 9')
     class default
-      call write_fail ('test_get_any failed test 10')
+      call write_fail('test_get_any failed test 10')
     end select
 
-    call p%get_any ('em', matrix, default=reshape([point(1.0,2.0)],shape=[1,1]))
+    call p%get_any('em', matrix, default=reshape([point(1.0,2.0)],shape=[1,1]))
     select type (matrix)
     type is (point)
-      if (matrix(1,1)%x /= 1.0 .or. matrix(1,1)%y /= 2.0) call write_fail ('test_get_any failed test 9m')
+      if (matrix(1,1)%x /= 1.0 .or. matrix(1,1)%y /= 2.0) call write_fail('test_get_any failed test 9m')
     class default
-      call write_fail ('test_get_any failed test 10m')
+      call write_fail('test_get_any failed test 10m')
     end select
 
     !! Get them again with different default values that should be ignored.
 
-    call p%get_any ('a', scalar, default=0)
+    call p%get_any('a', scalar, default=0)
     select type (scalar)
     type is (integer)
-      if (scalar /= 1) call write_fail ('test_get_any failed test 11')
+      if (scalar /= 1) call write_fail('test_get_any failed test 11')
     class default
-      call write_fail ('test_get_any failed test 12')
+      call write_fail('test_get_any failed test 12')
     end select
 
-    call p%get_any ('b', vector, default=[0.0])
+    call p%get_any('b', vector, default=[0.0])
     select type (vector)
     type is (real)
-      if (any(vector /= [1,2])) call write_fail ('test_get_any failed test 13')
+      if (any(vector /= [1,2])) call write_fail('test_get_any failed test 13')
     class default
-      call write_fail ('test_get_any failed test 14')
+      call write_fail('test_get_any failed test 14')
     end select
 
-    call p%get_any ('bm', matrix, default=reshape([0.0],shape=[1,1]))
+    call p%get_any('bm', matrix, default=reshape([0.0],shape=[1,1]))
     select type (matrix)
     type is (real)
-      if (any(matrix(:,1) /= [1,2])) call write_fail ('test_get_any failed test 13m')
+      if (any(matrix(:,1) /= [1,2])) call write_fail('test_get_any failed test 13m')
     class default
-      call write_fail ('test_get_any failed test 14m')
+      call write_fail('test_get_any failed test 14m')
     end select
 
-    call p%get_any ('c', scalar, default="fubar")
+    call p%get_any('c', scalar, default="fubar")
     select type (scalar)
     type is (point)
-      if (scalar%x /= 1 .or. scalar%y /= 2) call write_fail ('test_get_any failed test 15')
+      if (scalar%x /= 1 .or. scalar%y /= 2) call write_fail('test_get_any failed test 15')
     class default
-      call write_fail ('test_get_any failed test 16')
+      call write_fail('test_get_any failed test 16')
     end select
 
-    call p%get_any ('d', vector, default=[point(1.0,2.0)])
+    call p%get_any('d', vector, default=[point(1.0,2.0)])
     select type (vector)
     type is (character(*))
-      if (any(vector /= ['foo','bar'])) call write_fail ('test_get_any failed test 17')
+      if (any(vector /= ['foo','bar'])) call write_fail('test_get_any failed test 17')
     class default
-      call write_fail ('test_get_any failed test 18')
+      call write_fail('test_get_any failed test 18')
     end select
 
-    call p%get_any ('dm', matrix, default=reshape([point(1.0,2.0)],shape=[1,1]))
+    call p%get_any('dm', matrix, default=reshape([point(1.0,2.0)],shape=[1,1]))
     select type (matrix)
     type is (character(*))
-      if (any(matrix(1,:) /= ['foo','bar'])) call write_fail ('test_get_any failed test 17m')
+      if (any(matrix(1,:) /= ['foo','bar'])) call write_fail('test_get_any failed test 17m')
     class default
-      call write_fail ('test_get_any failed test 18m')
+      call write_fail('test_get_any failed test 18m')
     end select
 
-    call p%get_any ('e', vector, default=[13])
+    call p%get_any('e', vector, default=[13])
     select type (vector)
     type is (point)
-      if (vector(1)%x /= 1.0 .or. vector(1)%y /= 2.0) call write_fail ('test_get_any failed test 19')
+      if (vector(1)%x /= 1.0 .or. vector(1)%y /= 2.0) call write_fail('test_get_any failed test 19')
     class default
-      call write_fail ('test_get_any failed test 20')
+      call write_fail('test_get_any failed test 20')
     end select
 
-    call p%get_any ('em', matrix, default=reshape([13],shape=[1,1]))
+    call p%get_any('em', matrix, default=reshape([13],shape=[1,1]))
     select type (matrix)
     type is (point)
-      if (matrix(1,1)%x /= 1.0 .or. matrix(1,1)%y /= 2.0) call write_fail ('test_get_any failed test 19m')
+      if (matrix(1,1)%x /= 1.0 .or. matrix(1,1)%y /= 2.0) call write_fail('test_get_any failed test 19m')
     class default
-      call write_fail ('test_get_any failed test 20m')
+      call write_fail('test_get_any failed test 20m')
     end select
 
   end subroutine
@@ -453,70 +454,70 @@ contains
     character(:), allocatable :: errmsg
     class(*), allocatable :: scalar, vector(:), matrix(:,:)
 
-    call p%set ('foo', 13)
+    call p%set('foo', 13)
 
     !! Overwrite with different rank; should fail
-    call p%set ('foo', [1], stat=stat, errmsg=errmsg)
-    if (stat == 0) call write_fail ('test_overwrite failed test 1')
+    call p%set('foo', [1], stat=stat, errmsg=errmsg)
+    if (stat == 0) call write_fail('test_overwrite failed test 1')
 
     !! Overwrite with different values/types.
-    call p%set ('foo', 11.0)
-    call p%get ('foo', r)
-    if (r /= 11.0) call write_fail ('test_overwrite failed test 2')
-    call p%set ('foo', 'blah')
-    call p%get ('foo', c)
-    if (c /= 'blah') call write_fail ('test_overwrite failed test 3')
-    call p%set ('foo', point(1.0, 2.0))
-    call p%get_any ('foo', scalar)
+    call p%set('foo', 11.0)
+    call p%get('foo', r)
+    if (r /= 11.0) call write_fail('test_overwrite failed test 2')
+    call p%set('foo', 'blah')
+    call p%get('foo', c)
+    if (c /= 'blah') call write_fail('test_overwrite failed test 3')
+    call p%set('foo', point(1.0, 2.0))
+    call p%get_any('foo', scalar)
     select type (scalar)
     type is (point)
-      if (scalar%x /= 1 .or. scalar%y /= 2) call write_fail ('test_overwrite failed test 4')
+      if (scalar%x /= 1 .or. scalar%y /= 2) call write_fail('test_overwrite failed test 4')
     class default
-      call write_fail ('test_overwrite failed test 5')
+      call write_fail('test_overwrite failed test 5')
     end select
 
-    call p%set ('bar', [13])
+    call p%set('bar', [13])
 
     !! Overwrite with different rank; should fail
-    call p%set ('bar', 1, stat=stat, errmsg=errmsg)
-    if (stat == 0) call write_fail ('test_overwrite failed test 6')
+    call p%set('bar', 1, stat=stat, errmsg=errmsg)
+    if (stat == 0) call write_fail('test_overwrite failed test 6')
 
     !! Overwrite with different values/types.
-    call p%set ('bar', [11.0])
-    call p%get ('bar', rarray)
-    if (any(rarray /= [11.0])) call write_fail ('test_overwrite failed test 7')
-    call p%set ('bar', ['blah','blah'])
-    call p%get ('bar', carray)
-    if (any(carray /= ['blah','blah'])) call write_fail ('test_overwrite failed test 8')
-    call p%set ('bar', [point(1.0, 2.0)])
-    call p%get_any ('bar', vector)
+    call p%set('bar', [11.0])
+    call p%get('bar', rarray)
+    if (any(rarray /= [11.0])) call write_fail('test_overwrite failed test 7')
+    call p%set('bar', ['blah','blah'])
+    call p%get('bar', carray)
+    if (any(carray /= ['blah','blah'])) call write_fail('test_overwrite failed test 8')
+    call p%set('bar', [point(1.0, 2.0)])
+    call p%get_any('bar', vector)
     select type (vector)
     type is (point)
-      if (vector(1)%x /= 1 .or. vector(1)%y /= 2) call write_fail ('test_overwrite failed test 9')
+      if (vector(1)%x /= 1 .or. vector(1)%y /= 2) call write_fail('test_overwrite failed test 9')
     class default
-      call write_fail ('test_overwrite failed test 10')
+      call write_fail('test_overwrite failed test 10')
     end select
 
-    call p%set ('biz', reshape([13],shape=[1,1]))
+    call p%set('biz', reshape([13],shape=[1,1]))
 
     !! Overwrite with different rank; should fail
-    call p%set ('biz', [1], stat=stat, errmsg=errmsg)
-    if (stat == 0) call write_fail ('test_overwrite failed test 11')
+    call p%set('biz', [1], stat=stat, errmsg=errmsg)
+    if (stat == 0) call write_fail('test_overwrite failed test 11')
 
     !! Overwrite with different values/types.
-    call p%set ('biz', reshape([11.0],shape=[1,1]))
-    call p%get ('biz', rmatrix)
-    if (rmatrix(1,1) /= 11.0) call write_fail ('test_overwrite failed test 12')
-    call p%set ('biz', reshape(['blah','blah'],shape=[2,1]))
-    call p%get ('biz', cmatrix)
-    if (any(cmatrix(:,1) /= ['blah','blah'])) call write_fail ('test_overwrite failed test 13')
-    call p%set ('biz', reshape([point(1.0, 2.0)],shape=[1,1]))
-    call p%get_any ('biz', matrix)
+    call p%set('biz', reshape([11.0],shape=[1,1]))
+    call p%get('biz', rmatrix)
+    if (rmatrix(1,1) /= 11.0) call write_fail('test_overwrite failed test 12')
+    call p%set('biz', reshape(['blah','blah'],shape=[2,1]))
+    call p%get('biz', cmatrix)
+    if (any(cmatrix(:,1) /= ['blah','blah'])) call write_fail('test_overwrite failed test 13')
+    call p%set('biz', reshape([point(1.0, 2.0)],shape=[1,1]))
+    call p%get_any('biz', matrix)
     select type (matrix)
     type is (point)
-      if (matrix(1,1)%x /= 1 .or. matrix(1,1)%y /= 2) call write_fail ('test_overwrite failed test 14')
+      if (matrix(1,1)%x /= 1 .or. matrix(1,1)%y /= 2) call write_fail('test_overwrite failed test 14')
     class default
-      call write_fail ('test_overwrite failed test 15')
+      call write_fail('test_overwrite failed test 15')
     end select
 
   end subroutine
@@ -534,28 +535,28 @@ contains
 
     !! Create a sublist parameter and add a parameter to the sublist.
     sla => p%sublist('A')
-    if (.not.associated(sla)) call write_fail ('test_sublists failed test 1')
-    if (p%count() /= 1) call write_fail ('test_sublists failed test 2')
-    call sla%set ('foo', 42)
+    if (.not.associated(sla)) call write_fail('test_sublists failed test 1')
+    if (p%count() /= 1) call write_fail('test_sublists failed test 2')
+    call sla%set('foo', 42)
 
     !! 'A' should be recognized as both a parameter and a sublist.
-    if (.not.p%is_sublist('A')) call write_fail ('test_sublists failed test 3')
-    if (.not.p%is_parameter('A')) call write_fail ('test_sublists failed test 4')
+    if (.not.p%is_sublist('A')) call write_fail('test_sublists failed test 3')
+    if (.not.p%is_parameter('A')) call write_fail('test_sublists failed test 4')
 
     !! Try to use sublist with an existing non-sublist parameter; should fail.
     slb => sla%sublist('foo', stat, errmsg=errmsg)
-    if (stat == 0) call write_fail ('test_sublists failed test 5')
+    if (stat == 0) call write_fail('test_sublists failed test 5')
 
     !! Create a sublist parameter of the sublist.
     slb => sla%sublist('B')
-    if (.not.associated(slb)) call write_fail ('test_sublists failed test 6')
-    if (sla%count() /= 2) call write_fail ('test_sublists failed test 7')
-    if (.not.sla%is_sublist('B')) call write_fail ('test_sublists failed test 8')
-    if (.not.sla%is_parameter('B')) call write_fail ('test_sublists failed test 9')
+    if (.not.associated(slb)) call write_fail('test_sublists failed test 6')
+    if (sla%count() /= 2) call write_fail('test_sublists failed test 7')
+    if (.not.sla%is_sublist('B')) call write_fail('test_sublists failed test 8')
+    if (.not.sla%is_parameter('B')) call write_fail('test_sublists failed test 9')
 
     !! Access the 'A' sublist again and verify it is the same.
     sl => p%sublist('A')
-    if (.not.associated(sl,sla)) call write_fail ('test_sublists failed test 5')
+    if (.not.associated(sl,sla)) call write_fail('test_sublists failed test 5')
 
   end subroutine
 
@@ -571,134 +572,217 @@ contains
 
     integer :: j
     type point; real x, y; end type
-    class(parameter_entry), pointer :: pentry
+    class(parameter_value), pointer :: pval
     class(*), pointer :: scalar, scalar1, vector(:), vector1(:), matrix(:,:), matrix1(:,:)
 
     !! Populate a parameter list.
-    call p%set ('integer', 1)
-    call p%set ('real', [2.0])
-    call p%set ('matrix', reshape([1,2,3,4,5,6],shape=[2,3]))
+    call p%set('integer', 1)
+    call p%set('real', [2.0])
+    call p%set('matrix', reshape([1,2,3,4,5,6],shape=[2,3]))
     sl => p%sublist ('sublist')
-    call p%set ('string', 'hello')
-    call p%set ('point', point(1.0,2.0))
+    call p%set('string', 'hello')
+    call p%set('point', point(1.0,2.0))
 
     !! Walk the list.
     piter = parameter_list_iterator(p)
-    if (piter%count() /= 6) call write_fail ('test_iterator failed test 1')
+    if (piter%count() /= 6) call write_fail('test_iterator failed test 1')
     do j = piter%count(), 1, -1
-      if (piter%at_end()) call write_fail ('test_iterator failed test 2')
-      if (piter%count() /= j) call write_fail ('test_iterator failed test 3')
+      if (piter%at_end()) call write_fail('test_iterator failed test 2')
+      if (piter%count() /= j) call write_fail('test_iterator failed test 3')
       call piter%next()
     end do
-    if (piter%count() /= 0) call write_fail ('test_iterator failed test 4')
-    if (.not.piter%at_end()) call write_fail ('test_iterator failed test 5')
+    if (piter%count() /= 0) call write_fail('test_iterator failed test 4')
+    if (.not.piter%at_end()) call write_fail('test_iterator failed test 5')
 
     !! Walk the list again and check values this time.
     piter = parameter_list_iterator(p)
     do while (.not.piter%at_end())
-      pentry => piter%entry()
-      select type (pentry)
+      pval => piter%value()
+      select type (pval)
       type is (any_scalar)
-        if (.not.piter%is_scalar()) call write_fail ('test_iterator failed test 6')
-        if (piter%is_list()) call write_fail ('test_iterator failed test 7')
-        if (piter%is_vector()) call write_fail ('test_iterator failed test 8')
-        if (piter%is_matrix()) call write_fail ('test_iterator failed test m1')
+        if (.not.piter%is_scalar()) call write_fail('test_iterator failed test 6')
+        if (piter%is_sublist()) call write_fail('test_iterator failed test 7')
+        if (piter%is_vector()) call write_fail('test_iterator failed test 8')
+        if (piter%is_matrix()) call write_fail('test_iterator failed test m1')
         scalar1 => piter%scalar()
-        scalar => pentry%value_ptr()
-        if (.not.associated(scalar,scalar1)) call write_fail ('test_iterator failed test A')
+        scalar => pval%value_ptr()
+        if (.not.associated(scalar,scalar1)) call write_fail('test_iterator failed test A')
         select type (scalar)
         type is (integer)
-          if (piter%name() /= 'integer') call write_fail ('test_iterator failed test 9')
-          if (scalar /= 1) call write_fail ('test_iterator failed test 10')
+          if (piter%name() /= 'integer') call write_fail('test_iterator failed test 9')
+          if (scalar /= 1) call write_fail('test_iterator failed test 10')
         type is (character(*))
-          if (piter%name() /= 'string') call write_fail ('test_iterator failed test 11')
-          if (scalar /= 'hello') call write_fail ('test_iterator failed test 12')
+          if (piter%name() /= 'string') call write_fail('test_iterator failed test 11')
+          if (scalar /= 'hello') call write_fail('test_iterator failed test 12')
         type is (point)
-          if (piter%name() /= 'point') call write_fail ('test_iterator failed test 13')
-          if (scalar%x /= 1 .or. scalar%y /= 2) call write_fail ('test_iterator failed test 14')
+          if (piter%name() /= 'point') call write_fail('test_iterator failed test 13')
+          if (scalar%x /= 1 .or. scalar%y /= 2) call write_fail('test_iterator failed test 14')
         class default
-          call write_fail ('test_iterator failed test 15')
+          call write_fail('test_iterator failed test 15')
         end select
       type is (any_vector)
-        if (.not.piter%is_vector()) call write_fail ('test_iterator failed test 16')
-        if (piter%is_list()) call write_fail ('test_iterator failed test 17')
-        if (piter%is_scalar()) call write_fail ('test_iterator failed test 18')
-        if (piter%is_matrix()) call write_fail ('test_iterator failed test m2')
-        vector => pentry%value_ptr()
+        if (.not.piter%is_vector()) call write_fail('test_iterator failed test 16')
+        if (piter%is_sublist()) call write_fail('test_iterator failed test 17')
+        if (piter%is_scalar()) call write_fail('test_iterator failed test 18')
+        if (piter%is_matrix()) call write_fail('test_iterator failed test m2')
+        vector => pval%value_ptr()
         vector1 => piter%vector()
-        if (.not.associated(vector,vector1)) call write_fail ('test_iterator failed test B1')
+        if (.not.associated(vector,vector1)) call write_fail('test_iterator failed test B1')
         select type (vector)
         type is (real)
-          if (piter%name() /= 'real') call write_fail ('test_iterator failed test 19')
-          if (any(vector /= [2.0])) call write_fail ('test_iterator failed test 20')
+          if (piter%name() /= 'real') call write_fail('test_iterator failed test 19')
+          if (any(vector /= [2.0])) call write_fail('test_iterator failed test 20')
           select type (vector1)
           type is (real)
-            if (any(vector1 /= [2.0])) call write_fail ('test_iterator failed test B2')
-            if (any(vector1 /= vector)) call write_fail ('test_iterator failed test B3')
+            if (any(vector1 /= [2.0])) call write_fail('test_iterator failed test B2')
+            if (any(vector1 /= vector)) call write_fail('test_iterator failed test B3')
           class default
-            call write_fail ('test_iterator failed test B4')
+            call write_fail('test_iterator failed test B4')
           end select
         class default
-          call write_fail ('test_iterator failed test 21')
+          call write_fail('test_iterator failed test 21')
         end select
       type is (any_matrix)
-        if (.not.piter%is_matrix()) call write_fail ('test_iterator failed test 16m')
-        if (piter%is_list()) call write_fail ('test_iterator failed test 17m')
-        if (piter%is_scalar()) call write_fail ('test_iterator failed test 18m')
-        if (piter%is_vector()) call write_fail ('test_iterator failed test m3')
-        matrix => pentry%value_ptr()
+        if (.not.piter%is_matrix()) call write_fail('test_iterator failed test 16m')
+        if (piter%is_sublist()) call write_fail('test_iterator failed test 17m')
+        if (piter%is_scalar()) call write_fail('test_iterator failed test 18m')
+        if (piter%is_vector()) call write_fail('test_iterator failed test m3')
+        matrix => pval%value_ptr()
         matrix1 => piter%matrix()
-        if (.not.associated(matrix,matrix1)) call write_fail ('test_iterator failed test B1m')
+        if (.not.associated(matrix,matrix1)) call write_fail('test_iterator failed test B1m')
         select type (matrix)
         type is (integer)
-          if (piter%name() /= 'matrix') call write_fail ('test_iterator failed test 19m')
-          if (any(matrix /= reshape([1,2,3,4,5,6],shape=[2,3]))) call write_fail ('test_iterator failed test 20m')
+          if (piter%name() /= 'matrix') call write_fail('test_iterator failed test 19m')
+          if (any(matrix /= reshape([1,2,3,4,5,6],shape=[2,3]))) call write_fail('test_iterator failed test 20m')
           select type (matrix1)
           type is (integer)
-            if (any(matrix1 /= reshape([1,2,3,4,5,6],shape=[2,3]))) call write_fail ('test_iterator failed test B2m')
-            if (any(matrix1 /= matrix)) call write_fail ('test_iterator failed test B3m')
+            if (any(matrix1 /= reshape([1,2,3,4,5,6],shape=[2,3]))) call write_fail('test_iterator failed test B2m')
+            if (any(matrix1 /= matrix)) call write_fail('test_iterator failed test B3m')
           class default
-            call write_fail ('test_iterator failed test B4m')
+            call write_fail('test_iterator failed test B4m')
           end select
         class default
-          call write_fail ('test_iterator failed test 21m')
+          call write_fail('test_iterator failed test 21m')
         end select
       type is (parameter_list)
-        if (.not.piter%is_list()) call write_fail ('test_iterator failed test 22')
-        if (piter%is_scalar()) call write_fail ('test_iterator failed test 23')
-        if (piter%is_vector()) call write_fail ('test_iterator failed test 24')
-        if (piter%is_matrix()) call write_fail ('test_iterator failed test m4')
+        if (.not.piter%is_sublist()) call write_fail('test_iterator failed test 22')
+        if (piter%is_scalar()) call write_fail('test_iterator failed test 23')
+        if (piter%is_vector()) call write_fail('test_iterator failed test 24')
+        if (piter%is_matrix()) call write_fail('test_iterator failed test m4')
         sl2 => piter%sublist()
-        if (.not. associated(sl,sl2)) call write_fail ('test_iterator failed test 25')
-        if (.not. associated(sl,pentry)) call write_fail ('test_iterator failed test 26')
+        if (.not. associated(sl,sl2)) call write_fail('test_iterator failed test 25')
+        if (.not. associated(sl,pval)) call write_fail('test_iterator failed test 26')
       class default
-        call write_fail ('test_iterator failed test 27')
+        call write_fail('test_iterator failed test 27')
       end select
       call piter%next
     end do
 
+    !! Add to the list for the remaining test.
+    call p%set('foo', 42)
+    sl => p%sublist('sublist2')
+    call p%set('bar', 42)
+
+    !! Walk the list, sublists only this time.
+    piter = parameter_list_iterator(p, sublists_only=.true.)
+    if (piter%count() /= 2) call write_fail('test_iterator failed test 28')
+    do j = piter%count(), 1, -1
+      if (piter%at_end()) call write_fail('test_iterator failed test 29')
+      if (piter%count() /= j) call write_fail('test_iterator failed test 30')
+      if (.not.piter%is_sublist()) call write_fail('test_iterator failed test 31')
+      call piter%next
+    end do
+    if (piter%count() /= 0) call write_fail('test_iterator failed test 32')
+    if (.not.piter%at_end()) call write_fail('test_iterator failed test 33')
+
   end subroutine
 
  !!
- !! Test parameter list name
+ !! Test parameter list path
  !!
 
-  subroutine test_name
+  subroutine test_path
     type(parameter_list) :: p
     type(parameter_list), pointer :: sl
-    if (p%name() /= '$') call write_fail ('test_name failed test 1')
+    if (p%path() /= '$') call write_fail('test_path failed test 1')
     sl => p%sublist('fiz')
-    if (sl%name() /= '$.fiz') call write_fail ('test_name failed test 2')
-    call p%set_name('foo')
-    if (p%name() /= 'foo') call write_fail ('test_name failed test 3')
+    if (sl%path() /= '$.fiz') call write_fail('test_path failed test 2')
+    call p%set_path('foo')
+    if (p%path() /= 'foo') call write_fail('test_path failed test 3')
     sl => p%sublist('bar')
     sl => sl%sublist('fubar')
-    if (sl%name() /= 'foo.bar.fubar') call write_fail ('test_name failed test 4')
-    call sl%set_name ('biz')
-    if (sl%name() /= 'biz') call write_fail ('test_name failed test 5')
+    if (sl%path() /= 'foo.bar.fubar') call write_fail('test_path failed test 4')
+    call sl%set_path('biz')
+    if (sl%path() /= 'biz') call write_fail('test_path failed test 5')
   end subroutine
 
-  subroutine write_fail (errmsg)
+
+  subroutine test_assignment
+
+    type(parameter_list) :: p, q
+    type(parameter_list), pointer :: plist
+    integer :: i
+    real :: r
+    character(:), allocatable :: s
+
+    !! Populate a parameter list.
+    call p%set('a', 1)
+    plist => p%sublist('x')
+    call plist%set('b', 2.0)
+    plist => plist%sublist('y')
+    call plist%set('c', 'foo')
+
+    q = p ! make a (deep) copy
+
+    !! Check that the original is unaltered by the copy (e.g. not deleted)
+    call p%get('a', i)
+    if (i /= 1) call write_fail('test_assignment failed test 1')
+    if (.not.p%is_sublist('x')) call write_fail('test_assignment failed test 2')
+    plist => p%sublist('x')
+    call plist%get('b', r)
+    if (r /= 2.0) call write_fail('test_assignment failed test 3')
+    if (.not.plist%is_sublist('y')) call write_fail('test_assignment failed test 4')
+    plist => plist%sublist('y')
+    call plist%get('c', s)
+    if (s /= 'foo') call write_fail('test_assignment failed test 5')
+
+    !! Modify the original
+    call p%set('a', -1)
+    plist => p%sublist('x')
+    call plist%set('b', -2.0)
+    plist => plist%sublist('y')
+    call plist%set('c', 'bar')
+
+    !! Test the values of the copy
+    call q%get('a', i)
+    if (i /= 1) call write_fail('test_assignment failed test 6')
+    if (.not.q%is_sublist('x')) call write_fail('test_assignment failed test 7')
+    plist => q%sublist('x')
+    call plist%get('b', r)
+    if (r /= 2.0) call write_fail('test_assignment failed test 8')
+    if (.not.plist%is_sublist('y')) call write_fail('test_assignment failed test 9')
+    plist => plist%sublist('y')
+    call plist%get('c', s)
+    if (s /= 'foo') call write_fail('test_assignment failed test 10')
+
+    q = p ! copy the original over a now non-empty parameter list
+
+    !! Test the new values
+    call q%get('a', i)
+    if (i /= -1) call write_fail('test_assignment failed test 11')
+    if (.not.q%is_sublist('x')) call write_fail('test_assignment failed test 12')
+    plist => q%sublist('x')
+    call plist%get('b', r)
+    if (r /= -2.0) call write_fail('test_assignment failed test 13')
+    if (.not.plist%is_sublist('y')) call write_fail('test_assignment failed test 14')
+    plist => plist%sublist('y')
+    call plist%get('c', s)
+    if (s /= 'bar') call write_fail('test_assignment failed test 15')
+
+  end subroutine
+
+
+  subroutine write_fail(errmsg)
     use,intrinsic :: iso_fortran_env, only: error_unit
     character(*), intent(in) :: errmsg
     stat = 1

@@ -3,25 +3,51 @@ Parameter Lists
 ===============
 A *parameter list* is a hierarchical data structure consisting of a collection
 of parameter name/value pairs. A value can be a scalar or array of arbitrary
-type, including a parameter list itself. Parameter lists are intended as a
-convenient way to pass information between different program units. The
-module ``parameter_list_type`` implements the data structure and basic methods
-for working with it, and the module ``parameter_list_json`` provides additional
+type, or a parameter list itself. Parameter lists are intended as a convenient
+way to pass information between different program units. The module
+``parameter_list_type`` implements the data structure and basic methods for
+working with it, and the module ``parameter_list_json`` provides additional
 procedures for parameter list input/output using JSON-format text.
+
+.. admonition:: New in v23.12
+
+   * The optional ``default`` argument of the ``get`` and ``get_any``
+     subroutines has been moved to the last position. Applications that
+     passed that argument without using its ``default=`` keyword will
+     need to be updated. This change allows applications that use the
+     optional ``stat`` and ``errmsg`` arguments without the default
+     argument to dispense using their keywords, making usage less verbose.
+   * The ``name`` and ``set_name`` procedures have been renamed ``path``
+     and ``set_path`` to more accurately reflect their meaning.
+   * Optional arguments ``real_format`` and ``compact`` have been added
+     to the ``parameter_list_to_json`` subroutine.
 
 Introduction
 ============
 A parameter list is a hierarchical data structure consisting of a collection
-of parameter name/value pairs. A value can be a scalar or array of arbitrary
-type and kind, including a parameter list itself, termed a *sublist* parameter.
-Parameter lists are meant for passing information between different program units.
-Long argument lists can be shortened by gathering some of the arguments into
-a parameter list and passing it instead. Sublists can be used for arguments
-intended to be passed to lower-level procedures, and so forth. While a
-parameter list can be manually populated through a sequence of calls, it is
-more easily defined from JSON input text. When used in this way, a parameter
-list provides a powerful and flexible means for distributing program input
-to the different components of a program. 
+of parameter name/value pairs. A value can be a scalar or rank-1 or 2 array
+of arbitrary type and kind, or a parameter list itself, which is called a
+*sublist* parameter. Parameter lists are meant for passing information between
+different program units. Long argument lists can be shortened by gathering
+some of the arguments into a parameter list and passing it instead. Sublists
+can be used for arguments intended to be passed to lower-level procedures,
+and so forth. While a parameter list can be manually populated through a
+sequence of calls, it is more easily defined from JSON input text. When used
+in this way, a parameter list provides a powerful and flexible means for
+distributing program input to the different components of a program.
+
+Parameter lists are also extremely useful in object oriented programming.
+Consider an abstract base class that has multiple concrete implementations
+(extended types). Each has an initialization procedure, but with differing
+arguments specific to the implementation. Because of the differing argument
+lists, the initialization procedure cannot be a deferred procedure of the
+base class, so the different extended types must be exposed to application
+code in order to invoke the initialization procedure. The differing
+initialization arguments can instead be bundled into a parameter list
+argument, to yield a common interface for the initialization procedures,
+which can then be elevated to a base class procedure. Application code can
+then invoke it through a base class polymorphic variable without needing to
+know the specific dynamic type of the variable.
 
 Parameter lists are intended to pass lightweight data: scalars or (very)
 small arrays, typically of intrinsic types. Values of arbitrary derived
@@ -40,7 +66,7 @@ This implementation is inspired by, and modeled after, the
    that parameter list array values are Fortran arrays, whereas JSON allows
    jagged arrays with values of differing types. This makes array access
    natural and far simpler with parameter lists than it would be with JSON.
-   
+
 A simple example
 ----------------
 A simple example will illustrate some basic usage.
@@ -48,11 +74,11 @@ A simple example will illustrate some basic usage.
 .. code-block:: fortran
 
    use parameter_list_type
-   
+
    type(parameter_list) :: plist
-   real :: p
+   integer :: p
    character(:), allocatable :: f
-   
+
    !! Parameter lists come into existence well-defined and empty.
    !! Define some parameters; note the different types and ranks.
    call plist%set('page', 3)
@@ -60,21 +86,21 @@ A simple example will illustrate some basic usage.
    call plist%set('color', 'blue')
    call plist%set('boundingbox', [10,10,90,90])
    call plist%set('crop', .true.)
-   
+
    !! Replace an existing parameter value with a different value
    !! of different type, but same rank.
    call plist%set('size', 'default')
-   
+
    !! Retrieve a specific parameter value; its type must match P.
-   call plist%get('size', p)
-   
+   call plist%get('page', p)
+
    !! Retrieve a parameter that is not defined;
    !! it is created with the specified default value
    call plist%get('font', f, default='courier')
-   
+
    !! Create a sublist parameter named 'picture'
    sublist => plist%get('picture')
-   
+
    !! Define a parameter in the sublist
    call sublist%set('origin', [1.0, 2.0])
 
@@ -96,11 +122,11 @@ Then this code will populate a parameter list with the same values.
 
    use parameter_list_type
    use parameter_list_json
-   
+
    type(parameter_list), pointer :: plist
    character(:), allocatable :: errmsg
    integer :: unit
-   
+
    open(newunit=unit,file='input.json',action='read',access='stream')
    call parameter_list_from_json_stream(unit, plist, errmsg)
 
@@ -143,8 +169,8 @@ program execution is terminated.
     If the parameter already exists, it must not be a sublist parameter and
     its existing value must have the same rank as ``value``, but not
     necessarily the same type; its value is overwritten with ``value``.
-    
-``get(name, value [,default] [,stat [,errmsg]])``
+
+``get(name, value [,stat [,errmsg]] [,default])``
     Retrieve the value of the parameter ``name``. A copy of the value is
     returned in ``value``, which may be a scalar, or rank-1 or rank-2 array
     of the following intrinsic types: ``integer(int32)``, ``integer(int64)``,
@@ -163,8 +189,8 @@ program execution is terminated.
     of ``value`` does not match the stored value of the named parameter. Use
     ``get_any`` when the type of the parameter value is not one of those
     handled by this method.
-  
-``get_any(name, value [,default] [,stat [,errmsg]])``
+
+``get_any(name, value [,stat [,errmsg]] [,default])``
     Retrieves the value of the parameter ``name``.  A copy of the value is
     returned in ``value``, which is an allocatable ``class(*)`` variable
     or rank-1 or rank-2 array.  This is a more general version of ``get``
@@ -179,12 +205,20 @@ program execution is terminated.
     of ``value`` does not match that of the stored value of the named
     parameter.
 
-``set_name(name)``
-    Set the name of the parameter list to ``name``.  A parameter list
-    created by ``sublist`` is automatically assigned a default name. It is
-    the name of the parent parameter list appended with "``->``" followed
-    by the sublist parameter name. Use this function to override the default
-    name.
+.. note::
+   Arrays returned by ``get`` and ``get_any`` will have the default index
+   lower bounds of 1 and not the lower bounds of the array passed to `set`.
+   This is an unfortunate consequence of the semantics of array passing in
+   Fortran.
+
+``set_path(path)``
+    Sets the path of the parameter list to ``path``. This subroutine is not
+    normally needed, because the path of a parameter list has an automatically
+    defined value which follows the `JSONPath <https://goessner.net/articles/JsonPath/>`_ specification: a local
+    ``parameter_list`` variable has a default path of "``$``" (the root), and
+    the default path of a parameter list created by ``sublist`` is the
+    concatenation of the path of the parent parameter list, the character
+    "``.``", and the sublist parameter name.
 
 Type bound functions
 --------------------
@@ -194,47 +228,43 @@ Type bound functions
     sublist.  The parameter is created with an empty sublist value if it
     does not already exist. It is an error if the parameter exists but is
     not a sublist.
-  
+
 ``is_parameter(name)``
     returns true if there is a parameter with the given ``name``;
     otherwise false.
-  
+
 ``is_sublist(name)``
     Returns true if there is a sublist parameter with the given ``name``;
     otherwise false.
-  
+
 ``is_scalar(name)``
     Returns true if there is a scalar-valued parameter with the given ``name``;
     otherwise false.
-  
+
 ``is_vector(name)``
   Returns true if there is a vector-valued parameter with the given ``name``;
   otherwise false.
-  
+
 ``is_matrix(name)``
   Returns true if there is a matrix-valued parameter with the given ``name``;
   otherwise false.
-  
+
 ``count()``
   Returns the number of parameters stored in the parameter list.
-  
-``name()``
-  Returns the name of the parameter list.  If no name was assigned to the
-  parameter list, the name '``$``' is returned.  Be careful not to confuse
-  the name of a sublist parameter with the name of the parameter list that
-  is its value; they are not the same thing.
+
+``path()``
+  Returns the path of the parameter list; see ``set_path``.
 
 .. caution::
   :name: caution
 
   Derived type values with pointer components, direct or indirect, should be
-  used advisedly. The :ref:`map_any <map_any-module>` derived type is used to
-  store the parameter name/value pairs, and the values are sourced-allocation
-  copies of the values passed to the ``set`` method. This makes a *shallow*
-  copy of any pointer component. The original pointer and its copy will have
-  the same target; no copy of the target is made. This also applies to
-  parameter list assignment, where values in the lhs are sourced-allocation
-  copies of the rhs.
+  used advisedly. The values are sourced-allocation copies of the values passed
+  to the ``set`` method. This makes a *shallow* copy of any direct or indirect
+  pointer component. The original pointer and its copy will have the same
+  target; no copy of the target is made. This also applies to parameter list
+  assignment, whose values in the lhs are sourced-allocation copies of those
+  in the rhs.
 
 
 The parameter_list_iterator derived type
@@ -260,7 +290,7 @@ Constructor
   list``plist``, or the-end if the parameter list is empty. If the optional
   logical argument ``sublists_only`` is present with value true, parameters
   other than sublists are skipped by the iterator.
-  
+
 Constructor expressions are used to initialize iterator objects:
 
 .. code-block:: fortran
@@ -275,7 +305,7 @@ Type bound subroutine
 ``next()``
   Advances the iterator to the next parameter in the list, or to the-end if
   there are no more parameters remaining to be visited. This call has no
-  effect if the iterator is already positioned at the-end. 
+  effect if the iterator is already positioned at the-end.
 
 Type bound functions
 --------------------
@@ -286,23 +316,23 @@ Type bound functions
 ``name()``
   Returns the name of the current parameter. The iterator must not be
   positioned at the-end.
-  
-``is_list()``
+
+``is_sublist()``
   Returns true if the current parameter value is a sublist; otherwise false.
   The iterator must not be positioned at the-end.
-  
+
 ``is_scalar()``
   Returns true if the current parameter has a scalar value; otherwise
   false. The iterator must not be positioned at the-end.
-  
+
 ``is_vector()``
   Returns true if the current parameter has a rank-1 array value; otherwise
   false. The iterator must not be positioned at the-end.
-  
+
 ``is_matrix()``
   Returns true if the current parameter has a rank-2 array value; otherwise
   false. The iterator must not be positioned at the-end.
-  
+
 ``sublist()``
   Returns a ``parameter_list`` pointer associated with the current parameter
   value if it is a sublist; otherwise it returns a ``null()`` pointer.
@@ -323,7 +353,7 @@ Type bound functions
   Returns the number of remaining parameters, including the current one.
 
 Parameter list values are stored internally in objects of class
-``parameter_entry``. There are four different concrete extensions of this
+``parameter_value``. There are four different concrete extensions of this
 abstract type: ``any_scalar``, which stores a scalar value of any intrinsic
 or derived type; ``any_vector``, which stores a rank-1 array value of any
 intrinsic or derived type; ``any_matrix``, which stores a rank-2 array value
@@ -332,13 +362,13 @@ internal implementation detail can mostly be ignored; all of the procedures
 described so far hide this detail, for example. The following procedure is
 the exception.
 
-``entry()``
-  Returns a ``class(parameter_entry)`` pointer to an object that holds
+``value()``
+  Returns a ``class(parameter_value)`` pointer to an object that holds
   the value of the current parameter. The iterator must not be positioned
   at the-end. A select-type construct with stanzas for each of the four
   possible dynamic types is required to access the value. It is generally
   easier to use the preceding functions instead. For example, with sublists
-  it is easier to use the ``is_list`` method to identify whether the current
+  it is easier to use the ``is_sublist`` method to identify whether the current
   parameter is a sublist, and if so use the ``sublist`` method to acess the
   sublist.
 
@@ -422,8 +452,20 @@ text representation of a parameter list object.
   Does exactly the same thing as ``parameters_from_json_stream`` except that
   the JSON text is read from the character variable ``string``.
 
-``call parameter_list_to_json(plist, unit)``
+``call parameter_list_to_json(plist, unit [,real_format] [,compact])``
   Writes the JSON text representation of the parameter list ``plist``
   to ``unit``, which must be connected for formatted write access.
   The parameter list values other than sublists must be of intrinsic primitive
   types that are representable in JSON: logical, integer, real, character.
+  The edit descriptor to use for writing real values can be specified by
+  ``real_format``; the default is ``"es12.5"``. The output is "pretty" by
+  default, using white space, multiple lines, and indentation to express the
+  hierarchical structure of the parameter list. However, if ``compact`` is
+  specified with value true, the output is a single line without any white
+  space (mostly). This may be more useful for piping into downstream utilities.
+
+  .. note::
+     JSON is very strict about the syntax of a real number. In particular, the
+     decimal point must be preceded by and followed by a digit. For some real
+     edit descriptors (depending on compiler) the output will not be strictly
+     valid JSON. For example, outputting "1." or ".1" instead of "1.0" or "0.1".

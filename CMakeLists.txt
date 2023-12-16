@@ -25,7 +25,7 @@ endif()
 
 # Set missing CMake defaults for the NAG Fortran compiler
 if(CMAKE_Fortran_COMPILER_ID STREQUAL NAG)
-  set(CMAKE_Fortran_FLAGS_DEBUG "-u -O0 -g -C -nan")
+  set(CMAKE_Fortran_FLAGS_DEBUG "-u -O0 -gline -C -nan")
   set(CMAKE_Fortran_FLAGS_RELEASE "-u -O3")
   set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "${CMAKE_Fortran_FLAGS_RELEASE} -g")
 endif()
@@ -40,10 +40,16 @@ add_compile_definitions(
   $<$<COMPILE_LANG_AND_ID:Fortran,Intel>:INTEL_BUG20231123>
   $<$<COMPILE_LANG_AND_ID:Fortran,IntelLLVM>:INTEL_BUG20231122>
   $<$<COMPILE_LANG_AND_ID:Fortran,IntelLLVM>:INTEL_BUG20231123>
+  $<$<COMPILE_LANG_AND_ID:Fortran,Intel,IntelLLVM>:INTEL_BUG20231205>
+  $<$<COMPILE_LANG_AND_ID:Fortran,Intel,IntelLLVM>:INTEL_BUG20231210>
   $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:GNU_PR93762>
+  $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:GNU_PR112964>
+  $<$<COMPILE_LANG_AND_ID:Fortran,NAG>:NAG_BUG20231204>
+  $<$<COMPILE_LANG_AND_ID:Fortran,NAG>:NAG_BUG20231206>
 )
 
 # Required compiler options
+add_compile_options($<$<COMPILE_LANG_AND_ID:Fortran,NAG>:-f2018>)
 add_compile_options($<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-ffree-line-length-none>)
 add_compile_options("$<$<COMPILE_LANG_AND_ID:Fortran,Intel,IntelLLVM>:-standard-semantics>"
   "$<$<AND:$<NOT:$<BOOL:${ENABLE_STD_MOD_PROC_NAME}>>,$<COMPILE_LANG_AND_ID:Fortran,Intel,IntelLLVM>>:SHELL:-assume nostd_mod_proc_name>")
