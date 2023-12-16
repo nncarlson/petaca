@@ -9,7 +9,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
-!! Copyright (c) 2011, 2013, 2014 Neil N. Carlson
+!! Copyright (c) 2011, 2013, 2014, 2023 Neil N. Carlson
 !!
 !! Permission is hereby granted, free of charge, to any person obtaining a
 !! copy of this software and associated documentation files (the "Software"),
@@ -201,30 +201,30 @@ module parameter_list_json
 
 contains
 
-  subroutine parameter_list_from_json_stream_default (unit, plist, errmsg)
+  subroutine parameter_list_from_json_stream_default(unit, plist, errmsg)
     integer, intent(in) :: unit
     type(parameter_list), pointer, intent(out) :: plist
     character(:), allocatable :: errmsg
     integer :: stat
     allocate(plist)
-    call parameters_from_json_stream (unit, plist, stat, errmsg)
+    call parameters_from_json_stream(unit, plist, stat, errmsg)
     if (stat /= 0) deallocate(plist)
-  end subroutine parameter_list_from_json_stream_default
+  end subroutine
 
-  subroutine parameter_list_from_json_stream_name (unit, name, plist, errmsg)
+  subroutine parameter_list_from_json_stream_name(unit, name, plist, errmsg)
     integer, intent(in) :: unit
     character(*), intent(in) :: name
     type(parameter_list), pointer, intent(out) :: plist
     character(:), allocatable :: errmsg
     integer :: stat
     allocate(plist)
-    call plist%set_name (name)
-    call parameters_from_json_stream (unit, plist, stat, errmsg)
+    call plist%set_path (name)
+    call parameters_from_json_stream(unit, plist, stat, errmsg)
     if (stat /= 0) deallocate(plist)
-  end subroutine parameter_list_from_json_stream_name
+  end subroutine
 
 
-  subroutine parameters_from_json_stream (unit, plist, stat, errmsg)
+  subroutine parameters_from_json_stream(unit, plist, stat, errmsg)
 
     use,intrinsic :: iso_fortran_env, only: error_unit
 
@@ -295,7 +295,7 @@ contains
     allocate(plist)
     call parameters_from_json_string(string, plist, stat, errmsg)
     if (stat /= 0) deallocate(plist)
-  end subroutine parameter_list_from_json_string
+  end subroutine
 
 
   subroutine parameters_from_json_string(string, plist, stat, errmsg)
@@ -337,18 +337,16 @@ contains
   end subroutine parameters_from_json_string
 
 
-  subroutine init (this, plist)
+  subroutine init(this, plist)
     class(plist_builder), intent(out) :: this
     type(parameter_list), intent(in), target :: plist
     this%state = STATE_INIT
-    call this%pstack%push (plist)
-  end subroutine init
+    call this%pstack%push(plist)
+  end subroutine
 
- !!
- !! THE CALLBACK FUNCTIONS
- !!
+ !!!! THE CALLBACK FUNCTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  integer function start_map (this) result (status)
+  integer function start_map(this) result(status)
     class(plist_builder) :: this
     type(parameter_list), pointer :: plist
     select case (this%state)
@@ -358,16 +356,16 @@ contains
     case (STATE_PVAL)
       plist => this%pstack%peek()       ! get current parameter list context
       plist => plist%sublist(this%name) ! create the named sublist
-      call this%pstack%push (plist)     ! sublist becomes the new context
+      call this%pstack%push(plist)     ! sublist becomes the new context
       this%state = STATE_NAME           ! expecting a parameter name or map end
       status = FYAJL_CONTINUE_PARSING
     case default
-      call unexpected_event (this, this%errmsg)
+      call unexpected_event(this, this%errmsg)
       status = FYAJL_TERMINATE_PARSING
     end select
-  end function start_map
+  end function
 
-  integer function end_map (this) result (status)
+  integer function end_map(this) result(status)
     class(plist_builder) :: this
     type(parameter_list), pointer :: plist
     select case (this%state)
@@ -380,12 +378,12 @@ contains
       end if
       status = FYAJL_CONTINUE_PARSING
     case default
-      call unexpected_event (this, this%errmsg)
+      call unexpected_event(this, this%errmsg)
       status = FYAJL_TERMINATE_PARSING
     end select
-  end function end_map
+  end function
 
-  integer function map_key (this, value) result (status)
+  integer function map_key(this, value) result(status)
     class(plist_builder) :: this
     character(*), intent(in) :: value
     type(parameter_list), pointer :: plist
@@ -401,18 +399,18 @@ contains
         status = FYAJL_CONTINUE_PARSING
       end if
     case default
-      call unexpected_event (this, this%errmsg)
+      call unexpected_event(this, this%errmsg)
       status = FYAJL_TERMINATE_PARSING
     end select
-  end function map_key
+  end function
 
-  integer function null_value (this) result (status)
+  integer function null_value(this) result(status)
     class(plist_builder) :: this
     this%errmsg = 'null values are not allowed'
     status = FYAJL_TERMINATE_PARSING
-  end function null_value
+  end function
 
-  integer function integer_value (this, value) result (status)
+  integer function integer_value(this, value) result(status)
     class(plist_builder) :: this
     integer(fyajl_integer_kind), intent(in) :: value
     type(parameter_list), pointer :: plist
@@ -420,20 +418,20 @@ contains
     select case (this%state)
     case (STATE_PVAL)
       plist => this%pstack%peek() ! get current parameter list context
-      call plist%set (this%name, int(value))  ! create the parameter
+      call plist%set(this%name, int(value))  ! create the parameter
       this%state = STATE_NAME ! expecting the next parameter name or map end
       status = FYAJL_CONTINUE_PARSING
     case (STATE_AVAL)
       ASSERT(allocated(this%array))
-      call this%array%push_scalar (int(value), status, this%errmsg)
+      call this%array%push_scalar(int(value), status, this%errmsg)
       this%state = STATE_AVAL ! expecting the next array value or array end
     case default
-      call unexpected_event (this, this%errmsg)
+      call unexpected_event(this, this%errmsg)
       status = FYAJL_TERMINATE_PARSING
     end select
-  end function integer_value
+  end function
 
-  integer function double_value (this, value) result (status)
+  integer function double_value(this, value) result(status)
     class(plist_builder) :: this
     real(fyajl_real_kind), intent(in) :: value
     type(parameter_list), pointer :: plist
@@ -441,79 +439,79 @@ contains
     select case (this%state)
     case (STATE_PVAL)
       plist => this%pstack%peek() ! get current parameter list context
-      call plist%set (this%name, real(value,kind(1.0d0))) ! create the parameter
+      call plist%set(this%name, real(value,kind(1.0d0))) ! create the parameter
       this%state = STATE_NAME ! expecting the next parameter name or map end
       status = FYAJL_CONTINUE_PARSING
     case (STATE_AVAL)
       ASSERT(allocated(this%array))
-      call this%array%push_scalar (real(value,kind(1.0d0)), status, this%errmsg)
+      call this%array%push_scalar(real(value,kind(1.0d0)), status, this%errmsg)
       this%state = STATE_AVAL ! expecting the next array value or array end
     case default
-      call unexpected_event (this, this%errmsg)
+      call unexpected_event(this, this%errmsg)
       status = FYAJL_TERMINATE_PARSING
     end select
-  end function double_value
+  end function
 
-  integer function logical_value (this, value) result (status)
+  integer function logical_value(this, value) result(status)
     class(plist_builder) :: this
     logical, intent(in) :: value
     type(parameter_list), pointer :: plist
     select case (this%state)
     case (STATE_PVAL)
       plist => this%pstack%peek() ! get current parameter list context
-      call plist%set (this%name, value) ! create the parameter
+      call plist%set(this%name, value) ! create the parameter
       this%state = STATE_NAME ! expecting the next parameter name or map end
       status = FYAJL_CONTINUE_PARSING
     case (STATE_AVAL)
       ASSERT(allocated(this%array))
-      call this%array%push_scalar (value, status, this%errmsg)
+      call this%array%push_scalar(value, status, this%errmsg)
       this%state = STATE_AVAL ! expecting the next array value or array end
     case default
-      call unexpected_event (this, this%errmsg)
+      call unexpected_event(this, this%errmsg)
       status = FYAJL_TERMINATE_PARSING
     end select
-  end function logical_value
+  end function
 
-  integer function string_value (this, value) result (status)
+  integer function string_value(this, value) result(status)
     class(plist_builder) :: this
     character(*), intent(in) :: value
     type(parameter_list), pointer :: plist
     select case (this%state)
     case (STATE_PVAL)
       plist => this%pstack%peek() ! get current parameter list context
-      call plist%set (this%name, value) ! create the parameter
+      call plist%set(this%name, value) ! create the parameter
       this%state = STATE_NAME ! expecting the next parameter name or map end
       status = FYAJL_CONTINUE_PARSING
     case (STATE_AVAL)
       ASSERT(allocated(this%array))
-      call this%array%push_scalar (value, status, this%errmsg)
+      call this%array%push_scalar(value, status, this%errmsg)
       this%state = STATE_AVAL ! expecting the next array value or array end
     case default
-      call unexpected_event (this, this%errmsg)
+      call unexpected_event(this, this%errmsg)
       status = FYAJL_TERMINATE_PARSING
     end select
-  end function string_value
+  end function
 
-  integer function start_array (this) result (status)
+  integer function start_array(this) result(status)
     class(plist_builder) :: this
     select case (this%state)
     case (STATE_PVAL)
       ASSERT(.not.allocated(this%array))
       allocate(this%array)
-      call this%array%push_array (status, this%errmsg)
+      call this%array%push_array(status, this%errmsg)
       INSIST(status == FYAJL_CONTINUE_PARSING)
       this%state = STATE_AVAL ! looking for an array value
     case (STATE_AVAL)
       ASSERT(allocated(this%array))
-      call this%array%push_array (status, this%errmsg)
+      call this%array%push_array(status, this%errmsg)
       this%state = STATE_AVAL ! looking for an array value
     case default
-      call unexpected_event (this, this%errmsg)
+      call unexpected_event(this, this%errmsg)
       status = FYAJL_TERMINATE_PARSING
     end select
-  end function start_array
+  end function
 
-  integer function end_array (this) result (status)
+  integer function end_array(this) result(status)
     class(plist_builder) :: this
     type(parameter_list), pointer :: plist
     class(*), allocatable, target :: flat_array(:)
@@ -521,17 +519,17 @@ contains
     select case (this%state)
     case (STATE_AVAL)
       INSIST(allocated(this%array))
-      call this%array%pop_array (status, this%errmsg)
+      call this%array%pop_array(status, this%errmsg)
       if (status == FYAJL_TERMINATE_PARSING) return
       if (this%array%complete) then
         plist => this%pstack%peek() ! current parameter list
-        call this%array%to_array (flat_array)
+        call this%array%to_array(flat_array)
         select case (size(this%array%shape))
         case (1)
-          call plist%set (this%name, flat_array) ! create the parameter
+          call plist%set(this%name, flat_array) ! create the parameter
         case (2)
           array2(1:this%array%shape(1),1:this%array%shape(2)) => flat_array
-          call plist%set (this%name, array2) ! create the parameter
+          call plist%set(this%name, array2) ! create the parameter
         case default
           this%errmsg = 'arrays of rank greater than 2 are not supported'
           status = FYAJL_TERMINATE_PARSING
@@ -545,12 +543,12 @@ contains
         status = FYAJL_CONTINUE_PARSING
       end if
     case default
-      call unexpected_event (this, this%errmsg)
+      call unexpected_event(this, this%errmsg)
       status = FYAJL_TERMINATE_PARSING
     end select
   end function end_array
 
-  subroutine unexpected_event (this, errmsg)
+  subroutine unexpected_event(this, errmsg)
     class(plist_builder), intent(in) :: this
     character(:), allocatable :: errmsg
     select case (this%state)
@@ -567,14 +565,12 @@ contains
     case default
       INSIST(.false.)
     end select
-  end subroutine unexpected_event
+  end subroutine
 
- !!
- !! PARAMETER_LIST_STACK TYPE-BOUND PROCEDURES
- !!
+ !!!! PARAMETER_LIST_STACK TYPE-BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !! Push the parameter list onto the top of the stack.
-  subroutine stack_push (this, plist)
+  subroutine stack_push(this, plist)
     class(parameter_list_stack), intent(inout) :: this
     type(parameter_list), intent(in), target :: plist
     type(stack_item), pointer :: top
@@ -582,10 +578,10 @@ contains
     allocate(this%top)
     this%top%plist => plist
     this%top%next => top
-  end subroutine stack_push
+  end subroutine
 
   !! Pop the parameter list off the top of the stack.
-  function stack_pop (this) result (plist)
+  function stack_pop(this) result(plist)
     class(parameter_list_stack), intent(inout) :: this
     type(parameter_list), pointer :: plist
     type(stack_item), pointer :: top
@@ -597,10 +593,10 @@ contains
     else
       plist => null()
     end if
-  end function stack_pop
+  end function
 
   !! Return a pointer to the parameter list on the top of the stack.
-  function stack_peek (this) result (plist)
+  function stack_peek(this) result(plist)
     class(parameter_list_stack), intent(in) :: this
     type(parameter_list), pointer :: plist
     if (associated(this%top)) then
@@ -608,18 +604,16 @@ contains
     else
       plist => null()
     end if
-  end function stack_peek
+  end function
 
-  logical function stack_is_empty (this)
+  logical function stack_is_empty(this)
     class(parameter_list_stack), intent(in) :: this
     stack_is_empty = .not.associated(this%top)
-  end function stack_is_empty
+  end function
 
- !!
- !! ARRAY_DATA TYPE-BOUND PROCEDURES
- !!
+ !!!! ARRAY_DATA TYPE-BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine array_push_scalar (this, value, status, errmsg)
+  subroutine array_push_scalar(this, value, status, errmsg)
 
     class(array_data), intent(inout) :: this
     class(*), intent(in) :: value
@@ -667,7 +661,7 @@ contains
     else  ! discovered the type
       allocate(this%mold, mold=value)
     end if
-    call this%values%push (value)
+    call this%values%push(value)
 
     select type (value)
     type is (character(*))
@@ -679,7 +673,7 @@ contains
   end subroutine array_push_scalar
 
 
-  subroutine array_push_array (this, status, errmsg)
+  subroutine array_push_array(this, status, errmsg)
 
     class(array_data), intent(inout) :: this
     integer, intent(out) :: status
@@ -707,7 +701,7 @@ contains
   end subroutine array_push_array
 
 
-  subroutine array_pop_array (this, status, errmsg)
+  subroutine array_pop_array(this, status, errmsg)
 
     class(array_data), intent(inout) :: this
     integer, intent(out) :: status
@@ -746,7 +740,7 @@ contains
 
   end subroutine array_pop_array
 
-  subroutine array_to_array (this, array)
+  subroutine array_to_array(this, array)
     class(array_data), intent(inout) :: this
     class(*), allocatable, intent(out) :: array(:)
     INSIST(this%complete)
@@ -764,14 +758,12 @@ contains
     class default
       INSIST(.false.)
     end select
-  end subroutine array_to_array
+  end subroutine
 
- !!
- !! VALUE_QUEUE TYPE-BOUND PROCEDURES
- !!
+ !!!! VALUE_QUEUE TYPE-BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !! Push the value onto the tail of the list.
-  subroutine queue_push (this, value)
+  subroutine queue_push(this, value)
     class(value_queue), intent(inout) :: this
     class(*), intent(in) :: value
     if (associated(this%head)) then
@@ -783,10 +775,10 @@ contains
     end if
     allocate(this%tail%value, source=value)
     this%n = this%n + 1
-  end subroutine queue_push
+  end subroutine
 
   !! Return a pointer to the value at the head of the list.
-  function queue_peek (this) result (value)
+  function queue_peek(this) result(value)
     class(value_queue), intent(in) :: this
     class(*), pointer :: value
     if (associated(this%head)) then
@@ -794,10 +786,10 @@ contains
     else
       value => null()
     end if
-  end function queue_peek
+  end function
 
   !! Pop the value off the head of the list; use peek first to get it.
-  subroutine queue_pop (this)
+  subroutine queue_pop(this)
     class(value_queue), intent(inout) :: this
     type(queue_item), pointer :: head
     if (associated(this%head)) then
@@ -811,12 +803,12 @@ contains
       deallocate(head)
       this%n = this%n - 1
     end if
-  end subroutine queue_pop
+  end subroutine
 
   !! Move the values into an array, leaving an empty queue.
   !! Specific procedures for the different possible types.
 
-  subroutine queue_to_array_integer (this, array)
+  subroutine queue_to_array_integer(this, array)
     class(value_queue) :: this
     integer, intent(out) :: array(:)
     integer :: n
@@ -828,11 +820,11 @@ contains
       class default
         INSIST(.false.)
       end select
-      call this%pop()
+      call this%pop
     end do
-  end subroutine queue_to_array_integer
+  end subroutine
 
-  subroutine queue_to_array_logical (this, array)
+  subroutine queue_to_array_logical(this, array)
     class(value_queue) :: this
     logical, intent(out) :: array(:)
     integer :: n
@@ -844,11 +836,11 @@ contains
       class default
         INSIST(.false.)
       end select
-      call this%pop()
+      call this%pop
     end do
-  end subroutine queue_to_array_logical
+  end subroutine
 
-  subroutine queue_to_array_real (this, array)
+  subroutine queue_to_array_real(this, array)
     class(value_queue) :: this
     real(kind(1.0d0)), intent(out) :: array(:)
     integer :: n
@@ -860,11 +852,11 @@ contains
       class default
         INSIST(.false.)
       end select
-      call this%pop()
+      call this%pop
     end do
-  end subroutine queue_to_array_real
+  end subroutine
 
-  subroutine queue_to_array_string (this, array)
+  subroutine queue_to_array_string(this, array)
     class(value_queue) :: this
     character(*), intent(out) :: array(:)
     integer :: n
@@ -876,70 +868,19 @@ contains
       class default
         INSIST(.false.)
       end select
-      call this%pop()
+      call this%pop
     end do
-  end subroutine queue_to_array_string
+  end subroutine
 
-  logical function queue_is_empty (this)
+  logical function queue_is_empty(this)
     class(value_queue), intent(in) :: this
     queue_is_empty = .not.associated(this%head)
-  end function queue_is_empty
+  end function
 
-  integer function queue_size (this)
+  integer function queue_size(this)
     class(value_queue), intent(in) :: this
     queue_size = this%n
-  end function queue_size
-
-  subroutine parameter_list_to_json (plist, unit, real_fmt)
-    type(parameter_list), intent(in) :: plist
-    integer, intent(in) :: unit
-    character(*), intent(in), optional :: real_fmt
-    write(unit,'(a)') '{'
-    call parameter_list_to_json_aux (plist, '  ', unit, real_fmt)
-    write(unit,'(/,a)') '}'
-  end subroutine parameter_list_to_json
-
-  recursive subroutine parameter_list_to_json_aux (plist, indent, unit, real_fmt)
-
-    use map_any_type
-    use parameter_entry_class
-
-    type(parameter_list), intent(in) :: plist
-    character(*), intent(in) :: indent
-    integer, intent(in) :: unit
-    character(*), intent(in), optional :: real_fmt
-
-    type(parameter_list_iterator) :: piter
-    logical :: first_param
-
-    piter = parameter_list_iterator(plist)
-    first_param = .true.
-    do while (.not.piter%at_end())
-      if (first_param) then
-        first_param = .false.
-      else
-        write(unit,'(a)') ','
-      end if
-      write(unit,'(a)',advance='no') indent // '"' // piter%name() // '"'
-      select type (pentry => piter%entry())
-      type is (parameter_list)
-        write(unit,'(a)') ': {'
-        call parameter_list_to_json_aux (pentry, indent//'  ', unit, real_fmt)
-        write(unit,'(/,a)',advance='no') indent // '}'
-      type is (any_scalar)
-        write(unit,'(a)',advance='no') ': '
-        call pentry%write (unit, real_fmt)
-      type is (any_vector)
-        write(unit,'(a)',advance='no') ': '
-        call pentry%write (unit, real_fmt)
-      type is (any_matrix)
-        write(unit,'(a)',advance='no') ': '
-        call pentry%write (unit, real_fmt)
-      end select
-      call piter%next
-    end do
-
-  end subroutine parameter_list_to_json_aux
+  end function
 
   !! The behavior of the intrinsic SAME_TYPE_AS function is processor-dependent
   !! when applied to CLASS(*) variables with intrinsic dynamic type, making it
@@ -968,5 +909,181 @@ contains
       end select
     end function type_num
   end function my_same_type_as
+
+
+  subroutine parameter_list_to_json(plist, unit, real_fmt, compact)
+    type(parameter_list), intent(in) :: plist
+    integer, intent(in) :: unit
+    character(*), intent(in), optional :: real_fmt
+    logical, intent(in), optional :: compact
+    logical :: pretty
+    pretty = .true.
+    if (present(compact)) pretty = .not.compact
+    call parameter_list_to_json_aux(plist, '  ', unit, rfmt(real_fmt), pretty)
+    write(unit,*)
+  contains
+    pure function rfmt(fmt)
+      character(*), intent(in), optional :: fmt
+      character(:), allocatable :: rfmt
+      if (present(fmt)) then
+        rfmt = '(' // fmt // ')'
+      else
+        rfmt = '(es12.5)'
+      end if
+    end function
+  end subroutine
+
+  recursive subroutine parameter_list_to_json_aux(plist, indent, unit, rfmt, pretty)
+
+    type(parameter_list), intent(in) :: plist
+    character(*), intent(in) :: indent
+    integer, intent(in) :: unit
+    character(*), intent(in) :: rfmt
+    logical, intent(in) :: pretty
+
+    type(parameter_list_iterator) :: piter
+    logical :: first_param
+
+    write(unit,'(a)',advance='no') '{'
+
+    piter = parameter_list_iterator(plist)
+    first_param = .true.
+    do while (.not.piter%at_end())
+      if (first_param) then
+        first_param = .false.
+      else
+        write(unit,'(",")',advance='no')
+      end if
+      if (pretty) then
+        write(unit,'(/,4a)',advance='no') indent, '"', piter%name(), '": '
+      else
+        write(unit,'(3a)',advance='no') '"', piter%name(), '":'
+      end if
+      select type (pval => piter%value())
+      type is (parameter_list)
+        call parameter_list_to_json_aux (pval, indent//'  ', unit, rfmt, pretty)
+      type is (any_scalar)
+        call write_cstar_rank0(pval%value_ptr(), unit, rfmt)
+      type is (any_vector)
+#ifdef __GFORTRAN__
+        block
+          class(*), pointer :: value(:)
+          value => pval%value_ptr()
+          call write_cstar_rank1(value, unit, rfmt, pretty)
+        end block
+#else
+        call write_cstar_rank1(pval%value_ptr(), unit, rfmt, pretty)
+#endif
+      type is (any_matrix)
+#ifdef __GFORTRAN__
+        block
+          class(*), pointer :: value(:,:)
+          value => pval%value_ptr()
+          call write_cstar_rank2(value, unit, rfmt, pretty)
+        end block
+#else
+        call write_cstar_rank2(pval%value_ptr(), unit, rfmt, pretty)
+#endif
+      end select
+      call piter%next
+    end do
+
+    if (pretty .and. .not.first_param) then
+      write(unit,'(/,a)',advance='no') indent(3:) // '}'
+    else
+      write(unit,'(a)',advance='no') '}'
+    end if
+
+  end subroutine parameter_list_to_json_aux
+
+
+  subroutine write_cstar_rank0(value, unit, rfmt)
+    class(*), intent(in) :: value
+    integer, intent(in) :: unit
+    character(*), intent(in) :: rfmt
+    select type (value)
+    type is (integer(int32))
+      write(unit,'(i0)',advance='no') value
+    type is (integer(int64))
+      write(unit,'(i0)',advance='no') value
+    type is (real(real32))
+      write(unit,rfmt,advance='no') value
+    type is (real(real64))
+      write(unit,rfmt,advance='no') value
+    type is (logical)
+      if (value) then
+        write(unit,'("true")',advance='no')
+      else
+        write(unit,'("false")',advance='no')
+      end if
+    type is (character(*))
+      write(unit,'(3a)',advance='no') '"', value, '"'
+    class default
+      write(unit,'(a)',advance='no') '???' !TODO: should this be an error instead?
+    end select
+  end subroutine
+
+  subroutine write_cstar_rank1(value, unit, rfmt, pretty)
+    class(*), intent(in) :: value(:)
+    integer, intent(in) :: unit
+    character(*), intent(in) :: rfmt
+    logical, intent(in) :: pretty
+    character(2), parameter :: sep = ', '
+    integer :: n, m
+    m = merge(2, 1, pretty)
+    write(unit,'("[")',advance='no')
+    do n = 1, size(value,1)
+      if (n > 1) write(unit,'(a)',advance='no') sep(:m)
+      call write_cstar_rank0(value(n), unit, rfmt)
+    end do
+    write(unit,'("]")',advance='no')
+  end subroutine
+
+  subroutine write_cstar_rank2(value, unit, rfmt, pretty)
+    class(*), intent(in) :: value(:,:)
+    integer, intent(in) :: unit
+    character(*), intent(in) :: rfmt
+    logical, intent(in) :: pretty
+    character(2), parameter :: sep = ', '
+    integer :: n, m
+    m = merge(2, 1, pretty)
+    write(unit,'("[")',advance='no')
+    do n = 1, size(value,2)
+      if (n > 1) write(unit,'(a)',advance='no') sep(:m)
+      call write_cstar_rank1(value(:,n), unit, rfmt, pretty)
+    end do
+    write(unit,'("]")',advance='no')
+  end subroutine
+
+! Here's a compact and readable alternative that makes use of a recursive
+! subroutine with assumed-rank argument. This works for NAG, but GNU and
+! Intel both had problems due to compiler bugs.
+!
+!  !! Write the unlimited polymorphic VALUE to the given logical UNIT. Works for
+!  !! scalars, and rank-1 or rank-2 arrays of common intrinsic types. Values are
+!  !! written in a format compatible with JSON. Other types are written as ???
+!  !! (TODO: should this be an error?).
+!
+!  recursive subroutine write_cstar(value, unit, rfmt, pretty)
+!
+!    class(*), intent(in) :: value(..)
+!    integer, intent(in) :: unit
+!    character(*), intent(in) :: rfmt
+!    logical, intent(in) :: pretty
+!
+!    integer :: n
+!
+!    select rank (value)
+!    rank (0)
+!      ! body of write_cstar_rank0 goes here
+!    rank (1)
+!      ! body of write_cstar_rank1 goes here, but replace write_cstar_rank0
+!      ! call with recursive call to write_cstar
+!    rank (2)
+!      ! body of write_cstar_rank2 goes here, but replace write_cstar_rank1
+!      ! call with recursive call to write_cstar
+!    end select
+!
+!  end subroutine
 
 end module parameter_list_json
