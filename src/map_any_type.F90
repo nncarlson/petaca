@@ -163,8 +163,11 @@ contains
     type(list_item), pointer :: new_list_item
     allocate(new_list_item)
     new_list_item%key = key
-    !allocate(new_list_item%value, source=value)
+#ifdef GNU_PR114827
+    allocate(new_list_item%value, source=value)
+#else
     new_list_item%value = value
+#endif
     new_list_item%prev => new_list_item
   end function new_list_item
 

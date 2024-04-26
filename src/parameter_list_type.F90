@@ -211,7 +211,7 @@ contains
     if (allocated(lhs%value)) deallocate(lhs%value)
     select type (rhs)
     type is (any_scalar)
-#if defined(NAG_BUG20231204) || defined(INTEL_BUG20231205)
+#if defined(NAG_BUG20231204) || defined(INTEL_BUG20231205) || defined(GNU_PR114827)
       if (allocated(lhs%value)) deallocate(lhs%value)
       allocate(lhs%value, source=rhs%value)
 #else
@@ -224,16 +224,22 @@ contains
   subroutine any_scalar_set_value(this, value)
     class(any_scalar), intent(out) :: this
     class(*), intent(in) :: value
-    !allocate(this%value, source=value)
+#ifdef GNU_PR114827
+    allocate(this%value, source=value)
+#else
     this%value = value
+#endif
   end subroutine
 
   !! Get value; works for any type.
   subroutine any_scalar_get_value(this, value)
     class(any_scalar), intent(in) :: this
     class(*), allocatable, intent(out) :: value
-    !allocate(value, source=this%value)
+#ifdef GNU_PR114827
+    allocate(value, source=this%value)
+#else
     value = this%value
+#endif
   end subroutine
 
   !! Return a pointer to the value; works for any type.
@@ -338,7 +344,7 @@ contains
     class(parameter_value), intent(in) :: rhs
     select type (rhs)
     type is (any_vector)
-#ifdef INTEL_BUG20231205
+#if defined(INTEL_BUG20231205) || defined(GNU_PR114827)
       if (allocated(lhs%value)) deallocate(lhs%value)
       allocate(lhs%value, source=rhs%value)
 #else
@@ -351,14 +357,23 @@ contains
   subroutine any_vector_set_value(this, value)
     class(any_vector), intent(out) :: this
     class(*), intent(in) :: value(:)
+#ifdef GNU_PR114827
+    if (allocated(this%value)) deallocate(this%value)
+    allocate(this%value, source=value)
+#else
     this%value = value
+#endif
   end subroutine
 
   !! Get value; works for any type.
   subroutine any_vector_get_value(this, value)
     class(any_vector), intent(in) :: this
     class(*), allocatable, intent(out) :: value(:)
+#ifdef GNU_PR114827
+    allocate(value, source=this%value)
+#else
     value = this%value
+#endif
   end subroutine
 
   !! Return a pointer to the value; works for any type.
@@ -464,7 +479,7 @@ contains
     class(parameter_value), intent(in) :: rhs
     select type (rhs)
     type is (any_matrix)
-#ifdef INTEL_BUG20231205
+#if defined(INTEL_BUG20231205) || defined(GNU_PR114827)
       if (allocated(lhs%value)) deallocate(lhs%value)
       allocate(lhs%value, source=rhs%value)
 #else
@@ -477,14 +492,22 @@ contains
   subroutine any_matrix_set_value(this, value)
     class(any_matrix), intent(out) :: this
     class(*), intent(in) :: value(:,:)
+#ifdef GNU_PR114827
+    allocate(this%value, source=value)
+#else
     this%value = value
+#endif
   end subroutine
 
   !! Get value; works for any type.
   subroutine any_matrix_get_value(this, value)
     class(any_matrix), intent(in) :: this
     class(*), allocatable, intent(out) :: value(:,:)
+#ifdef GNU_PR114827
+    allocate(value, source=this%value)
+#else
     value = this%value
+#endif
   end subroutine
 
   !! Return a pointer to the value; works for any type.
