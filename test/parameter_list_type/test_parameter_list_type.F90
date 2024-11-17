@@ -30,7 +30,9 @@ program test_parameter_list_type
   integer :: stat = 0
 
   call test_basic
-  call test_get
+  call get_scalar
+  call get_vector
+  call get_matrix
   call test_get_any
   call test_overwrite
   call test_sublists
@@ -41,6 +43,18 @@ program test_parameter_list_type
   if (stat /= 0) stop 1
 
 contains
+
+  subroutine write_result(pass, name)
+    use,intrinsic :: iso_fortran_env, only: output_unit
+    logical, value :: pass
+    character(*), intent(in) :: name
+    if (pass) then
+      write(output_unit,'(a)') 'Passed: ' // name
+    else
+      stat = 1
+      write(output_unit,'(a)') 'FAILED: ' // name
+    end if
+  end subroutine
 
  !!
  !! A basic test that we can populate a parameter list with simple parameters.
@@ -113,185 +127,365 @@ contains
  !! A thorough test of set/get for all the specific intrinsic types.
  !!
 
-  subroutine test_get
+  subroutine get_scalar
 
-    type(parameter_list) :: p
-    integer(int32) :: i32, i32default
-    integer(int64) :: i64, i64default
-    integer(int32), allocatable :: i32array(:), i32arraydefault(:)
-    integer(int64), allocatable :: i64array(:), i64arraydefault(:)
-    integer(int32), allocatable :: i32matrix(:,:), i32matrixdefault(:,:), i32matrixref(:,:)
-    integer(int64), allocatable :: i64matrix(:,:), i64matrixdefault(:,:), i64matrixref(:,:)
-    real(real32) :: r32, r32default
-    real(real64) :: r64, r64default
-    real(real32), allocatable :: r32array(:), r32arraydefault(:)
-    real(real64), allocatable :: r64array(:), r64arraydefault(:)
-    real(real32), allocatable :: r32matrix(:,:), r32matrixdefault(:,:), r32matrixref(:,:)
-    real(real64), allocatable :: r64matrix(:,:), r64matrixdefault(:,:), r64matrixref(:,:)
-    logical :: l, ldefault
-    logical, allocatable :: larray(:), larraydefault(:)
-    logical, allocatable :: lmatrix(:,:), lmatrixdefault(:,:)
-    character(:), allocatable :: c, carray(:), cdefault, carraydefault(:)
-    character(:), allocatable :: cmatrix(:,:), cmatrixdefault(:,:)
+    block ! 32-bit integer
+      type(parameter_list) :: p
+      integer(int32) :: ref, def, x, y
+      ref = 1
+      def = 2
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(x == ref, 'get_scalar1_int32')
+      call p%get('foo', y, default=def)
+      call write_result(y == ref, 'get_scalar2_int32')
+      call p%get('bar', x, default=def)
+      call write_result(x == def, 'get_scalar3_int32')
+    end block
 
-    call p%set('i32', 1_int32)
-    call p%set('i64', 2_int64)
-    call p%set('i32array', [3_int32,4_int32])
-    call p%set('i64array', [5_int64,6_int64])
-    i32matrixref = reshape([integer(int32) :: 3, 4, 5, 6, 7, 8], shape=[2,3])
-    call p%set('i32matrix', i32matrixref)
-    i64matrixref = reshape([integer(int64) :: 3, 4, 5, 6, 7, 8], shape=[2,3])
-    call p%set('i64matrix', i64matrixref)
-    call p%set('r32', 1.0_real32)
-    call p%set('r64', 2.0_real64)
-    call p%set('r32array', [3.0_real32,4.0_real32])
-    call p%set('r64array', [5.0_real64,6.0_real64])
-    r32matrixref = reshape([real(real32) :: 3, 4, 5, 6, 7, 8], shape=[3,2])
-    call p%set('r32matrix', r32matrixref)
-    r64matrixref = reshape([real(real64) :: 3, 4, 5, 6, 7, 8], shape=[3,2])
-    call p%set('r64matrix', r64matrixref)
+    block ! 64-bit integer
+      type(parameter_list) :: p
+      integer(int64) :: ref, def, x, y
+      ref = 1
+      def = 2
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(x == ref, 'get_scalar1_int64')
+      call p%get('foo', y, default=def)
+      call write_result(y == ref, 'get_scalar2_int64')
+      call p%get('bar', x, default=def)
+      call write_result(x == def, 'get_scalar3_int64')
+    end block
 
-    call p%get('i32', i32)
-    call p%get('i64', i64)
-    call p%get('i32array', i32array)
-    call p%get('i64array', i64array)
-    call p%get('i32matrix', i32matrix)
-    call p%get('i64matrix', i64matrix)
-    call p%get('r32', r32)
-    call p%get('r64', r64)
-    call p%get('r32array', r32array)
-    call p%get('r64array', r64array)
-    call p%get('r32matrix', r32matrix)
-    call p%get('r64matrix', r64matrix)
+    block ! 32-bit real
+      type(parameter_list) :: p
+      real(real32) :: ref, def, x, y
+      ref = 1
+      def = 2
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(x == ref, 'get_scalar1_real32')
+      call p%get('foo', y, default=def)
+      call write_result(y == ref, 'get_scalar2_real32')
+      call p%get('bar', x, default=def)
+      call write_result(x == def, 'get_scalar3_real32')
+    end block
 
-    if (i32 /= 1) call write_fail('test_get failed test 1')
-    if (i64 /= 2) call write_fail('test_get failed test 2')
-    if (any(i32array /= [3_int32,4_int32])) call write_fail('test_get failed test 3')
-    if (any(i64array /= [5_int64,6_int64])) call write_fail('test_get failed test 4')
-    if (any(i32matrix /= i32matrixref)) call write_fail('test_get failed test 3m')
-    if (any(i64matrix /= i64matrixref)) call write_fail('test_get failed test 4m')
-    if (r32 /= 1.0) call write_fail('test_get failed test 5')
-    if (r64 /= 2.0) call write_fail('test_get failed test 6')
-    if (any(r32array /= [3.0_real32,4.0_real32])) call write_fail('test_get failed test 7')
-    if (any(r64array /= [5.0_real64,6.0_real64])) call write_fail('test_get failed test 8')
-    if (any(r32matrix /= r32matrixref)) call write_fail('test_get failed test 7m')
-    if (any(r64matrix /= r64matrixref)) call write_fail('test_get failed test 8m')
+    block ! 64-bit real
+      type(parameter_list) :: p
+      real(real64) :: ref, def, x, y
+      ref = 1
+      def = 2
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(x == ref, 'get_scalar1_real64')
+      call p%get('foo', y, default=def)
+      call write_result(y == ref, 'get_scalar2_real64')
+      call p%get('bar', x, default=def)
+      call write_result(x == def, 'get_scalar3_real64')
+    end block
 
-    call p%set('l', .true.)
-    call p%set('larray', [.true.,.false.])
-    call p%set('lmatrix', reshape([.true.,.false.],shape=[1,2]))
-    call p%set('c', 'bizbat')
-    call p%set('carray', ['foo','bar'])
-    call p%set('cmatrix', reshape(['foo','bar'],shape=[2,1]))
+    block ! 32-bit complex
+      type(parameter_list) :: p
+      complex(real32) :: ref, def, x, y
+      ref = cmplx(1,-1)
+      def = cmplx(2,-2)
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(x == ref, 'get_scalar1_complex32')
+      call p%get('foo', y, default=def)
+      call write_result(y == ref, 'get_scalar2_complex32')
+      call p%get('bar', x, default=def)
+      call write_result(x == def, 'get_scalar3_complex32')
+    end block
 
-    call p%get('l', l)
-    call p%get('larray', larray)
-    call p%get('lmatrix', lmatrix)
-    call p%get('c', c)
-    call p%get('carray', carray)
-    call p%get('cmatrix', cmatrix)
+    block ! 64-bit complex
+      type(parameter_list) :: p
+      complex(real64) :: ref, def, x, y
+      ref = cmplx(1,-1)
+      def = cmplx(2,-2)
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(x == ref, 'get_scalar1_complex64')
+      call p%get('foo', y, default=def)
+      call write_result(y == ref, 'get_scalar2_complex64')
+      call p%get('bar', x, default=def)
+      call write_result(x == def, 'get_scalar3_complex64')
+    end block
+    
+    block ! default logical
+      type(parameter_list) :: p
+      logical :: ref, def, x, y
+      ref = .true.
+      def = .false.
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(x .eqv. ref, 'get_scalar1_logical')
+      call p%get('foo', y, default=def)
+      call write_result(y .eqv. ref, 'get_scalar2_logical')
+      call p%get('bar', x, default=def)
+      call write_result(x .eqv. def, 'get_scalar3_logical')
+    end block
+    
+    block ! default character
+      type(parameter_list) :: p
+      character(:), allocatable :: ref, def, x, y
+      ref = 'biz'
+      def = 'bat'
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(x == ref, 'get_scalar1_char')
+      call p%get('foo', y, default=def)
+      call write_result(y == ref, 'get_scalar2_char')
+      call p%get('bar', x, default=def)
+      call write_result(x == def, 'get_scalar3_char')
+    end block
 
-    if (.not.l) call write_fail('test_get failed test 9')
-    if (any(larray .neqv. [.true.,.false.])) call write_fail('test_get failed test 10')
-    if (any(lmatrix(1,:) .neqv. [.true.,.false.])) call write_fail('test_get failed test 10m')
-    if (c /= 'bizbat') call write_fail('test_get failed test 11')
-    if (len(c) /= 6) call write_fail('test_get failed test 12')
-    if (any(carray /= ['foo','bar'])) call write_fail('test_get failed test 13')
-    if (len(carray) /= 3) call write_fail('test_get failed test 14')
-    if (any(cmatrix(:,1) /= ['foo','bar'])) call write_fail('test_get failed test 13m')
-    if (len(cmatrix) /= 3) call write_fail('test_get failed test 14m')
+  end subroutine get_scalar
 
-    !! Verify that the default argument is ignored for these existing parameters.
 
-    call p%get('i32', i32, default=0_int32)
-    call p%get('i64', i64, default=0_int64)
-    call p%get('i32array', i32array, default=[0_int32])
-    call p%get('i64array', i64array, default=[0_int64])
-    call p%get('i32matrix', i32matrix, default=reshape([0_int32],shape=[1,1]))
-    call p%get('i64matrix', i64matrix, default=reshape([0_int64],shape=[1,1]))
-    call p%get('r32', r32, default=0.0_real32)
-    call p%get('r64', r64, default=0.0_real64)
-    call p%get('r32array', r32array, default=[0.0_real32])
-    call p%get('r64array', r64array, default=[0.0_real64])
-    call p%get('r32matrix', r32matrix, default=reshape([0.0_real32],shape=[1,1]))
-    call p%get('r64matrix', r64matrix, default=reshape([0.0_real64],shape=[1,1]))
+  subroutine get_vector
 
-    if (i32 /= 1) call write_fail('test_get failed test 1')
-    if (i64 /= 2) call write_fail('test_get failed test 2')
-    if (any(i32array /= [3_int32,4_int32])) call write_fail('test_get failed test 15')
-    if (any(i64array /= [5_int64,6_int64])) call write_fail('test_get failed test 16')
-    if (any(i32matrix /= i32matrixref)) call write_fail('test_get failed test 15m')
-    if (any(i64matrix /= i64matrixref)) call write_fail('test_get failed test 16m')
-    if (r32 /= 1.0) call write_fail('test_get failed test 17')
-    if (r64 /= 2.0) call write_fail('test_get failed test 18')
-    if (any(r32array /= [3.0_real32,4.0_real32])) call write_fail('test_get failed test 19')
-    if (any(r64array /= [5.0_real64,6.0_real64])) call write_fail('test_get failed test 20')
-    if (any(r32matrix /= r32matrixref)) call write_fail('test_get failed test 19m')
-    if (any(r64matrix /= r64matrixref)) call write_fail('test_get failed test 20m')
+    integer, allocatable :: a(:), b(:)
 
-    call p%get('l', l, default=.false.)
-    call p%get('larray', larray, default=[.false.])
-    call p%get('lmatrix', lmatrix, default=reshape([.false.],shape=[1,1]))
-    call p%get('c', c, default='yellow')
-    call p%get('carray', carray, default=['fubar'])
-    call p%get('cmatrix', cmatrix, default=reshape(['fubar'],shape=[1,1]))
+    a = [1, 2]
+    b = [3]
 
-    if (.not.l) call write_fail('test_get failed test 21')
-    if (any(larray .neqv. [.true.,.false.])) call write_fail('test_get failed test 22')
-    if (any(lmatrix(1,:) .neqv. [.true.,.false.])) call write_fail('test_get failed test 22m')
-    if (c /= 'bizbat') call write_fail('test_get failed test 23')
-    if (len(c) /= 6) call write_fail('test_get failed test 24')
-    if (any(carray /= ['foo','bar'])) call write_fail('test_get failed test 25')
-    if (len(carray) /= 3) call write_fail('test_get failed test 26')
-    if (any(cmatrix(:,1) /= ['foo','bar'])) call write_fail('test_get failed test 25m')
-    if (len(cmatrix) /= 3) call write_fail('test_get failed test 25m')
+    block ! 32-bit integer
+      type(parameter_list) :: p
+      integer(int32), allocatable, dimension(:) :: ref, def, x, y
+      ref = a
+      def = b
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(all(x == ref), 'get_vector1_int32')
+      call p%get('foo', y, default=def)
+      call write_result(all(y == ref), 'get_vector2_int32')
+      call p%get('bar', x, default=def)
+      call write_result(all(x == def), 'get_vector3_int32')
+    end block
 
-    !! Verify that the default argument is used for these new parameters.
+    block ! 64-bit integer
+      type(parameter_list) :: p
+      integer(int64), allocatable, dimension(:) :: ref, def, x, y
+      ref = a
+      def = b
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(all(x == ref), 'get_vector1_int64')
+      call p%get('foo', y, default=def)
+      call write_result(all(y == ref), 'get_vector2_int64')
+      call p%get('bar', x, default=def)
+      call write_result(all(x == def), 'get_vector3_int64')
+    end block
 
-    call p%get('i32default', i32default, default=10_int32)
-    call p%get('i64default', i64default, default=20_int64)
-    call p%get('i32arraydefault', i32arraydefault, default=[30_int32])
-    call p%get('i64arraydefault', i64arraydefault, default=[40_int64])
-    call p%get('i32matrixdefault', i32matrixdefault, default=reshape([30_int32],shape=[1,1]))
-    call p%get('i64matrixdefault', i64matrixdefault, default=reshape([40_int64],shape=[1,1]))
-    call p%get('r32default', r32default, default=10.0_real32)
-    call p%get('r64default', r64default, default=20.0_real64)
-    call p%get('r32arraydefault', r32arraydefault, default=[30.0_real32])
-    call p%get('r64arraydefault', r64arraydefault, default=[40.0_real64])
-    call p%get('r32matrixdefault', r32matrixdefault, default=reshape([30.0_real32],shape=[1,1]))
-    call p%get('r64matrixdefault', r64matrixdefault, default=reshape([40.0_real64],shape=[1,1]))
+    block ! 32-bit real
+      type(parameter_list) :: p
+      real(real32), allocatable, dimension(:) :: ref, def, x, y
+      ref = a
+      def = b
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(all(x == ref), 'get_vector1_real32')
+      call p%get('foo', y, default=def)
+      call write_result(all(y == ref), 'get_vector2_real32')
+      call p%get('bar', x, default=def)
+      call write_result(all(x == def), 'get_vector3_real32')
+    end block
 
-    if (i32default /= 10) call write_fail('test_get failed test 27')
-    if (i64default /= 20) call write_fail('test_get failed test 28')
-    if (any(i32arraydefault /= [30_int32])) call write_fail('test_get failed test 29')
-    if (any(i64arraydefault /= [40_int64])) call write_fail('test_get failed test 30')
-    if (i32matrixdefault(1,1) /= 30_int32) call write_fail('test_get failed test 29m')
-    if (i64matrixdefault(1,1) /= 40_int64) call write_fail('test_get failed test 30m')
-    if (r32default /= 10.0) call write_fail('test_get failed test 31')
-    if (r64default /= 20.0) call write_fail('test_get failed test 32')
-    if (any(r32arraydefault /= [30.0])) call write_fail('test_get failed test 33')
-    if (any(r64arraydefault /= [40.0])) call write_fail('test_get failed test 34')
-    if (r32matrixdefault(1,1) /= 30.0) call write_fail('test_get failed test 33m')
-    if (r64matrixdefault(1,1) /= 40.0) call write_fail('test_get failed test 34m')
+    block ! 64-bit real
+      type(parameter_list) :: p
+      real(real64), allocatable, dimension(:) :: ref, def, x, y
+      ref = a
+      def = b
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(all(x == ref), 'get_vector1_real64')
+      call p%get('foo', y, default=def)
+      call write_result(all(y == ref), 'get_vector2_real64')
+      call p%get('bar', x, default=def)
+      call write_result(all(x == def), 'get_vector3_real64')
+    end block
 
-    call p%get('ldefault', ldefault, default=.false.)
-    call p%get('larraydefault', larraydefault, default=[.true.])
-    call p%get('lmatrixdefault', lmatrixdefault, default=reshape([.true.],shape=[1,1]))
-    call p%get('cdefault', cdefault, default='yellow')
-    call p%get('carraydefault', carraydefault, default=['fubar'])
-    call p%get('cmatrixdefault', cmatrixdefault, default=reshape(['fubar'],shape=[1,1]))
+    block ! 32-bit complex
+      type(parameter_list) :: p
+      complex(real32), allocatable, dimension(:) :: ref, def, x, y
+      ref = a*cmplx(1,-1)
+      def = b*cmplx(1,-1)
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(all(x == ref), 'get_vector1_complex32')
+      call p%get('foo', y, default=def)
+      call write_result(all(y == ref), 'get_vector2_complex32')
+      call p%get('bar', x, default=def)
+      call write_result(all(x == def), 'get_vector3_complex32')
+    end block
 
-    if (ldefault) call write_fail('test_get failed test 35')
-    if (any(larraydefault .neqv. [.true.])) call write_fail('test_get failed test 36')
-    if (lmatrixdefault(1,1) .neqv. .true.) call write_fail('test_get failed test 36m')
-    if (cdefault /= 'yellow') call write_fail('test_get failed test 37')
-    if (len(c) /= 6) call write_fail('test_get failed test 38')
-    if (any(carraydefault /= ['fubar'])) call write_fail('test_get failed test 39')
-    if (len(carraydefault) /= 5) call write_fail('test_get failed test 40')
-    if (cmatrixdefault(1,1) /= 'fubar') call write_fail('test_get failed test 39m')
-    if (len(cmatrixdefault) /= 5) call write_fail('test_get failed test 40m')
+    block ! 64-bit complex
+      type(parameter_list) :: p
+      complex(real64), allocatable, dimension(:) :: ref, def, x, y
+      ref = a*cmplx(1,-1)
+      def = b*cmplx(1,-1)
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(all(x == ref), 'get_vector1_complex64')
+      call p%get('foo', y, default=def)
+      call write_result(all(y == ref), 'get_vector2_complex64')
+      call p%get('bar', x, default=def)
+      call write_result(all(x == def), 'get_vector3_complex64')
+    end block
+    
+    block ! default logical
+      type(parameter_list) :: p
+      logical, allocatable, dimension(:) :: ref, def, x, y
+      ref = [.true., .false.]
+      def = [.false.]
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(all(x .eqv. ref), 'get_vector1_logical')
+      call p%get('foo', y, default=def)
+      call write_result(all(y .eqv. ref), 'get_vector2_logical')
+      call p%get('bar', x, default=def)
+      call write_result(all(x .eqv. def), 'get_vector3_logical')
+    end block
+    
+    block ! default character
+      type(parameter_list) :: p
+      character(:), allocatable, dimension(:) :: ref, def, x, y
+      ref = ['biz', 'fiz']
+      def = ['bat']
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(all(x == ref), 'get_vector1_char')
+      call p%get('foo', y, default=def)
+      call write_result(all(y == ref), 'get_vector2_char')
+      call p%get('bar', x, default=def)
+      call write_result(all(x == def), 'get_vector3_char')
+    end block
 
-  end subroutine
+  end subroutine get_vector
+
+
+  subroutine get_matrix
+
+    integer, allocatable :: a(:,:), b(:,:)
+
+    a = reshape([1, 2, 3, 4, 5, 6], shape=[2, 3])
+    b = -transpose(a)
+
+    block ! 32-bit integer
+      type(parameter_list) :: p
+      integer(int32), allocatable, dimension(:,:) :: ref, def, x, y
+      ref = a
+      def = b
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(all(x == ref), 'get_matrix1_int32')
+      call p%get('foo', y, default=def)
+      call write_result(all(y == ref), 'get_matrix2_int32')
+      call p%get('bar', x, default=def)
+      call write_result(all(x == def), 'get_matrix3_int32')
+    end block
+
+    block ! 64-bit integer
+      type(parameter_list) :: p
+      integer(int64), allocatable, dimension(:,:) :: ref, def, x, y
+      ref = a
+      def = b
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(all(x == ref), 'get_matrix1_int64')
+      call p%get('foo', y, default=def)
+      call write_result(all(y == ref), 'get_matrix2_int64')
+      call p%get('bar', x, default=def)
+      call write_result(all(x == def), 'get_matrix3_int64')
+    end block
+
+    block ! 32-bit real
+      type(parameter_list) :: p
+      real(real32), allocatable, dimension(:,:) :: ref, def, x, y
+      ref = a
+      def = b
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(all(x == ref), 'get_matrix1_real32')
+      call p%get('foo', y, default=def)
+      call write_result(all(y == ref), 'get_matrix2_real32')
+      call p%get('bar', x, default=def)
+      call write_result(all(x == def), 'get_matrix3_real32')
+    end block
+
+    block ! 64-bit real
+      type(parameter_list) :: p
+      real(real64), allocatable, dimension(:,:) :: ref, def, x, y
+      ref = a
+      def = b
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(all(x == ref), 'get_matrix1_real64')
+      call p%get('foo', y, default=def)
+      call write_result(all(y == ref), 'get_matrix2_real64')
+      call p%get('bar', x, default=def)
+      call write_result(all(x == def), 'get_matrix3_real64')
+    end block
+
+    block ! 32-bit complex
+      type(parameter_list) :: p
+      complex(real32), allocatable, dimension(:,:) :: ref, def, x, y
+      ref = a*cmplx(1,-1)
+      def = b*cmplx(1,-1)
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(all(x == ref), 'get_matrix1_complex32')
+      call p%get('foo', y, default=def)
+      call write_result(all(y == ref), 'get_matrix2_complex32')
+      call p%get('bar', x, default=def)
+      call write_result(all(x == def), 'get_matrix3_complex32')
+    end block
+
+    block ! 64-bit complex
+      type(parameter_list) :: p
+      complex(real64), allocatable, dimension(:,:) :: ref, def, x, y
+      ref = a*cmplx(1,-1)
+      def = b*cmplx(1,-1)
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(all(x == ref), 'get_matrix1_complex64')
+      call p%get('foo', y, default=def)
+      call write_result(all(y == ref), 'get_matrix2_complex64')
+      call p%get('bar', x, default=def)
+      call write_result(all(x == def), 'get_matrix3_complex64')
+    end block
+    
+    block ! default logical
+      type(parameter_list) :: p
+      logical, allocatable, dimension(:,:) :: ref, def, x, y
+      ref = reshape([.true., .false.], shape=[1,2])
+      def = reshape([.false.], shape=[1,1])
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(all(x .eqv. ref), 'get_matrix1_logical')
+      call p%get('foo', y, default=def)
+      call write_result(all(y .eqv. ref), 'get_matrix2_logical')
+      call p%get('bar', x, default=def)
+      call write_result(all(x .eqv. def), 'get_matrix3_logical')
+    end block
+    
+    block ! default character
+      type(parameter_list) :: p
+      character(:), allocatable, dimension(:,:) :: ref, def, x, y
+      ref = reshape(['biz', 'fiz', 'wiz'], shape=[1,2])
+      def = reshape(['bat'], shape=[1,1])
+      call p%set('foo', ref)
+      call p%get('foo', x)
+      call write_result(all(x == ref), 'get_matrix1_char')
+      call p%get('foo', y, default=def)
+      call write_result(all(y == ref), 'get_matrix2_char')
+      call p%get('bar', x, default=def)
+      call write_result(all(x == def), 'get_matrix3_char')
+    end block
+
+  end subroutine get_matrix
 
  !!
  !! Test the get_any methods

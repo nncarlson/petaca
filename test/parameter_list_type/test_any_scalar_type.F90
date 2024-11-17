@@ -33,6 +33,8 @@ program test_any_scalar_type
   call test_set_get_int64
   call test_set_get_real32
   call test_set_get_real64
+  call test_set_get_cmplx32
+  call test_set_get_cmplx64
   call test_set_get_logical
   call test_set_get_character
   call test_get_value
@@ -130,6 +132,50 @@ contains
     call x%get_value(val, errc)
     if (errc) call write_fail('test_set_get_real64 failed test 4')
     if (val /= 17.0) call write_fail('test_set_get_real64 failed test 5')
+
+  end subroutine
+
+  subroutine test_set_get_cmplx32
+
+    type(any_scalar) :: x
+    complex(real32) :: val
+    complex(real64) :: bad
+    logical :: errc
+
+    x = any_scalar(cmplx(1,2,kind=real32))  ! constructor
+
+    call x%get_value(val, errc)
+    if (errc) call write_fail('test_set_get_cmplx32 failed test 1')
+    if (val /= cmplx(1,2,kind=real32)) call write_fail('test_set_get_cmplx32 failed test 2')
+    call x%get_value(bad, errc)
+    if (.not.errc) call write_fail('test_set_get_cmplx32 failed test 3')
+
+    call x%set_value(cmplx(2,3,kind=real32)) ! overwrite
+    call x%get_value(val, errc)
+    if (errc) call write_fail('test_set_get_cmplx32 failed test 4')
+    if (val /= cmplx(2,3,kind=real32)) call write_fail('test_set_get_cmplx32 failed test 5')
+
+  end subroutine
+
+  subroutine test_set_get_cmplx64
+
+    type(any_scalar) :: x
+    complex(real64) :: val
+    complex(real32) :: bad
+    logical :: errc
+
+    x = any_scalar(cmplx(1,2,kind=real64))  ! constructor
+
+    call x%get_value(val, errc)
+    if (errc) call write_fail('test_set_get_cmplx64 failed test 1')
+    if (val /= cmplx(1,2,kind=real64)) call write_fail('test_set_get_cmplx64 failed test 2')
+    call x%get_value(bad, errc)
+    if (.not.errc) call write_fail('test_set_get_cmplx64 failed test 3')
+
+    call x%set_value(cmplx(2,3,kind=real64)) ! overwrite
+    call x%get_value(val, errc)
+    if (errc) call write_fail('test_set_get_cmplx64 failed test 4')
+    if (val /= cmplx(2,3,kind=real64)) call write_fail('test_set_get_cmplx64 failed test 5')
 
   end subroutine
 

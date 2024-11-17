@@ -25,6 +25,12 @@
 use json
 implicit none
 
+call run_tests
+
+contains
+
+subroutine run_tests
+
 class(json_value), allocatable :: val
 character(:), allocatable :: errmsg
 integer :: stat
@@ -81,5 +87,7 @@ type is (json_null)
 class default
   stop 63
 end select
+
+end subroutine
 
 end

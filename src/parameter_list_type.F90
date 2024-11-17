@@ -61,10 +61,12 @@ module parameter_list_type
     procedure :: value_ptr => any_scalar_value_ptr  !TODO: needed? delete?
     generic   :: get_value => &
         any_scalar_get_value, any_scalar_get_character, any_scalar_get_logical, &
-        any_scalar_get_int32, any_scalar_get_int64, any_scalar_get_real32, any_scalar_get_real64
+        any_scalar_get_int32, any_scalar_get_int64, any_scalar_get_real32, any_scalar_get_real64, &
+        any_scalar_get_cmplx32, any_scalar_get_cmplx64
     procedure, private :: &
         any_scalar_get_value, any_scalar_get_character, any_scalar_get_logical, &
-        any_scalar_get_int32, any_scalar_get_int64, any_scalar_get_real32, any_scalar_get_real64
+        any_scalar_get_int32, any_scalar_get_int64, any_scalar_get_real32, any_scalar_get_real64, &
+        any_scalar_get_cmplx32, any_scalar_get_cmplx64
     procedure :: copy_impl => any_scalar_copy
   end type
 
@@ -81,10 +83,12 @@ module parameter_list_type
     procedure :: value_ptr => any_vector_value_ptr
     generic   :: get_value => &
         any_vector_get_value, any_vector_get_character, any_vector_get_logical, &
-        any_vector_get_int32, any_vector_get_int64, any_vector_get_real32, any_vector_get_real64
+        any_vector_get_int32, any_vector_get_int64, any_vector_get_real32, any_vector_get_real64, &
+        any_vector_get_cmplx32, any_vector_get_cmplx64
     procedure, private :: &
         any_vector_get_value, any_vector_get_character, any_vector_get_logical, &
-        any_vector_get_int32, any_vector_get_int64, any_vector_get_real32, any_vector_get_real64
+        any_vector_get_int32, any_vector_get_int64, any_vector_get_real32, any_vector_get_real64, &
+        any_vector_get_cmplx32, any_vector_get_cmplx64
     procedure :: copy_impl => any_vector_copy
   end type
 
@@ -101,10 +105,12 @@ module parameter_list_type
     procedure :: value_ptr => any_matrix_value_ptr
     generic   :: get_value => &
         any_matrix_get_value, any_matrix_get_character, any_matrix_get_logical, &
-        any_matrix_get_int32, any_matrix_get_int64, any_matrix_get_real32, any_matrix_get_real64
+        any_matrix_get_int32, any_matrix_get_int64, any_matrix_get_real32, any_matrix_get_real64, &
+        any_matrix_get_cmplx32, any_matrix_get_cmplx64
     procedure, private :: &
         any_matrix_get_value, any_matrix_get_character, any_matrix_get_logical, &
-        any_matrix_get_int32, any_matrix_get_int64, any_matrix_get_real32, any_matrix_get_real64
+        any_matrix_get_int32, any_matrix_get_int64, any_matrix_get_real32, any_matrix_get_real64, &
+        any_matrix_get_cmplx32, any_matrix_get_cmplx64
     procedure :: copy_impl => any_matrix_copy
   end type
 
@@ -136,13 +142,17 @@ module parameter_list_type
         get_scalar_int32, get_vector_int32, get_matrix_int32, &
         get_scalar_int64, get_vector_int64, get_matrix_int64, &
         get_scalar_real32, get_vector_real32, get_matrix_real32, &
-        get_scalar_real64, get_vector_real64, get_matrix_real64
+        get_scalar_real64, get_vector_real64, get_matrix_real64, &
+        get_scalar_cmplx32, get_vector_cmplx32, get_matrix_cmplx32, &
+        get_scalar_cmplx64, get_vector_cmplx64, get_matrix_cmplx64
     procedure, private :: get_scalar_string, get_vector_string, get_matrix_string, &
         get_scalar_logical, get_vector_logical, get_matrix_logical, &
         get_scalar_int32, get_vector_int32, get_matrix_int32, &
         get_scalar_int64, get_vector_int64, get_matrix_int64, &
         get_scalar_real32, get_vector_real32, get_matrix_real32, &
-        get_scalar_real64, get_vector_real64, get_matrix_real64
+        get_scalar_real64, get_vector_real64, get_matrix_real64, &
+        get_scalar_cmplx32, get_vector_cmplx32, get_matrix_cmplx32, &
+        get_scalar_cmplx64, get_vector_cmplx64, get_matrix_cmplx64
     procedure :: copy_impl => parameter_list_copy
     final :: dealloc_parameter_list
   end type
@@ -303,6 +313,32 @@ contains
     end select
   end subroutine
 
+  subroutine any_scalar_get_cmplx32(this, value, errc)
+    class(any_scalar), intent(in) :: this
+    complex(real32), intent(out) :: value
+    logical, intent(out) :: errc
+    select type (v => this%value)
+    type is (complex(real32))
+      value = v
+      errc = .false.
+    class default
+      errc = .true.
+    end select
+  end subroutine
+
+  subroutine any_scalar_get_cmplx64(this, value, errc)
+    class(any_scalar), intent(in) :: this
+    complex(real64), intent(out) :: value
+    logical, intent(out) :: errc
+    select type (v => this%value)
+    type is (complex(real64))
+      value = v
+      errc = .false.
+    class default
+      errc = .true.
+    end select
+  end subroutine
+
   subroutine any_scalar_get_character(this, value, errc)
     class(any_scalar), intent(in) :: this
     character(:), allocatable, intent(out) :: value
@@ -438,6 +474,32 @@ contains
     end select
   end subroutine
 
+  subroutine any_vector_get_cmplx32(this, value, errc)
+    class(any_vector), intent(in) :: this
+    complex(real32), allocatable :: value(:)
+    logical, intent(out) :: errc
+    select type (v => this%value)
+    type is (complex(real32))
+      value = v
+      errc = .false.
+    class default
+      errc = .true.
+    end select
+  end subroutine
+
+  subroutine any_vector_get_cmplx64(this, value, errc)
+    class(any_vector), intent(in) :: this
+    complex(real64), allocatable :: value(:)
+    logical, intent(out) :: errc
+    select type (v => this%value)
+    type is (complex(real64))
+      value = v
+      errc = .false.
+    class default
+      errc = .true.
+    end select
+  end subroutine
+
   subroutine any_vector_get_character(this, value, errc)
     class(any_vector), intent(in) :: this
     character(:), allocatable, intent(out) :: value(:)
@@ -564,6 +626,32 @@ contains
     logical, intent(out) :: errc
     select type (v => this%value)
     type is (real(real64))
+      value = v
+      errc = .false.
+    class default
+      errc = .true.
+    end select
+  end subroutine
+
+  subroutine any_matrix_get_cmplx32(this, value, errc)
+    class(any_matrix), intent(in) :: this
+    complex(real32), allocatable :: value(:,:)
+    logical, intent(out) :: errc
+    select type (v => this%value)
+    type is (complex(real32))
+      value = v
+      errc = .false.
+    class default
+      errc = .true.
+    end select
+  end subroutine
+
+  subroutine any_matrix_get_cmplx64(this, value, errc)
+    class(any_matrix), intent(in) :: this
+    complex(real64), allocatable :: value(:,:)
+    logical, intent(out) :: errc
+    select type (v => this%value)
+    type is (complex(real64))
       value = v
       errc = .false.
     class default
@@ -1019,6 +1107,62 @@ contains
 
   end subroutine get_scalar_real64
 
+  recursive subroutine get_scalar_cmplx32(this, name, value, stat, errmsg, default)
+
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    complex(real32), intent(out) :: value
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+    complex(real32), intent(in), optional :: default
+
+    logical :: errc
+    type(any_scalar), pointer :: pval
+
+    call error_clear(stat, errmsg)
+    pval => cast_to_any_scalar(find_pval(this, name))
+    if (associated(pval)) then
+      call pval%get_value(value, errc)
+      if (errc) call error('not an complex(real32) parameter: "' // name // '"', stat, errmsg)
+    else if (this%is_parameter(name)) then
+      call error('not a scalar parameter: "' // name // '"', stat, errmsg)
+    else if (present(default)) then
+      call this%set(name, default)
+      call this%get(name, value)
+    else
+      call error('no such parameter: "' // name // '"', stat, errmsg)
+    end if
+
+  end subroutine
+
+  recursive subroutine get_scalar_cmplx64(this, name, value, stat, errmsg, default)
+
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    complex(real64), intent(out) :: value
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+    complex(real64), intent(in), optional :: default
+
+    logical :: errc
+    type(any_scalar), pointer :: pval
+
+    call error_clear(stat, errmsg)
+    pval => cast_to_any_scalar(find_pval(this, name))
+    if (associated(pval)) then
+      call pval%get_value(value, errc)
+      if (errc) call error('not an complex(real64) parameter: "' // name // '"', stat, errmsg)
+    else if (this%is_parameter(name)) then
+      call error('not a scalar parameter: "' // name // '"', stat, errmsg)
+    else if (present(default)) then
+      call this%set(name, default)
+      call this%get(name, value)
+    else
+      call error('no such parameter: "' // name // '"', stat, errmsg)
+    end if
+
+  end subroutine
+
   recursive subroutine get_scalar_logical(this, name, value, stat, errmsg, default)
 
     class(parameter_list), intent(inout) :: this
@@ -1193,6 +1337,62 @@ contains
 
   end subroutine get_vector_real64
 
+  recursive subroutine get_vector_cmplx32(this, name, value, stat, errmsg, default)
+
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    complex(real32), allocatable, intent(out) :: value(:)
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+    complex(real32), intent(in), optional :: default(:)
+
+    logical :: errc
+    type(any_vector), pointer :: pval
+
+    call error_clear(stat, errmsg)
+    pval => cast_to_any_vector(find_pval(this, name))
+    if (associated(pval)) then
+      call pval%get_value(value, errc)
+      if (errc) call error('not an complex(real32) parameter: "' // name // '"', stat, errmsg)
+    else if (this%is_parameter(name)) then
+      call error('not a vector parameter: "' // name // '"', stat, errmsg)
+    else if (present(default)) then
+      call this%set(name, default)
+      call this%get(name, value)
+    else
+      call error('no such parameter: "' // name // '"', stat, errmsg)
+    end if
+
+  end subroutine
+
+  recursive subroutine get_vector_cmplx64(this, name, value, stat, errmsg, default)
+
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    complex(real64), allocatable, intent(out) :: value(:)
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+    complex(real64), intent(in), optional :: default(:)
+
+    logical :: errc
+    type(any_vector), pointer :: pval
+
+    call error_clear(stat, errmsg)
+    pval => cast_to_any_vector(find_pval(this, name))
+    if (associated(pval)) then
+      call pval%get_value(value, errc)
+      if (errc) call error('not an complex(real64) parameter: "' // name // '"', stat, errmsg)
+    else if (this%is_parameter(name)) then
+      call error('not a vector parameter: "' // name // '"', stat, errmsg)
+    else if (present(default)) then
+      call this%set(name, default)
+      call this%get(name, value)
+    else
+      call error('no such parameter: "' // name // '"', stat, errmsg)
+    end if
+
+  end subroutine
+
   recursive subroutine get_vector_logical(this, name, value, stat, errmsg, default)
 
     class(parameter_list), intent(inout) :: this
@@ -1366,6 +1566,62 @@ contains
     end if
 
   end subroutine get_matrix_real64
+
+  recursive subroutine get_matrix_cmplx32(this, name, value, stat, errmsg, default)
+
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    complex(real32), allocatable, intent(out) :: value(:,:)
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+    complex(real32), intent(in), optional :: default(:,:)
+
+    logical :: errc
+    type(any_matrix), pointer :: pval
+
+    call error_clear(stat, errmsg)
+    pval => cast_to_any_matrix(find_pval(this, name))
+    if (associated(pval)) then
+      call pval%get_value(value, errc)
+      if (errc) call error('not an complex(real32) parameter: "' // name // '"', stat, errmsg)
+    else if (this%is_parameter(name)) then
+      call error('not a matrix parameter: "' // name // '"', stat, errmsg)
+    else if (present(default)) then
+      call this%set(name, default)
+      call this%get(name, value)
+    else
+      call error('no such parameter: "' // name // '"', stat, errmsg)
+    end if
+
+  end subroutine
+
+  recursive subroutine get_matrix_cmplx64(this, name, value, stat, errmsg, default)
+
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    complex(real64), allocatable, intent(out) :: value(:,:)
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+    complex(real64), intent(in), optional :: default(:,:)
+
+    logical :: errc
+    type(any_matrix), pointer :: pval
+
+    call error_clear(stat, errmsg)
+    pval => cast_to_any_matrix(find_pval(this, name))
+    if (associated(pval)) then
+      call pval%get_value(value, errc)
+      if (errc) call error('not an complex(real64) parameter: "' // name // '"', stat, errmsg)
+    else if (this%is_parameter(name)) then
+      call error('not a matrix parameter: "' // name // '"', stat, errmsg)
+    else if (present(default)) then
+      call this%set(name, default)
+      call this%get(name, value)
+    else
+      call error('no such parameter: "' // name // '"', stat, errmsg)
+    end if
+
+  end subroutine
 
   recursive subroutine get_matrix_logical(this, name, value, stat, errmsg, default)
 
