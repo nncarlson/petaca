@@ -167,6 +167,21 @@ module secure_hash_class
     procedure, non_overridable :: update_real128_1
     procedure, non_overridable :: update_real128_2
     procedure, non_overridable :: update_real128_3
+    generic, public :: update => update_complex32_0, update_complex32_1, update_complex32_2, update_complex32_3
+    procedure, non_overridable :: update_complex32_0
+    procedure, non_overridable :: update_complex32_1
+    procedure, non_overridable :: update_complex32_2
+    procedure, non_overridable :: update_complex32_3
+    generic, public :: update => update_complex64_0, update_complex64_1, update_complex64_2, update_complex64_3
+    procedure, non_overridable :: update_complex64_0
+    procedure, non_overridable :: update_complex64_1
+    procedure, non_overridable :: update_complex64_2
+    procedure, non_overridable :: update_complex64_3
+    generic, public :: update => update_complex128_0, update_complex128_1, update_complex128_2, update_complex128_3
+    procedure, non_overridable :: update_complex128_0
+    procedure, non_overridable :: update_complex128_1
+    procedure, non_overridable :: update_complex128_2
+    procedure, non_overridable :: update_complex128_3
     generic, public :: update => update_char_0, update_char_1, update_char_2, update_char_3
     procedure, non_overridable :: update_char_0
     procedure, non_overridable :: update_char_1
@@ -628,6 +643,114 @@ contains
     class(secure_hash), intent(inout) :: this
     real(real128), intent(in) :: data(:,:,:)
     call update_real128 (this, data, size(data))
+  end subroutine
+
+!!!! COMPLEX(KIND=REAL32) DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine update_complex32 (this, data, len)
+    class(secure_hash), intent(inout) :: this
+    complex(real32), intent(in), target :: data(*) ! See Note 1
+    integer, intent(in) :: len
+    integer(int8), pointer :: ptr(:)
+    if (len == 0) return
+    call c_f_pointer (c_loc(data), ptr, shape=[8*len]) ! See Note 2
+    call this%process_bytes (ptr, size(ptr))
+  end subroutine update_complex32
+
+  subroutine update_complex32_0 (this, data)
+    class(secure_hash), intent(inout) :: this
+    complex(real32), intent(in) :: data
+    call update_complex32 (this, [data], 1)
+  end subroutine
+
+  subroutine update_complex32_1 (this, data)
+    class(secure_hash), intent(inout) :: this
+    complex(real32), intent(in) :: data(:)
+    call update_complex32 (this, data, size(data))
+  end subroutine
+
+  subroutine update_complex32_2 (this, data)
+    class(secure_hash), intent(inout) :: this
+    complex(real32), intent(in) :: data(:,:)
+    call update_complex32 (this, data, size(data))
+  end subroutine
+
+  subroutine update_complex32_3 (this, data)
+    class(secure_hash), intent(inout) :: this
+    complex(real32), intent(in) :: data(:,:,:)
+    call update_complex32 (this, data, size(data))
+  end subroutine
+
+!!!! COMPLEX(KIND=REAL64) DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine update_complex64 (this, data, len)
+    class(secure_hash), intent(inout) :: this
+    complex(real64), intent(in), target :: data(*) ! See Note 1
+    integer, intent(in) :: len
+    integer(int8), pointer :: ptr(:)
+    if (len == 0) return
+    call c_f_pointer (c_loc(data), ptr, shape=[16*len]) ! See Note 2
+    call this%process_bytes (ptr, size(ptr))
+  end subroutine update_complex64
+
+  subroutine update_complex64_0 (this, data)
+    class(secure_hash), intent(inout) :: this
+    complex(real64), intent(in) :: data
+    call update_complex64 (this, [data], 1)
+  end subroutine
+
+  subroutine update_complex64_1 (this, data)
+    class(secure_hash), intent(inout) :: this
+    complex(real64), intent(in) :: data(:)
+    call update_complex64 (this, data, size(data))
+  end subroutine
+
+  subroutine update_complex64_2 (this, data)
+    class(secure_hash), intent(inout) :: this
+    complex(real64), intent(in) :: data(:,:)
+    call update_complex64 (this, data, size(data))
+  end subroutine
+
+  subroutine update_complex64_3 (this, data)
+    class(secure_hash), intent(inout) :: this
+    complex(real64), intent(in) :: data(:,:,:)
+    call update_complex64 (this, data, size(data))
+  end subroutine
+
+!!!! COMPLEX(KIND=REAL128) DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine update_complex128 (this, data, len)
+    class(secure_hash), intent(inout) :: this
+    complex(real128), intent(in), target :: data(*) ! See Note 1
+    integer, intent(in) :: len
+    integer(int8), pointer :: ptr(:)
+    if (len == 0) return
+    call c_f_pointer (c_loc(data(1)), ptr, shape=[32*len]) ! See Notes 2, 4
+    call this%process_bytes (ptr, size(ptr))
+  end subroutine update_complex128
+
+  subroutine update_complex128_0 (this, data)
+    class(secure_hash), intent(inout) :: this
+    complex(real128), intent(in) :: data
+    call update_complex128 (this, [data], 1)
+  end subroutine
+
+  subroutine update_complex128_1 (this, data)
+    class(secure_hash), intent(inout) :: this
+    complex(real128), intent(in) :: data(:)
+    call update_complex128 (this, data, size(data))
+  end subroutine
+
+  subroutine update_complex128_2 (this, data)
+    class(secure_hash), intent(inout) :: this
+    complex(real128), intent(in) :: data(:,:)
+    call update_complex128 (this, data, size(data))
+  end subroutine
+
+  subroutine update_complex128_3 (this, data)
+    class(secure_hash), intent(inout) :: this
+    complex(real128), intent(in) :: data(:,:,:)
+    call update_complex128 (this, data, size(data))
   end subroutine
 
 !!!! DEFAULT CHARACTER DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

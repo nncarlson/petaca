@@ -92,6 +92,15 @@ contains
     type is (real(real128))
       write(unit) a
       call h%update (a)
+    type is (complex(real32))
+      write(unit) a
+      call h%update (a)
+    type is (complex(real64))
+      write(unit) a
+      call h%update (a)
+    type is (complex(real128))
+      write(unit) a
+      call h%update (a)
     type is (character(*))
       write(unit) a
       call h%update (a)
@@ -146,6 +155,15 @@ contains
       write(unit) a
       call h%update (a)
     type is (real(real128))
+      write(unit) a
+      call h%update (a)
+    type is (complex(real32))
+      write(unit) a
+      call h%update (a)
+    type is (complex(real64))
+      write(unit) a
+      call h%update (a)
+    type is (complex(real128))
       write(unit) a
       call h%update (a)
     type is (character(*))
@@ -204,6 +222,15 @@ contains
     type is (real(real128))
       write(unit) a
       call h%update (a)
+    type is (complex(real32))
+      write(unit) a
+      call h%update (a)
+    type is (complex(real64))
+      write(unit) a
+      call h%update (a)
+    type is (complex(real128))
+      write(unit) a
+      call h%update (a)
     type is (character(*))
       write(unit) a
       call h%update (a)
@@ -260,6 +287,15 @@ contains
     type is (real(real128))
       write(unit) a
       call h%update (a)
+    type is (complex(real32))
+      write(unit) a
+      call h%update (a)
+    type is (complex(real64))
+      write(unit) a
+      call h%update (a)
+    type is (complex(real128))
+      write(unit) a
+      call h%update (a)
     type is (character(*))
       write(unit) a
       call h%update (a)
@@ -302,6 +338,9 @@ program test_secure_hash
   call test_md5_real32
   call test_md5_real64
   call test_md5_real128  ! real128 not portable between compilers
+  call test_md5_complex32
+  call test_md5_complex64
+  call test_md5_complex128  ! real128 not portable between compilers
   call test_md5_character
   call test_md5_log8     !logical types not portable between compilers
   call test_md5_log16
@@ -317,6 +356,9 @@ program test_secure_hash
   call test_sha1_real32
   call test_sha1_real64
   call test_sha1_real128  ! real128 not portable between compilers
+  call test_sha1_complex32
+  call test_sha1_complex64
+  call test_sha1_complex128  ! real128 not portable between compilers
   call test_sha1_character
   call test_sha1_log8     !logical types not portable between compilers
   call test_sha1_log16
@@ -504,6 +546,36 @@ contains
     call test ('md5_test_real128: rank-2 array', valid_hash(a2, 'md5'))
     call test ('md5_test_real128: rank-3 array', valid_hash(a3, 'md5'))
   end subroutine test_md5_real128
+
+  subroutine test_md5_complex32
+    complex(real32) :: a0, a1(2), a2(2,3), a3(2,3,4)
+    a0 = (-1300100230.0, 1300100230.0)
+    a1 = a0; a2 = a0; a3 = a0
+    call test ('md5_test_complex32: scalar', valid_hash(a0, 'md5'))
+    call test ('md5_test_complex32: rank-1 array', valid_hash(a1, 'md5'))
+    call test ('md5_test_complex32: rank-2 array', valid_hash(a2, 'md5'))
+    call test ('md5_test_complex32: rank-3 array', valid_hash(a3, 'md5'))
+  end subroutine test_md5_complex32
+
+  subroutine test_md5_complex64
+    complex(real64) :: a0, a1(2), a2(2,3), a3(2,3,4)
+    a0 = (-130010023087.0_real64, 130010023087.0_real64)
+    a1 = a0; a2 = a0; a3 = a0
+    call test ('md5_test_complex64: scalar', valid_hash(a0, 'md5'))
+    call test ('md5_test_complex64: rank-1 array', valid_hash(a1, 'md5'))
+    call test ('md5_test_complex64: rank-2 array', valid_hash(a2, 'md5'))
+    call test ('md5_test_complex64: rank-3 array', valid_hash(a3, 'md5'))
+  end subroutine test_md5_complex64
+
+  subroutine test_md5_complex128
+    complex(real128) :: a0, a1(2), a2(2,3), a3(2,3,4)
+    a0 = (-130010023087.0_real128, 130010023087.0_real128)
+    a1 = a0; a2 = a0; a3 = a0
+    call test ('md5_test_complex128: scalar', valid_hash(a0, 'md5'))
+    call test ('md5_test_complex128: rank-1 array', valid_hash(a1, 'md5'))
+    call test ('md5_test_complex128: rank-2 array', valid_hash(a2, 'md5'))
+    call test ('md5_test_complex128: rank-3 array', valid_hash(a3, 'md5'))
+  end subroutine test_md5_complex128
 
   subroutine test_md5_character
     character(5) :: a0, a1(2), a2(2,3), a3(2,3,4)
@@ -724,6 +796,36 @@ contains
     call test ('sha1_test_real128: rank-3 array', valid_hash(a3, 'sha1'))
   end subroutine test_sha1_real128
 
+  subroutine test_sha1_complex32
+    complex(real32) :: a0, a1(2), a2(2,3), a3(2,3,4)
+    a0 = (-1300100230.0, 1300100230.0)
+    a1 = a0; a2 = a0; a3 = a0
+    call test ('sha1_test_complex32: scalar', valid_hash(a0, 'sha1'))
+    call test ('sha1_test_complex32: rank-1 array', valid_hash(a1, 'sha1'))
+    call test ('sha1_test_complex32: rank-2 array', valid_hash(a2, 'sha1'))
+    call test ('sha1_test_complex32: rank-3 array', valid_hash(a3, 'sha1'))
+  end subroutine test_sha1_complex32
+
+  subroutine test_sha1_complex64
+    complex(real64) :: a0, a1(2), a2(2,3), a3(2,3,4)
+    a0 = (-130010023087.0_real64, 130010023087.0_real64)
+    a1 = a0; a2 = a0; a3 = a0
+    call test ('sha1_test_complex64: scalar', valid_hash(a0, 'sha1'))
+    call test ('sha1_test_complex64: rank-1 array', valid_hash(a1, 'sha1'))
+    call test ('sha1_test_complex64: rank-2 array', valid_hash(a2, 'sha1'))
+    call test ('sha1_test_complex64: rank-3 array', valid_hash(a3, 'sha1'))
+  end subroutine test_sha1_complex64
+
+  subroutine test_sha1_complex128
+    complex(real128) :: a0, a1(2), a2(2,3), a3(2,3,4)
+    a0 = (-130010023087.0_real128, 130010023087.0_real128)
+    a1 = a0; a2 = a0; a3 = a0
+    call test ('sha1_test_complex128: scalar', valid_hash(a0, 'sha1'))
+    call test ('sha1_test_complex128: rank-1 array', valid_hash(a1, 'sha1'))
+    call test ('sha1_test_complex128: rank-2 array', valid_hash(a2, 'sha1'))
+    call test ('sha1_test_complex128: rank-3 array', valid_hash(a3, 'sha1'))
+  end subroutine test_sha1_complex128
+
   subroutine test_sha1_character
     character(5) :: a0, a1(2), a2(2,3), a3(2,3,4)
     a0 = 'hello'
@@ -782,6 +884,9 @@ contains
     real(real32)   :: r32(0)
     real(real64)   :: r64(0)
     real(real128)  :: r128(0)
+    complex(real32) :: z32(0)
+    complex(real64) :: z64(0)
+    complex(real128) :: z128(0)
     logical(int8)  :: b8(0)
     logical(int16) :: b16(0)
     logical(int32) :: b32(0)
@@ -794,6 +899,9 @@ contains
     call test('sha1_test_zero_size: real-32 array', valid_hash(r32, 'sha1'))
     call test('sha1_test_zero_size: real-64 array', valid_hash(r64, 'sha1'))
     call test('sha1_test_zero_size: real-128 array', valid_hash(r128, 'sha1'))
+    call test('sha1_test_zero_size: complex-32 array', valid_hash(z32, 'sha1'))
+    call test('sha1_test_zero_size: complex-64 array', valid_hash(z64, 'sha1'))
+    call test('sha1_test_zero_size: complex-128 array', valid_hash(z128, 'sha1'))
     call test('sha1_test_zero_size: logical-8 array', valid_hash(b8, 'sha1'))
     call test('sha1_test_zero_size: logical-16 array', valid_hash(b16, 'sha1'))
     call test('sha1_test_zero_size: logical-32 array', valid_hash(b32, 'sha1'))
