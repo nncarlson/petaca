@@ -9,6 +9,12 @@ way to pass information between different program units. The module
 working with it, and the module ``parameter_list_json`` provides additional
 procedures for parameter list input/output using JSON-format text.
 
+.. admonition:: New in v24.12
+
+   * Support for 32 and 64-bit arguments has been added to the generic ``get``
+     subroutine. Note that the ``set`` subroutine has always supported
+     arguments of any type.
+
 .. admonition:: New in v23.12
 
    * The optional ``default`` argument of the ``get`` and ``get_any``
@@ -174,8 +180,9 @@ program execution is terminated.
     Retrieve the value of the parameter ``name``. A copy of the value is
     returned in ``value``, which may be a scalar, or rank-1 or rank-2 array
     of the following intrinsic types: ``integer(int32)``, ``integer(int64)``,
-    ``real(real32)``, ``real(real64)``, default ``logical``, and default
-    ``character``. The kind parameters are those from the intrinsic module
+    ``real(real32)``, ``real(real64)``, ``complex(real32)``, ``complex(real64)``,
+    default ``logical``, and default ``character``.
+    The kind parameters are those from the intrinsic module
     ``iso_fortran_env``, and should cover the default integer and real kinds,
     as well as double precision. An array ``value`` must be allocatable and
     a character ``value`` must be deferred-length allocatable. In these latter
@@ -192,11 +199,11 @@ program execution is terminated.
 
 ``get_any(name, value [,stat [,errmsg]] [,default])``
     Retrieves the value of the parameter ``name``.  A copy of the value is
-    returned in ``value``, which is an allocatable ``class(*)`` variable
-    or rank-1 or rank-2 array.  This is a more general version of ``get``
-    that can retrieve any type of parameter value. The drawback of ``get_any``
-    is that application code must use a select-type construct in order to use
-    the returned value, making it more complex to use. If present, the optional
+    returned in ``value``, which is an allocatable ``class(*)`` variable or
+    rank-1 or rank-2 array.  This is a more general version of ``get`` that
+    can retrieve any type of parameter value. The drawback of ``get_any`` is
+    that application code must use a select-type construct in order to use the
+    returned value, making it more cumbersome to use. If present, the optional
     argument ``default`` must have the same rank as ``value``. If the named
     parameter does not exist, it is created with the value prescribed by
     ``default``, and that value is returned in ``value``.  It is an error if

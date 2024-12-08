@@ -33,6 +33,8 @@ program test_any_vector_type
   call test_set_get_int64
   call test_set_get_real32
   call test_set_get_real64
+  call test_set_get_cmplx32
+  call test_set_get_cmplx64
   call test_set_get_logical
   call test_set_get_character
   call test_get_value
@@ -192,6 +194,86 @@ contains
         call write_fail('test_set_get_real64 failed test 4c')
       else
         if (any(val /= [11.0])) call write_fail('test_set_get_real64 failed test 5')
+      end if
+    end if
+
+  end subroutine
+
+  subroutine test_set_get_cmplx32
+
+    type(any_vector) :: x
+    complex(real32), allocatable :: val(:), src(:)
+    complex(real64), allocatable :: bad(:)
+    logical :: errc
+
+    src = [cmplx(1,2,kind=real32), cmplx(3,4,kind=real32)]
+    x = any_vector(src)  ! constructor
+
+    call x%get_value(val, errc)
+    if (errc) call write_fail('test_set_get_cmplx32 failed test 1')
+    if (.not.allocated(val)) then
+      call write_fail('test_set_get_cmplx32 failed test 1b')
+    else
+      if (size(val) /= 2) then
+        call write_fail('test_set_get_cmplx32 failed test 1c')
+      else
+        if (any(val /= src)) call write_fail('test_set_get_cmplx32 failed test 2')
+      end if
+    end if
+    call x%get_value(bad, errc)
+    if (.not.errc) call write_fail('test_set_get_cmplx32 failed test 3')
+
+    src = [cmplx(5,6,kind=real32)]
+    call x%set_value(src) ! overwrite
+    call x%get_value(val, errc)
+    if (errc) call write_fail('test_set_get_cmplx32 failed test 4')
+    if (.not.allocated(val)) then
+      call write_fail('test_set_get_cmplx32 failed test 4b')
+    else
+      if (size(val) /= 1) then
+        call write_fail('test_set_get_cmplx32 failed test 4c')
+      else
+        if (any(val /= src)) call write_fail('test_set_get_cmplx32 failed test 5')
+      end if
+    end if
+
+  end subroutine
+
+  subroutine test_set_get_cmplx64
+
+    type(any_vector) :: x
+    complex(real64), allocatable :: val(:), src(:)
+    complex(real32), allocatable :: bad(:)
+    logical :: errc
+
+    src = [cmplx(1,2,kind=real64), cmplx(3,4,kind=real64)]
+    x = any_vector(src)  ! constructor
+
+    call x%get_value(val, errc)
+    if (errc) call write_fail('test_set_get_cmplx64 failed test 1')
+    if (.not.allocated(val)) then
+      call write_fail('test_set_get_cmplx64 failed test 1b')
+    else
+      if (size(val) /= 2) then
+        call write_fail('test_set_get_cmplx64 failed test 1c')
+      else
+        if (any(val /= src)) call write_fail('test_set_get_cmplx64 failed test 2')
+      end if
+    end if
+    call x%get_value(bad, errc)
+    if (.not.errc) call write_fail('test_set_get_cmplx64 failed test 3')
+
+    src = [cmplx(5,6,kind=real64)]
+    call x%set_value(src) ! overwrite
+    call x%get_value(val, errc)
+    if (errc) call write_fail('test_set_get_cmplx64 failed test 4')
+    if (.not.allocated(val)) then
+      call write_fail('test_set_get_cmplx64 failed test 4b')
+    else
+      if (size(val) /= 1) then
+        call write_fail('test_set_get_cmplx64 failed test 4c')
+      else
+        if (any(val /= src)) call write_fail('test_set_get_cmplx64 failed test 5')
       end if
     end if
 

@@ -47,12 +47,16 @@ contains
     character(:), allocatable :: errmsg
     call parameter_list_from_json_string('{"array":[1,2]}', plist, errmsg)
     if (.not.associated(plist)) call write_fail('test_vector_valid failed test 1')
+    deallocate(plist)
     call parameter_list_from_json_string('{"array":[1.0,2.0]}', plist, errmsg)
     if (.not.associated(plist)) call write_fail('test_vector_valid failed test 2')
+    deallocate(plist)
     call parameter_list_from_json_string('{"array":[true,false]}', plist, errmsg)
     if (.not.associated(plist)) call write_fail('test_vector_valid failed test 3')
+    deallocate(plist)
     call parameter_list_from_json_string('{"array":["boy","girl"]}', plist, errmsg)
     if (.not.associated(plist)) call write_fail('test_vector_valid failed test 4')
+    deallocate(plist)
   end subroutine
 
   !! This is meant to test the MY_SAME_TYPE_AS function which replaced earlier
@@ -85,12 +89,16 @@ contains
     character(:), allocatable :: errmsg, array(:)
     integer :: stat
     call parameter_list_from_json_string('{"array":["foo","bar"]}', plist, errmsg)
-    if (.not.associated(plist)) call write_fail('test_string_array failed test 1')
+    if (.not.associated(plist)) then
+      call write_fail('test_string_array failed test 1')
+      return
+    end if
     call plist%get('array', array, stat=stat, errmsg=errmsg)
     if (stat /= 0) call write_fail('test_string_array failed test 2: ' // errmsg)
     if (size(array) /= 2) call write_fail('test_string_array failed test3')
     if (array(1) /= 'foo') call write_fail('test_string_array failed test4: "' // array(1) // '"')
     if (array(2) /= 'bar') call write_fail('test_string_array failed test5: "' // array(2) // '"')
+    deallocate(plist)
   end subroutine
 
   subroutine write_fail(errmsg)

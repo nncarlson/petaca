@@ -33,6 +33,8 @@ program test_any_matrix_type
   call test_set_get_int64
   call test_set_get_real32
   call test_set_get_real64
+  call test_set_get_cmplx32
+  call test_set_get_cmplx64
   call test_set_get_logical
   call test_set_get_character
   call test_get_value
@@ -200,6 +202,92 @@ contains
         call write_fail('test_set_get_real64 failed test 4c')
       else
         if (any(val /= ref)) call write_fail('test_set_get_real64 failed test 5')
+      end if
+    end if
+
+  end subroutine
+
+  subroutine test_set_get_cmplx32
+
+    type(any_matrix) :: x
+    complex(real32), allocatable :: val(:,:), ref(:,:), a
+    complex(real64), allocatable :: bad(:,:)
+    logical :: errc
+    integer :: j
+
+    a = cmplx(1,-1,kind=real32)
+    ref = reshape([(j*a, j=1,6)], shape=[2,3])
+    x = any_matrix(ref)  ! constructor
+
+    call x%get_value(val, errc)
+    if (errc) call write_fail('test_set_get_cmplx32 failed test 1')
+    if (.not.allocated(val)) then
+      call write_fail('test_set_get_cmplx32 failed test 1b')
+    else
+      if (any(shape(val) /= shape(ref))) then
+        call write_fail('test_set_get_cmplx32 failed test 1c')
+      else
+        if (any(val /= ref)) call write_fail('test_set_get_cmplx32 failed test 2')
+      end if
+    end if
+    call x%get_value(bad, errc)
+    if (.not.errc) call write_fail('test_set_get_cmplx32 failed test 3')
+
+    a = cmplx(2,3,kind=real32)
+    ref = reshape([(j*a, j=1,2)], shape=[1,2])
+    call x%set_value(ref) ! overwrite
+    call x%get_value(val, errc)
+    if (errc) call write_fail('test_set_get_cmplx32 failed test 4')
+    if (.not.allocated(val)) then
+      call write_fail('test_set_get_cmplx32 failed test 4b')
+    else
+      if (any(shape(val) /= shape(ref))) then
+        call write_fail('test_set_get_cmplx32 failed test 4c')
+      else
+        if (any(val /= ref)) call write_fail('test_set_get_cmplx32 failed test 5')
+      end if
+    end if
+
+  end subroutine
+
+  subroutine test_set_get_cmplx64
+
+    type(any_matrix) :: x
+    complex(real64), allocatable :: val(:,:), ref(:,:), a
+    complex(real32), allocatable :: bad(:,:)
+    logical :: errc
+    integer :: j
+
+    a = cmplx(1,-1,kind=real64)
+    ref = reshape([(j*a, j=1,6)], shape=[2,3])
+    x = any_matrix(ref)  ! constructor
+
+    call x%get_value(val, errc)
+    if (errc) call write_fail('test_set_get_cmplx64 failed test 1')
+    if (.not.allocated(val)) then
+      call write_fail('test_set_get_cmplx64 failed test 1b')
+    else
+      if (any(shape(val) /= shape(ref))) then
+        call write_fail('test_set_get_cmplx64 failed test 1c')
+      else
+        if (any(val /= ref)) call write_fail('test_set_get_cmplx64 failed test 2')
+      end if
+    end if
+    call x%get_value(bad, errc)
+    if (.not.errc) call write_fail('test_set_get_cmplx64 failed test 3')
+
+    a = cmplx(2,3,kind=real64)
+    ref = reshape([(j*a, j=1,2)], shape=[1,2])
+    call x%set_value(ref) ! overwrite
+    call x%get_value(val, errc)
+    if (errc) call write_fail('test_set_get_cmplx64 failed test 4')
+    if (.not.allocated(val)) then
+      call write_fail('test_set_get_cmplx64 failed test 4b')
+    else
+      if (any(shape(val) /= shape(ref))) then
+        call write_fail('test_set_get_cmplx64 failed test 4c')
+      else
+        if (any(val /= ref)) call write_fail('test_set_get_cmplx64 failed test 5')
       end if
     end if
 
