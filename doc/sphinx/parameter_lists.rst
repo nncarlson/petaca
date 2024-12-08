@@ -11,8 +11,8 @@ procedures for parameter list input/output using JSON-format text.
 
 .. admonition:: New in v24.12
 
-   * Support for 32 and 64-bit arguments has been added to the generic ``get``
-     subroutine. Note that the ``set`` subroutine has always supported
+   * Support for 32 and 64-bit complex arguments has been added to the generic
+     ``get`` subroutine. Note that the ``set`` subroutine has always supported
      arguments of any type.
 
 .. admonition:: New in v23.12
