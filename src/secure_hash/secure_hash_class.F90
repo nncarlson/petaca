@@ -162,11 +162,13 @@ module secure_hash_class
     procedure, non_overridable :: update_real64_1
     procedure, non_overridable :: update_real64_2
     procedure, non_overridable :: update_real64_3
+#ifdef HAVE_REAL128
     generic, public :: update => update_real128_0, update_real128_1, update_real128_2, update_real128_3
     procedure, non_overridable :: update_real128_0
     procedure, non_overridable :: update_real128_1
     procedure, non_overridable :: update_real128_2
     procedure, non_overridable :: update_real128_3
+#endif
     generic, public :: update => update_complex32_0, update_complex32_1, update_complex32_2, update_complex32_3
     procedure, non_overridable :: update_complex32_0
     procedure, non_overridable :: update_complex32_1
@@ -177,11 +179,13 @@ module secure_hash_class
     procedure, non_overridable :: update_complex64_1
     procedure, non_overridable :: update_complex64_2
     procedure, non_overridable :: update_complex64_3
+#ifdef HAVE_REAL128
     generic, public :: update => update_complex128_0, update_complex128_1, update_complex128_2, update_complex128_3
     procedure, non_overridable :: update_complex128_0
     procedure, non_overridable :: update_complex128_1
     procedure, non_overridable :: update_complex128_2
     procedure, non_overridable :: update_complex128_3
+#endif
     generic, public :: update => update_char_0, update_char_1, update_char_2, update_char_3
     procedure, non_overridable :: update_char_0
     procedure, non_overridable :: update_char_1
@@ -611,6 +615,7 @@ contains
 
 !!!! REAL(KIND=REAL128) DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#ifdef HAVE_REAL128
   subroutine update_real128 (this, data, len)
     class(secure_hash), intent(inout) :: this
     real(real128), intent(in), target :: data(*) ! See Note 1
@@ -644,6 +649,7 @@ contains
     real(real128), intent(in) :: data(:,:,:)
     call update_real128 (this, data, size(data))
   end subroutine
+#endif
 
 !!!! COMPLEX(KIND=REAL32) DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -719,6 +725,7 @@ contains
 
 !!!! COMPLEX(KIND=REAL128) DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#ifdef HAVE_REAL128
   subroutine update_complex128 (this, data, len)
     class(secure_hash), intent(inout) :: this
     complex(real128), intent(in), target :: data(*) ! See Note 1
@@ -752,6 +759,7 @@ contains
     complex(real128), intent(in) :: data(:,:,:)
     call update_complex128 (this, data, size(data))
   end subroutine
+#endif
 
 !!!! DEFAULT CHARACTER DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

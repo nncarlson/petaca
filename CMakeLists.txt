@@ -16,6 +16,13 @@ option(BUILD_HTML "Build HTML documentation (requires Sphinx)" OFF)
 option(BUILD_SHARED_LIBS "Build shared object library" ON)
 option(ENABLE_STD_MOD_PROC_NAME "Build with -assume std_mod_proc_name when using Intel" OFF)
 
+# Some Fortran compilers may not support 128-bit reals
+include(CheckFortranSourceCompiles)
+check_fortran_source_compiles("use::iso_fortran_env;real(real128)::x;end" real128 SRC_EXT ".f90")
+if(real128)
+  add_compile_definitions($<$<COMPILE_LANGUAGE:Fortran>:HAVE_REAL128>)
+endif()
+
 include(CTest) # defines option BUILD_TESTING (on)
 
 if(NOT CMAKE_BUILD_TYPE)
