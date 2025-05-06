@@ -226,8 +226,6 @@ contains
 
   subroutine parameters_from_json_stream(unit, plist, stat, errmsg)
 
-    use,intrinsic :: iso_fortran_env, only: error_unit
-
     integer, intent(in) :: unit
     type(parameter_list), target :: plist
     integer, intent(out) :: stat
@@ -253,12 +251,17 @@ contains
 
     inquire(unit,pos=last_pos)  ! starting position in stream
     do
-      read(unit,iostat=ios) buffer
+      do buflen = 1, size(buffer)
+        read(unit,iostat=ios) buffer(buflen)
+        if (ios /= 0) exit
+      end do
       if (ios /= 0 .and. ios /= iostat_end) then
-        write(error_unit,'(a,i0)') 'read error: iostat=', ios
+        allocate(character(16) :: errmsg)
+        write(errmsg,'(i0)') ios
+        errmsg = 'read error: iostat=' // trim(errmsg)
+        stat = -1
         exit
       end if
-
       inquire(unit,pos=curr_pos)
       buflen = curr_pos - last_pos
       last_pos = curr_pos
