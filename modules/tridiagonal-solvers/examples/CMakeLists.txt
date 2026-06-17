@@ -1,0 +1,2 @@
+add_executable(btd_matrix_example btd_matrix_example.F90)
+target_link_libraries(btd_matrix_example parallel-lib)
