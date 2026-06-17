@@ -40,7 +40,8 @@ module parameter_list_type
   implicit none
   private
 
-  type, abstract, public :: parameter_value
+  type, abstract, public :: parameter_entry
+    character(:), allocatable :: name
     !! meta data associated with the parameter will go here
   contains
 #ifdef NAG_BUG20231206
@@ -53,7 +54,7 @@ module parameter_list_type
     !TODO: make write a deferred procedure?
   end type
 
-  type, extends(parameter_value), public :: any_scalar
+  type, extends(parameter_entry), public :: any_scalar
     private
     class(*), allocatable :: value
   contains
@@ -73,7 +74,7 @@ module parameter_list_type
     procedure any_scalar_value
   end interface
 
-  type, extends(parameter_value), public :: any_vector
+  type, extends(parameter_entry), public :: any_vector
     private
     class(*), allocatable :: value(:)
   contains
@@ -93,7 +94,7 @@ module parameter_list_type
     procedure any_vector_value
   end interface
 
-  type, extends(parameter_value), public :: any_matrix
+  type, extends(parameter_entry), public :: any_matrix
     private
     class(*), allocatable :: value(:,:)
   contains
@@ -113,10 +114,24 @@ module parameter_list_type
     procedure any_matrix_value
   end interface
 
-  type, extends(parameter_value), public :: parameter_list
-    private
-    character(:), allocatable :: path_
+  type, extends(parameter_entry) :: list
     type(list_item), pointer :: first => null()
+  contains
+    procedure :: copy_impl => list_copy
+    final :: list_final
+  end type
+
+  type :: list_item
+    class(parameter_entry), allocatable :: pentry
+    type(list_item), pointer :: next => null(), prev => null()
+  contains
+    final :: list_item_final
+  end type
+
+  type, public :: parameter_list
+    !private
+    character(:), allocatable :: path_
+    type(list), pointer :: first => null()  !FIXME: rename
   contains
     procedure :: path
     procedure :: set_path
@@ -144,15 +159,7 @@ module parameter_list_type
         get_scalar_real32, get_vector_real32, get_matrix_real32, &
         get_scalar_real64, get_vector_real64, get_matrix_real64
     procedure :: copy_impl => parameter_list_copy
-    final :: dealloc_parameter_list
-  end type
-
-  type :: list_item
-    character(:), allocatable :: name
-    class(parameter_value), allocatable :: value
-    type(list_item), pointer :: next => null(), prev => null()
-  contains
-    final :: dealloc_list_item
+!    final :: dealloc_parameter_list
   end type
 
   type, public :: parameter_list_iterator
@@ -186,28 +193,30 @@ contains
   !! extension-specific implementation.
 
   recursive subroutine copy(lhs, rhs)
-    class(parameter_value), intent(inout) :: lhs
-    class(parameter_value), intent(in) :: rhs
+    class(parameter_entry), intent(inout) :: lhs
+    class(parameter_entry), intent(in) :: rhs
     if (same_type_as(lhs, rhs)) then
       call lhs%copy_impl(rhs)
     else
-      error stop 'parameter_value: assignment between different dynamic types'
+      error stop 'parameter_entry: assignment between different dynamic types'
     end if
   end subroutine
 
 !!!! SCALAR_ANY TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !! User-defined constructor for ANY_SCALAR objects.
-  function any_scalar_value(value) result(obj)
+  function any_scalar_value(name, value) result(this)
+    character(*), intent(in) :: name
     class(*), intent(in) :: value
-    type(any_scalar) :: obj
-    call any_scalar_set_value(obj, value)
+    type(any_scalar) :: this
+    this%name = name
+    call any_scalar_set_value(this, value)
   end function
 
   !! Should have the same effect as intrinsic assignment of ANY_SCALAR objects.
   subroutine any_scalar_copy(lhs, rhs)
     class(any_scalar), intent(inout) :: lhs
-    class(parameter_value), intent(in) :: rhs
+    class(parameter_entry), intent(in) :: rhs
     if (allocated(lhs%value)) deallocate(lhs%value)
     select type (rhs)
     type is (any_scalar)
@@ -326,16 +335,18 @@ contains
 !!!! VECTOR_ANY TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !! User-defined constructor for ANY_VECTOR objects.
-  function any_vector_value(value) result(obj)
+  function any_vector_value(name, value) result(this)
+    character(*), intent(in) :: name
     class(*), intent(in) :: value(:)
-    type(any_vector) :: obj
-    call any_vector_set_value(obj, value)
+    type(any_vector) :: this
+    this%name = name
+    call any_vector_set_value(this, value)
   end function
 
   !! Should have the same effect as intrinsic assignment of ANY_VECTOR objects.
   subroutine any_vector_copy(lhs, rhs)
     class(any_vector), intent(inout) :: lhs
-    class(parameter_value), intent(in) :: rhs
+    class(parameter_entry), intent(in) :: rhs
     select type (rhs)
     type is (any_vector)
 #ifdef INTEL_BUG20231205
@@ -452,16 +463,18 @@ contains
 !!!! MATRIX_ANY TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !! User-defined constructor for ANY_MATRIX objects.
-  function any_matrix_value(value) result(obj)
+  function any_matrix_value(name, value) result(this)
+    character(*), intent(in) :: name
     class(*), intent(in) :: value(:,:)
-    type(any_matrix) :: obj
-    call any_matrix_set_value(obj, value)
+    type(any_matrix) :: this
+    this%name = name
+    call any_matrix_set_value(this, value)
   end function
 
   !! Should have the same effect as intrinsic assignment of ANY_MATRIX objects.
   subroutine any_matrix_copy(lhs, rhs)
     class(any_matrix), intent(inout) :: lhs
-    class(parameter_value), intent(in) :: rhs
+    class(parameter_entry), intent(in) :: rhs
     select type (rhs)
     type is (any_matrix)
 #ifdef INTEL_BUG20231205
@@ -574,21 +587,21 @@ contains
     end select
   end subroutine
 
-!!!! PARAMETER_LIST TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!! LIST TYPE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !! Final procedure for PARAMETER_LIST objects.
-  recursive subroutine dealloc_parameter_list(this)
-    type(parameter_list), intent(inout) :: this
+  recursive subroutine list_final(this)
+    type(list), intent(inout) :: this
     if (associated(this%first)) deallocate(this%first)
   end subroutine
 
-  !! Final procedure for LIST_ITEM objects.  This recursively follows the
-  !! NEXT pointer. When deallocating a linked-list structure only the root
-  !! needs to be explicitly deallocated. When the desire is to deallocate a
-  !! single LIST_ITEM object, first nullify the NEXT point to prevent the
-  !! recursive finalization from possibly deallocating more than it should.
+  !! Final procedure for PARAMETER_ENTRY_LIST_ITEM objects. This recursively
+  !! follows the NEXT pointer. When deallocating a linked-list structure only
+  !! the root needs to be explicitly deallocated. When the desire is to
+  !! deallocate a single PARAMETER_ENTRY_LIST_ITEM object, first nullify the
+  !! NEXT point to prevent the recursive finalization from deallocating more
+  !! than it should.
 
-  recursive subroutine dealloc_list_item(this)
+  recursive subroutine list_item_final(this)
     type(list_item), intent(inout) :: this
     if (associated(this%next)) deallocate(this%next)
   end subroutine
@@ -598,9 +611,108 @@ contains
   !! those stored as class(*) components of ANY_SCALAR, ANY_VECTOR, and
   !! ANY_MATRIX -- are themselves shallow copies.
 
+  recursive subroutine list_copy(lhs, rhs)
+    class(list), intent(inout) :: lhs
+    class(parameter_entry), intent(in) :: rhs
+    select type (rhs)
+    type is (list)
+      if (associated(lhs%first, rhs%first)) return  ! rhs and lhs are the same
+      if (associated(lhs%first)) deallocate(lhs%first)
+      if (associated(rhs%first)) lhs%first => list_item_copy(rhs%first)
+    end select
+  end subroutine
+
+  !! This creates a copy of the forward linked-list structure rooted with the
+  !! given LIST_ITEM object. A pointer to the copy root is returned by the
+  !! function. The PREV pointers in the copy are properly defined, including
+  !! that of the root, which points to the end of the list, and thus is
+  !! suitable as the target of LIST%FIRST.
+
+  recursive function list_item_copy(item) result(copy)
+    type(list_item), intent(in) :: item
+    type(list_item), pointer :: copy
+    allocate(copy)
+    allocate(copy%pentry, mold=item%pentry) ! NB: only intrinsic assignment with source=
+#ifdef NAG_BUG20231206
+    call copy%pentry%copy(item%pentry)
+#else
+    copy%pentry = item%pentry  ! defined assignment (requires rhs be allocated!)
+#endif
+    if (associated(item%next)) then
+      copy%next => list_item_copy(item%next)
+      copy%prev => copy%next%prev
+      copy%next%prev => copy
+    else
+      copy%prev => copy
+    end if
+  end function
+
+  !! Return a pointer to a new initialized (but unlinked) LIST_ITEM.
+  function new_list_item(pentry) result(item)
+    class(parameter_entry), intent(in) :: pentry
+    type(list_item), pointer :: item
+    allocate(item)
+    allocate(item%pentry, mold=pentry) ! NB: only intrinsic assignment with source=
+#ifdef NAG_BUG20231206
+    call item%pentry%copy(pentry)
+#else
+    item%value = value  ! defined assignment (requires rhs be allocated!)
+#endif
+    item%prev => item
+    item%next => null()
+  end function
+
+  !! Blindly link the given LIST_ITEM (as made by NEW_LIST_ITEM) to the end
+  !! of the list; it does not check that its name is unique (someone else must).
+  subroutine append_list_item(this, item)
+    type(list), intent(inout) :: this
+    type(list_item), pointer :: item
+    type(list_item), pointer :: tail
+    if (associated(this%first)) then
+      tail => this%first%prev
+      tail%next => item
+      item%prev => tail
+      this%first%prev => item
+    else
+      item%next => null()
+      item%prev => item
+      this%first => item
+    end if
+  end subroutine
+
+  !! Returns a pointer to the parameter entry in the list that has the given
+  !! name, or a null pointer if it is none is found.
+  function find_pentry(this, name) result(pentry)
+    type(list), intent(in) :: this
+    character(*), intent(in) :: name
+    class(parameter_entry), pointer :: pentry
+    type(list_item), pointer :: item
+    pentry => null()
+    item => this%first
+    do while (associated(item))
+      if (item%pentry%name == name) exit
+      item => item%next
+    end do
+    if (associated(item)) pentry => item%pentry
+  end function
+
+
+!!!! PARAMETER_LIST TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !! Final procedure for PARAMETER_LIST objects.
+  subroutine parameter_list_final(this) !FIXME? non-recursive?
+    type(parameter_list), intent(inout) :: this
+    if (associated(this%first)) deallocate(this%first)
+  end subroutine
+
+  !! Defined assignment subroutine for PARAMETER_LIST_OBJECTS. Makes a deep
+  !! copy of the hierarchical parameter list structure. Terminal values --
+  !! those stored as class(*) components of ANY_SCALAR, ANY_VECTOR, and
+  !! ANY_MATRIX -- are themselves shallow copies.
+
   recursive subroutine parameter_list_copy(lhs, rhs)
     class(parameter_list), intent(inout) :: lhs
-    class(parameter_value), intent(in) :: rhs
+    class(parameter_entry), intent(in) :: rhs
     select type (rhs)
     type is (parameter_list)
       if (allocated(rhs%path_)) then
@@ -636,43 +748,43 @@ contains
   logical function is_parameter(this, name)
     class(parameter_list), intent(in) :: this
     character(*), intent(in) :: name
-    is_parameter = associated(find_pval(this, name))
+    is_parameter = associated(find_pentry(this%first, name))
   end function
 
   !! Returns true if the named parameter exists and is a sublist.
   logical function is_sublist(this, name)
     class(parameter_list), intent(in) :: this
     character(*), intent(in) :: name
-    is_sublist = associated(cast_to_parameter_list(find_pval(this, name)))
+    is_sublist = associated(cast_to_list(find_pval(this%first, name)))
   end function
 
   !! Returns true if the named parameter exists and is scalar-valued.
   logical function is_scalar(this, name)
     class(parameter_list), intent(in) :: this
     character(*), intent(in) :: name
-    is_scalar = associated(cast_to_any_scalar(find_pval(this, name)))
+    is_scalar = associated(cast_to_any_scalar(find_pval(this%first, name)))
   end function
 
   !! Returns true if the named parameter exists and is vector-valued.
   logical function is_vector(this, name)
     class(parameter_list), intent(in) :: this
     character(*), intent(in) :: name
-    is_vector = associated(cast_to_any_vector(find_pval(this, name)))
+    is_vector = associated(cast_to_any_vector(find_pval(this%first, name)))
   end function
 
   !! Returns true if the named parameter exists and is matrix-valued.
   logical function is_matrix(this, name)
     class(parameter_list), intent(in) :: this
     character(*), intent(in) :: name
-    is_matrix = associated(cast_to_any_matrix(find_pval(this, name)))
+    is_matrix = associated(cast_to_any_matrix(find_pval(this%first, name)))
   end function
 
   !! Returns the number of stored parameters (of any kind) in the list.
-  integer function count(this)
+  integer function count(this)  !TODO: bind to list
     class(parameter_list), intent(in) :: this
     type(list_item), pointer :: item
     count = 0
-    item => this%first
+    item => this%first%first
     do while (associated(item))
       count = count + 1
       item => item%next
@@ -691,16 +803,16 @@ contains
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
 
-    type(any_scalar), pointer :: pval
+    type(any_scalar), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_scalar(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%set_value(value)
+    pentry => cast_to_any_scalar(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%set_value(value)
     else if (this%is_parameter(name)) then
       call error('not a scalar-valued parameter: "' // name // '"', stat, errmsg)
     else
-      call append_list_item(this, new_list_item(name, any_scalar(value)))
+      call append_list_item(this%first, new_list_item(any_scalar(name, value)))
     end if
 
   end subroutine
@@ -717,16 +829,16 @@ contains
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
 
-    type(any_vector), pointer :: pval
+    type(any_vector), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_vector(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%set_value(value)
+    pentry => cast_to_any_vector(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%set_value(value)
     else if (this%is_parameter(name)) then
       call error('not a vector-valued parameter: "' // name // '"', stat, errmsg)
     else
-      call append_list_item(this, new_list_item(name, any_vector(value)))
+      call append_list_item(this%first, new_list_item(any_vector(name, value)))
     end if
 
   end subroutine
@@ -743,16 +855,16 @@ contains
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
 
-    type(any_matrix), pointer :: pval
+    type(any_matrix), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_matrix(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%set_value(value)
+    pentry => cast_to_any_matrix(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%set_value(value)
     else if (this%is_parameter(name)) then
       call error('not a matrix-valued parameter: "' // name // '"', stat, errmsg)
     else
-      call append_list_item(this, new_list_item(name, any_matrix(value)))
+      call append_list_item(this%first, new_list_item(any_matrix(name, value)))
     end if
 
   end subroutine
@@ -761,24 +873,26 @@ contains
   !! parameter exists and is not a sublist. An empty sublist parameter is
   !! created if necessary.
 
-  recursive function sublist(this, name, stat, errmsg) result(list)
+  recursive function sublist(this, name, stat, errmsg) result(plist)
 
     class(parameter_list), intent(inout) :: this
     character(*), intent(in) :: name
-    class(parameter_list), pointer :: list
+    type(parameter_list) :: plist
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
 
+    type(list), pointer :: pentry
+
     call error_clear(stat, errmsg)
-    list => cast_to_parameter_list(find_pval(this,name))
-    if (associated(list)) then
-      return
+    plist%first => cast_to_list(find_pentry(this%first, name))
+    if (associated(plist%first)) then
     else if (this%is_parameter(name)) then
       call error('parameter is not a sublist: "' // name // '"', stat, errmsg)
     else
-      call append_list_item(this, new_list_item(name, parameter_list(this%path()//'.'//name)))
-      list => this%sublist(name)
+      call append_list_item(this%first, new_list_item(list(name)))
+      plist = this%sublist(name)
     end if
+    plist%path_ = this%path() // '.' // name
 
   end function
 
@@ -894,12 +1008,12 @@ contains
     integer(int32), intent(in), optional :: default
 
     logical :: errc
-    type(any_scalar), pointer :: pval
+    type(any_scalar), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_scalar(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_scalar(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not an integer(int32) parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a scalar parameter: "' // name // '"', stat, errmsg)
@@ -922,12 +1036,12 @@ contains
     integer(int64), intent(in), optional :: default
 
     logical :: errc
-    type(any_scalar), pointer :: pval
+    type(any_scalar), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_scalar(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_scalar(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not an integer(int64) parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a scalar parameter: "' // name // '"', stat, errmsg)
@@ -950,12 +1064,12 @@ contains
     real(real32), intent(in), optional :: default
 
     logical :: errc
-    type(any_scalar), pointer :: pval
+    type(any_scalar), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_scalar(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_scalar(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not an real(real32) parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a scalar parameter: "' // name // '"', stat, errmsg)
@@ -978,12 +1092,12 @@ contains
     real(real64), intent(in), optional :: default
 
     logical :: errc
-    type(any_scalar), pointer :: pval
+    type(any_scalar), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_scalar(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_scalar(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not an real(real64) parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a scalar parameter: "' // name // '"', stat, errmsg)
@@ -1006,12 +1120,12 @@ contains
     logical, intent(in), optional :: default
 
     logical :: errc
-    type(any_scalar), pointer :: pval
+    type(any_scalar), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_scalar(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_scalar(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not a logical parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a scalar parameter: "' // name // '"', stat, errmsg)
@@ -1034,12 +1148,12 @@ contains
     character(*), intent(in), optional :: default
 
     logical :: errc
-    type(any_scalar), pointer :: pval
+    type(any_scalar), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_scalar(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_scalar(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not a string parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a scalar parameter: "' // name // '"', stat, errmsg)
@@ -1068,12 +1182,12 @@ contains
     integer(int32), intent(in), optional :: default(:)
 
     logical :: errc
-    type(any_vector), pointer :: pval
+    type(any_vector), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_vector(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_vector(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not an integer(int32) parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a vector parameter: "' // name // '"', stat, errmsg)
@@ -1096,12 +1210,12 @@ contains
     integer(int64), intent(in), optional :: default(:)
 
     logical :: errc
-    type(any_vector), pointer :: pval
+    type(any_vector), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_vector(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_vector(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not an integer(int64) parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a vector parameter: "' // name // '"', stat, errmsg)
@@ -1124,12 +1238,12 @@ contains
     real(real32), intent(in), optional :: default(:)
 
     logical :: errc
-    type(any_vector), pointer :: pval
+    type(any_vector), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_vector(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_vector(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not an real(real32) parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a vector parameter: "' // name // '"', stat, errmsg)
@@ -1152,12 +1266,12 @@ contains
     real(real64), intent(in), optional :: default(:)
 
     logical :: errc
-    type(any_vector), pointer :: pval
+    type(any_vector), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_vector(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_vector(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not an real(real64) parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a vector parameter: "' // name // '"', stat, errmsg)
@@ -1180,12 +1294,12 @@ contains
     logical, intent(in), optional :: default(:)
 
     logical :: errc
-    type(any_vector), pointer :: pval
+    type(any_vector), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_vector(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_vector(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not a logical parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a vector parameter: "' // name // '"', stat, errmsg)
@@ -1208,12 +1322,12 @@ contains
     character(*), intent(in), optional :: default(:)
 
     logical :: errc
-    type(any_vector), pointer :: pval
+    type(any_vector), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_vector(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_vector(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not a string parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a vector parameter: "' // name // '"', stat, errmsg)
@@ -1242,12 +1356,12 @@ contains
     integer(int32), intent(in), optional :: default(:,:)
 
     logical :: errc
-    type(any_matrix), pointer :: pval
+    type(any_matrix), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_matrix(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_matrix(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not an integer(int32) parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a matrix parameter: "' // name // '"', stat, errmsg)
@@ -1270,12 +1384,12 @@ contains
     integer(int64), intent(in), optional :: default(:,:)
 
     logical :: errc
-    type(any_matrix), pointer :: pval
+    type(any_matrix), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_matrix(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_matrix(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not an integer(int64) parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a matrix parameter: "' // name // '"', stat, errmsg)
@@ -1298,12 +1412,12 @@ contains
     real(real32), intent(in), optional :: default(:,:)
 
     logical :: errc
-    type(any_matrix), pointer :: pval
+    type(any_matrix), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_matrix(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_matrix(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not an real(real32) parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a matrix parameter: "' // name // '"', stat, errmsg)
@@ -1326,12 +1440,12 @@ contains
     real(real64), intent(in), optional :: default(:,:)
 
     logical :: errc
-    type(any_matrix), pointer :: pval
+    type(any_matrix), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_matrix(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_matrix(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not an real(real64) parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a matrix parameter: "' // name // '"', stat, errmsg)
@@ -1354,12 +1468,12 @@ contains
     logical, intent(in), optional :: default(:,:)
 
     logical :: errc
-    type(any_matrix), pointer :: pval
+    type(any_matrix), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_matrix(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_matrix(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not a logical parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a matrix parameter: "' // name // '"', stat, errmsg)
@@ -1382,12 +1496,12 @@ contains
     character(*), intent(in), optional :: default(:,:)
 
     logical :: errc
-    type(any_matrix), pointer :: pval
+    type(any_matrix), pointer :: pentry
 
     call error_clear(stat, errmsg)
-    pval => cast_to_any_matrix(find_pval(this, name))
-    if (associated(pval)) then
-      call pval%get_value(value, errc)
+    pentry => cast_to_any_matrix(find_pentry(this%first, name))
+    if (associated(pentry)) then
+      call pentry%get_value(value, errc)
       if (errc) call error('not a string parameter: "' // name // '"', stat, errmsg)
     else if (this%is_parameter(name)) then
       call error('not a matrix parameter: "' // name // '"', stat, errmsg)
@@ -1402,135 +1516,56 @@ contains
 
   !!!! AUXILIARY CLASS-CASTING FUNCTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !! These cast a CLASS(PARAMETER_VALUE) pointer to a pointer to one of the
+  !! These cast a CLASS(PARAMETER_ENTRY) pointer to a pointer to one of the
   !! extended types provided the dynamic type of the pointer is of that class;
   !! otherwise a null pointer is returned.
 
-  function cast_to_parameter_list(pval) result(cast)
-    class(parameter_value), pointer, intent(in) :: pval
-    class(parameter_list), pointer :: cast
+  function cast_to_list(pentry) result(cast)
+    class(parameter_entry), pointer, intent(in) :: pentry
+    type(list), pointer :: cast
     cast => null()
-    if (associated(pval)) then
-      select type (pval)
-      class is (parameter_list)
-        cast => pval
+    if (associated(pentry)) then
+      select type (pentry)
+      type is (list)
+        cast => pentry
       end select
     end if
   end function
 
-  function cast_to_any_scalar(pval) result(cast)
-    class(parameter_value), pointer, intent(in) :: pval
-    class(any_scalar), pointer :: cast
+  function cast_to_any_scalar(pentry) result(cast)
+    class(parameter_entry), pointer, intent(in) :: pentry
+    type(any_scalar), pointer :: cast
     cast => null()
-    if (associated(pval)) then
-      select type (pval)
-      class is (any_scalar)
-        cast => pval
+    if (associated(pentry)) then
+      select type (pentry)
+      type is (any_scalar)
+        cast => pentry
       end select
     end if
   end function
 
-  function cast_to_any_vector(pval) result(cast)
-    class(parameter_value), pointer, intent(in) :: pval
-    class(any_vector), pointer :: cast
+  function cast_to_any_vector(pentry) result(cast)
+    class(parameter_entry), pointer, intent(in) :: pentry
+    type(any_vector), pointer :: cast
     cast => null()
-    if (associated(pval)) then
-      select type (pval)
-      class is (any_vector)
-        cast => pval
+    if (associated(pentry)) then
+      select type (pentry)
+      type is (any_vector)
+        cast => pentry
       end select
     end if
   end function
 
-  function cast_to_any_matrix(pval) result(cast)
-    class(parameter_value), pointer, intent(in) :: pval
-    class(any_matrix), pointer :: cast
+  function cast_to_any_matrix(pentry) result(cast)
+    class(parameter_entry), pointer, intent(in) :: pentry
+    type(any_matrix), pointer :: cast
     cast => null()
-    if (associated(pval)) then
-      select type (pval)
-      class is (any_matrix)
-        cast => pval
+    if (associated(pentry)) then
+      select type (pentry)
+      type is (any_matrix)
+        cast => pentry
       end select
     end if
-  end function
-
-  !!!! AUXILLARY LIST_ITEM PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  !! This creates a copy of the forward linked-list structure rooted with the
-  !! given LIST_ITEM object. A pointer to the copy root is returned by the
-  !! function. The PREV pointers in the copy are properly defined, including
-  !! that of the root, which points to the end of the list, and thus is
-  !! suitable as the target of PARAMETER_LIST%FIRST.
-
-  recursive function list_item_copy(item) result(copy)
-    type(list_item), intent(in) :: item
-    type(list_item), pointer :: copy
-    allocate(copy)
-    copy%name = item%name
-    allocate(copy%value, mold=item%value) ! NB: only intrinsic assignment with source=
-#ifdef NAG_BUG20231206
-    call copy%value%copy(item%value)
-#else
-    copy%value = item%value  ! defined assignment (requires rhs be allocated!)
-#endif
-    if (associated(item%next)) then
-      copy%next => list_item_copy(item%next)
-      copy%prev => copy%next%prev
-      copy%next%prev => copy
-    else
-      copy%prev => copy
-    end if
-  end function
-
-  !! Return a pointer to a new initialized (but unlinked) LIST_ITEM.
-  function new_list_item(name, value) result(item)
-    character(*), intent(in) :: name
-    class(parameter_value), intent(in) :: value
-    type(list_item), pointer :: item
-    allocate(item)
-    item%name = name
-    allocate(item%value, mold=value) ! NB: only intrinsic assignment with source=
-#ifdef NAG_BUG20231206
-    call item%value%copy(value)
-#else
-    item%value = value  ! defined assignment (requires rhs be allocated!)
-#endif
-    item%prev => item
-    item%next => null()
-  end function
-
-  !! Blindly link the given LIST_ITEM (as made by NEW_LIST_ITEM) to the end
-  !! of the list; it does not check that its name is unique (someone else must).
-  subroutine append_list_item(this, item)
-    class(parameter_list), intent(inout) :: this !FIXME: class or type?
-    type(list_item), pointer :: item
-    type(list_item), pointer :: tail
-    if (associated(this%first)) then
-      tail => this%first%prev
-      tail%next => item
-      item%prev => tail
-      this%first%prev => item
-    else
-      item%next => null()
-      item%prev => item
-      this%first => item
-    end if
-  end subroutine
-
-  !! Returns a pointer to the parameter value in the parameter list that
-  !! has the given name, or a null pointer if it is none is found.
-  function find_pval(this, name) result(pval)
-    class(parameter_list), intent(in) :: this  !FIXME: class or type?
-    character(*), intent(in) :: name
-    class(parameter_value), pointer :: pval
-    type(list_item), pointer :: item
-    pval => null()
-    item => this%first
-    do while (associated(item))
-      if (item%name == name) exit
-      item => item%next
-    end do
-    if (associated(item)) pval => item%value
   end function
 
   !!!! AUXILIARY ERROR HANDLING PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1607,10 +1642,10 @@ contains
     name = this%item%name
   end function
 
-  !! Returns a CLASS(PARAMETER_VALUE) pointer to the current parameter value.
+  !! Returns a CLASS(parameter_entry) pointer to the current parameter value.
   function iter_value(this) result(pval)
     class(parameter_list_iterator), intent(in) :: this
-    class(parameter_value), pointer :: pval
+    class(parameter_entry), pointer :: pval
     pval => this%item%value
   end function
 
