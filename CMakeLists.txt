@@ -2,6 +2,17 @@ cmake_minimum_required(VERSION 3.20.2)
 
 project(Petaca Fortran C)
 
+# CMake does not currently provide the PIC flag for LLVMFlang on Linux.
+# LLVMFlang 23 requires it for shared-library builds; older tested versions
+# happen to link without it. Remove this once CMake handles LLVMFlang PIC.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
+   CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang" AND
+   CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 23 AND
+   CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 24 AND
+   NOT CMAKE_Fortran_COMPILE_OPTIONS_PIC)
+  set(CMAKE_Fortran_COMPILE_OPTIONS_PIC "-fPIC")
+endif()
+
 set(CMAKE_MODULE_PATH "${Petaca_SOURCE_DIR}/cmake/")
 
 # If necessary, set YAJL_ROOT to the yajl installation root
