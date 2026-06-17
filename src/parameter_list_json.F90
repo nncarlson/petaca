@@ -964,57 +964,6 @@ contains
     end if
   end function
 
-  subroutine parameter_list_to_json (plist, unit, real_fmt)
-    type(parameter_list), intent(in) :: plist
-    integer, intent(in) :: unit
-    character(*), intent(in), optional :: real_fmt
-    write(unit,'(a)') '{'
-    call parameter_list_to_json_aux (plist, '  ', unit, real_fmt)
-    write(unit,'(/,a)') '}'
-  end subroutine parameter_list_to_json
-
-  recursive subroutine parameter_list_to_json_aux (plist, indent, unit, real_fmt)
-
-    use map_any_type
-    use parameter_entry_class
-
-    type(parameter_list), intent(in) :: plist
-    character(*), intent(in) :: indent
-    integer, intent(in) :: unit
-    character(*), intent(in), optional :: real_fmt
-
-    type(parameter_list_iterator) :: piter
-    logical :: first_param
-
-    piter = parameter_list_iterator(plist)
-    first_param = .true.
-    do while (.not.piter%at_end())
-      if (first_param) then
-        first_param = .false.
-      else
-        write(unit,'(a)') ','
-      end if
-      write(unit,'(a)',advance='no') indent // '"' // piter%name() // '"'
-      select type (pentry => piter%entry())
-      type is (parameter_list)
-        write(unit,'(a)') ': {'
-        call parameter_list_to_json_aux (pentry, indent//'  ', unit, real_fmt)
-        write(unit,'(/,a)',advance='no') indent // '}'
-      type is (any_scalar)
-        write(unit,'(a)',advance='no') ': '
-        call pentry%write (unit, real_fmt)
-      type is (any_vector)
-        write(unit,'(a)',advance='no') ': '
-        call pentry%write (unit, real_fmt)
-      type is (any_matrix)
-        write(unit,'(a)',advance='no') ': '
-        call pentry%write (unit, real_fmt)
-      end select
-      call piter%next
-    end do
-
-  end subroutine parameter_list_to_json_aux
-
   !! The behavior of the intrinsic SAME_TYPE_AS function is processor-dependent
   !! when applied to CLASS(*) variables with intrinsic dynamic type, making it
   !! useless for the present need.  Hence this custom version.  The variables

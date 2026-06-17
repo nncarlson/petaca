@@ -81,10 +81,12 @@ module parameter_list_type
     procedure :: value_ptr => any_vector_value_ptr
     generic   :: get_value => &
         any_vector_get_value, any_vector_get_character, any_vector_get_logical, &
-        any_vector_get_int32, any_vector_get_int64, any_vector_get_real32, any_vector_get_real64
+        any_vector_get_int32, any_vector_get_int64, any_vector_get_real32, any_vector_get_real64, &
+        any_vector_get_parameter_list
     procedure, private :: &
         any_vector_get_value, any_vector_get_character, any_vector_get_logical, &
-        any_vector_get_int32, any_vector_get_int64, any_vector_get_real32, any_vector_get_real64
+        any_vector_get_int32, any_vector_get_int64, any_vector_get_real32, any_vector_get_real64, &
+        any_vector_get_parameter_list
     procedure :: copy_impl => any_vector_copy
   end type
 
@@ -114,7 +116,7 @@ module parameter_list_type
   end interface
 
   type, extends(parameter_value), public :: parameter_list
-    private
+    !private
     character(:), allocatable :: path_
     type(list_item), pointer :: first => null()
   contains
@@ -136,13 +138,15 @@ module parameter_list_type
         get_scalar_int32, get_vector_int32, get_matrix_int32, &
         get_scalar_int64, get_vector_int64, get_matrix_int64, &
         get_scalar_real32, get_vector_real32, get_matrix_real32, &
-        get_scalar_real64, get_vector_real64, get_matrix_real64
+        get_scalar_real64, get_vector_real64, get_matrix_real64, &
+        get_vector_parameter_list
     procedure, private :: get_scalar_string, get_vector_string, get_matrix_string, &
         get_scalar_logical, get_vector_logical, get_matrix_logical, &
         get_scalar_int32, get_vector_int32, get_matrix_int32, &
         get_scalar_int64, get_vector_int64, get_matrix_int64, &
         get_scalar_real32, get_vector_real32, get_matrix_real32, &
-        get_scalar_real64, get_vector_real64, get_matrix_real64
+        get_scalar_real64, get_vector_real64, get_matrix_real64, &
+        get_vector_parameter_list
     procedure :: copy_impl => parameter_list_copy
     final :: dealloc_parameter_list
   end type
@@ -336,6 +340,7 @@ contains
   subroutine any_vector_copy(lhs, rhs)
     class(any_vector), intent(inout) :: lhs
     class(parameter_value), intent(in) :: rhs
+print *, 'in any_vector_copy'
     select type (rhs)
     type is (any_vector)
 #ifdef INTEL_BUG20231205
@@ -443,6 +448,19 @@ contains
     select type (v => this%value)
     type is (logical)
       value = v
+      errc = .false.
+    class default
+      errc = .true.
+    end select
+  end subroutine
+
+  subroutine any_vector_get_parameter_list(this, value, errc)
+    class(any_vector), intent(in) :: this
+    type(parameter_list), allocatable, intent(out) :: value(:)
+    logical, intent(out) :: errc
+    select type (v => this%value)
+    type is (parameter_list)
+      allocate(value, source=v) ! NB: intentionally a shallow copy
       errc = .false.
     class default
       errc = .true.
@@ -579,6 +597,7 @@ contains
   !! Final procedure for PARAMETER_LIST objects.
   recursive subroutine dealloc_parameter_list(this)
     type(parameter_list), intent(inout) :: this
+print *, 'in dealloc_parameter_list'
     if (associated(this%first)) deallocate(this%first)
   end subroutine
 
@@ -601,6 +620,7 @@ contains
   recursive subroutine parameter_list_copy(lhs, rhs)
     class(parameter_list), intent(inout) :: lhs
     class(parameter_value), intent(in) :: rhs
+print *, 'in parameter_list_copy'
     select type (rhs)
     type is (parameter_list)
       if (allocated(rhs%path_)) then
@@ -1225,6 +1245,34 @@ contains
     end if
 
   end subroutine get_vector_string
+
+  recursive subroutine get_vector_parameter_list(this, name, value, stat, errmsg, default)
+
+    class(parameter_list), intent(inout) :: this
+    character(*), intent(in) :: name
+    type(parameter_list), allocatable, intent(out) :: value(:)  !TODO: is out right?
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+    character(*), intent(in), optional :: default(:)
+
+    logical :: errc
+    type(any_vector), pointer :: pval
+
+    call error_clear(stat, errmsg)
+    pval => cast_to_any_vector(find_pval(this, name))
+    if (associated(pval)) then
+      call pval%get_value(value, errc)
+      if (errc) call error('not a parameter list parameter: "' // name // '"', stat, errmsg)
+    else if (this%is_parameter(name)) then
+      call error('not a vector parameter: "' // name // '"', stat, errmsg)
+    else if (present(default)) then
+      call this%set(name, default)
+      call this%get(name, value)
+    else
+      call error('no such parameter: "' // name // '"', stat, errmsg)
+    end if
+
+  end subroutine get_vector_parameter_list
 
   !! The follow subroutines get the rank-2 array value of the named parameter
   !! for various specific types.  If the parameter doesn't exist, it is created
