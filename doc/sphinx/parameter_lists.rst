@@ -182,13 +182,20 @@ execution is terminated.
    Fortran.
 
 ``set_path(path)``
-    Sets the path of the parameter list to ``path``. This subroutine is not
-    normally needed, because the path of a parameter list has an automatically
-    defined value which follows the `JSONPath <https://goessner.net/articles/JsonPath/>`_ specification: a local
-    ``parameter_list`` variable has a default path of "``$``" (the root), and
-    the default path of a parameter list created by ``sublist`` is the
-    concatenation of the path of the parent parameter list, the character
-    "``.``", and the sublist parameter name.
+    Sets the path of the parameter list to the supplied `JSON Pointer
+    <https://www.rfc-editor.org/rfc/rfc6901>`_. This subroutine is not normally
+    needed, because the path of a parameter list has an automatically defined
+    JSON Pointer value: a local ``parameter_list`` variable has the empty
+    string as its root path, and the path of a parameter list created by
+    ``sublist`` appends ``/`` and the sublist parameter name to its parent
+    path. Within a name, ``~`` is escaped as ``~0`` and ``/`` as ``~1``.
+
+    .. important::
+
+       This replaces the former JSONPath-style paths, such as ``$.solver``.
+       Code that passes a value to ``set_path`` must now supply a JSON Pointer,
+       such as ``/solver``. Code that consumes or displays values returned by
+       ``path()`` may also need to be updated for the new syntax.
 
 Type bound functions
 --------------------
@@ -470,4 +477,3 @@ New in v23.12
 * Renamed Procedures: To more accurately reflect their meaning, ``name`` and ``set_name`` have been renamed to ``path`` and ``set_path``.
 
 * JSON Enhancements: Optional arguments ``real_format`` and ``compact`` were added to the ``parameter_list_to_json`` subroutine.
-
