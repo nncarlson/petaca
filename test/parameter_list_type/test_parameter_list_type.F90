@@ -898,16 +898,18 @@ contains
   subroutine test_path
     type(parameter_list) :: p
     type(parameter_list), pointer :: sl
-    if (p%path() /= '$') call write_fail('test_path failed test 1')
+    if (p%path() /= '') call write_fail('test_path failed test 1')
     sl => p%sublist('fiz')
-    if (sl%path() /= '$.fiz') call write_fail('test_path failed test 2')
-    call p%set_path('foo')
-    if (p%path() /= 'foo') call write_fail('test_path failed test 3')
+    if (sl%path() /= '/fiz') call write_fail('test_path failed test 2')
+    call p%set_path('/foo')
+    if (p%path() /= '/foo') call write_fail('test_path failed test 3')
     sl => p%sublist('bar')
     sl => sl%sublist('fubar')
-    if (sl%path() /= 'foo.bar.fubar') call write_fail('test_path failed test 4')
-    call sl%set_path('biz')
-    if (sl%path() /= 'biz') call write_fail('test_path failed test 5')
+    if (sl%path() /= '/foo/bar/fubar') call write_fail('test_path failed test 4')
+    call sl%set_path('/biz')
+    if (sl%path() /= '/biz') call write_fail('test_path failed test 5')
+    sl => p%sublist('a/b~c')
+    if (sl%path() /= '/foo/a~1b~0c') call write_fail('test_path failed test 6')
   end subroutine
 
 

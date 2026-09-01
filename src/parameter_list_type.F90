@@ -732,7 +732,7 @@ contains
     if (allocated(this%path_)) then
       path = this%path_
     else
-      path = '$'
+      path = ''  ! The empty string is the JSON Pointer for the root.
     end if
   end function
 
@@ -887,7 +887,8 @@ contains
     else if (this%is_parameter(name)) then
       call error('parameter is not a sublist: "' // name // '"', stat, errmsg)
     else
-      call append_list_item(this, new_list_item(name, parameter_list(this%path()//'.'//name)))
+      call append_list_item(this, new_list_item(name, &
+          parameter_list(this%path()//'/'//json_pointer_token(name))))
       list => this%sublist(name)
     end if
 
@@ -1810,6 +1811,26 @@ contains
       item => item%next
     end do
     if (associated(item)) pval => item%value
+  end function
+
+  !! Encode a JSON Pointer reference token as specified by RFC 6901.  A tilde
+  !! and slash in a parameter name are escaped so that each child path is an
+  !! unambiguous extension of its parent path.
+  function json_pointer_token(token) result(escaped)
+    character(*), intent(in) :: token
+    character(:), allocatable :: escaped
+    integer :: i
+    escaped = ''
+    do i = 1, len(token)
+      select case (token(i:i))
+      case ('~')
+        escaped = escaped // '~0'
+      case ('/')
+        escaped = escaped // '~1'
+      case default
+        escaped = escaped // token(i:i)
+      end select
+    end do
   end function
 
   !!!! AUXILIARY ERROR HANDLING PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!
